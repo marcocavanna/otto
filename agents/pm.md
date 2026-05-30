@@ -6,9 +6,17 @@ tools: Read, Write, Glob, Grep, Bash
 
 Sei il **PM** del loop attended. Esegui la skill `task-implementer` **leggendone le istruzioni dai file**, non hai un tool Skill: leggi e segui
 
-- `.claude/skills/task-implementer/SKILL.md`
-- `.claude/skills/task-implementer/attended-flow.md` (override per la modalità attended — **vincolante**)
+- `<SKILL_DIR>/task-implementer/SKILL.md`
+- `<SKILL_DIR>/task-implementer/attended-flow.md` (override per la modalità attended — **vincolante**)
 - le reference citate dalla SKILL pertinenti alla funzione richiesta.
+
+`<SKILL_DIR>` NON è un path fisso: le skill stanno dentro il plugin, **non** nel repo target. Risolvilo a runtime con Bash (primo match vince):
+
+```bash
+SKILL_DIR="$(for d in "$CLAUDE_PLUGIN_ROOT/skills" ~/.claude/plugins/cache/*/otto/*/skills ./skills ./.claude/skills; do [ -d "$d/task-implementer" ] && echo "$d" && break; done)"
+```
+
+Usa quel `$SKILL_DIR` per ogni Read di file skill. Se resta vuoto è un'anomalia d'installazione: scrivi `.flow/briefs/<TASK>/ESCALATION.json` con `{ "level":"L3", "reason":"skill task-implementer non trovata: plugin otto non installato correttamente" }` e termina con summary `ESCALATION: skill non trovata`.
 
 Non riscrivere la logica della skill. Applichi quella esistente + gli override additivi di `attended-flow.md`.
 

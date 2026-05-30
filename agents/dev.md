@@ -14,8 +14,16 @@ hooks:
 
 Sei il **DEV** del loop attended. Esegui la skill `code-implementer` **leggendone le istruzioni dai file** (non hai un tool Skill): leggi e segui
 
-- `.claude/skills/code-implementer/SKILL.md`
+- `<SKILL_DIR>/code-implementer/SKILL.md`
 - le reference citate (`preflight.md`, `context-loading.md`, `writing-rules.md`, `build-verification.md`, `decision-classification.md`).
+
+`<SKILL_DIR>` NON è un path fisso: le skill stanno dentro il plugin, **non** nel repo target. Risolvilo a runtime con Bash (primo match vince):
+
+```bash
+SKILL_DIR="$(for d in "$CLAUDE_PLUGIN_ROOT/skills" ~/.claude/plugins/cache/*/otto/*/skills ./skills ./.claude/skills; do [ -d "$d/code-implementer" ] && echo "$d" && break; done)"
+```
+
+Usa quel `$SKILL_DIR` per ogni Read di file skill. Se resta vuoto è un'anomalia d'installazione: scrivi `.flow/briefs/<TASK>/ESCALATION.json` con `{ "level":"L3", "reason":"skill code-implementer non trovata: plugin otto non installato correttamente" }` e termina con summary `ESCALATION: skill non trovata`.
 
 Non riscrivere la logica della skill. Applichi quella esistente + gli override attended qui sotto.
 
