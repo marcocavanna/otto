@@ -13,7 +13,7 @@ Questa guida si legge dall'alto verso il basso. Se sei di fretta, salta dritto a
 
 ## 1. Chi c'è nella squadra
 
-Immagina un piccolo studio di sviluppo. Cinque ruoli, ognuno con un compito preciso:
+Immagina un piccolo studio di sviluppo. Sette ruoli, ognuno con un compito preciso:
 
 | Ruolo (skill/agente) | Metafora | Cosa fa | Quando lo chiami |
 |---|---|---|---|
@@ -23,6 +23,7 @@ Immagina un piccolo studio di sviluppo. Cinque ruoli, ognuno con un compito prec
 | **code-implementer** (agente **DEV**) | Lo sviluppatore con le mani sulla tastiera | Legge il brief e **scrive il codice**, poi controlla che compili | Idem: di solito lo chiama il capo-officina |
 | **flow-run** | Il **capo-officina / direttore d'orchestra** | Fa lavorare PM e DEV in sequenza, da solo, fermandosi solo quando serve te | Quando vuoi **andare in automatico** su un piano di task |
 | **critical-flow-analysis** | L'**ispettore** che entra nel codice esistente con la torcia | Analizza a fondo un flusso già scritto, stila un referto di bug/debolezze e — se glielo chiedi — trasforma il piano di riparazione in task | Vuoi **scovare bug** in qualcosa che già esiste (e poi sistemarli col flow) |
+| **whats-next** | Il **caposquadra** che guarda la lavagna e ti dice da dove ripartire | Legge tutti i piani attivi (progetto + feature), riconcilia lo stato reale e ti dice **cosa fare adesso** e perché — senza toccare niente | Hai tanti task aperti e non sai **qual è il prossimo passo** |
 
 Due cose da sapere subito:
 
@@ -151,6 +152,15 @@ Esempi lineari. Le frasi tra virgolette sono **esattamente quello che scrivi** a
 
 > In una frase: l'ispettore **fa la diagnosi**, e su tuo ok **scrive le ricette mediche** che poi il flow esegue. Lui non opera mai di testa sua. 🩺
 
+### Ricetta G — Ho tanti task aperti e non so da dove ripartire 🧭
+1. *"whats-next"* (oppure *"cosa devo fare adesso?"*)
+   → parte **whats-next**. Guarda **tutti** i piani attivi (il progetto + le feature in parallelo), controlla cosa è davvero fatto e cosa no, e ti dà una **lavagna**: a che punto sei, cosa è sbloccato, cosa è quasi finito.
+2. Ti propone 1–3 mosse **motivate** (es. *"chiudi la feature X che è all'88% e ferma"*, *"poi T-012 che ne sblocca altri 3"*), ognuna con il comando pronto.
+3. Scegli tu: la scelta "spingo il progetto o chiudo una feature?" resta tua. Copi il comando suggerito (es. *"esegui solo T-012"*) e parte la Ricetta D.
+4. Puoi anche restringere: *"whats-next nella feature export-csv"* oppure *"whats-next nella milestone M1"*.
+
+> In una frase: il caposquadra **non tocca niente e non decide al posto tuo** — ti dice solo dove sei e qual è la mossa più sensata adesso. 🧭
+
 ---
 
 ## 8. Il giro completo, in un disegno
@@ -244,7 +254,7 @@ Buon lavoro — e se la squadra fa una domanda, non è perché è confusa: è pe
 /plugin install otto                         # installa il plugin
 ```
 
-Da lì hai subito disponibili le 5 skill (`project-planner`, `feature-planner`, `task-implementer`, `code-implementer`, `flow-run`), i 2 agenti (`pm`, `dev`) e i 2 controlli automatici. Per partire ti basta una frase: *"pianifica la feature …"* oppure *"ho un'idea per un progetto"*.
+Da lì hai subito disponibili le 7 skill (`project-planner`, `feature-planner`, `task-implementer`, `code-implementer`, `flow-run`, `critical-flow-analysis`, `whats-next`), i 2 agenti (`pm`, `dev`) e i 2 controlli automatici. Per partire ti basta una frase: *"pianifica la feature …"* oppure *"ho un'idea per un progetto"*.
 
 > Nota tecnica (per chi pubblica): gli hook usano `${CLAUDE_PLUGIN_ROOT}`, quindi funzionano da qualunque path di installazione. Gli artefatti di lavoro (`docs/…`, `.flow/…`) vengono invece creati nella cartella del **tuo** progetto, dove devono stare.
 
