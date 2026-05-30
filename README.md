@@ -13,7 +13,7 @@ Questa guida si legge dall'alto verso il basso. Se sei di fretta, salta dritto a
 
 ## 1. Chi c'è nella squadra
 
-Immagina un piccolo studio di sviluppo. Sette ruoli, ognuno con un compito preciso:
+Immagina un piccolo studio di sviluppo. Otto ruoli, ognuno con un compito preciso:
 
 | Ruolo (skill/agente) | Metafora | Cosa fa | Quando lo chiami |
 |---|---|---|---|
@@ -24,6 +24,7 @@ Immagina un piccolo studio di sviluppo. Sette ruoli, ognuno con un compito preci
 | **flow-run** | Il **capo-officina / direttore d'orchestra** | Fa lavorare PM e DEV in sequenza, da solo, fermandosi solo quando serve te | Quando vuoi **andare in automatico** su un piano di task |
 | **critical-flow-analysis** | L'**ispettore** che entra nel codice esistente con la torcia | Analizza a fondo un flusso già scritto, stila un referto di bug/debolezze e — se glielo chiedi — trasforma il piano di riparazione in task | Vuoi **scovare bug** in qualcosa che già esiste (e poi sistemarli col flow) |
 | **whats-next** | Il **caposquadra** che guarda la lavagna e ti dice da dove ripartire | Legge tutti i piani attivi (progetto + feature), riconcilia lo stato reale e ti dice **cosa fare adesso** e perché — senza toccare niente | Hai tanti task aperti e non sai **qual è il prossimo passo** |
+| **flow-sync** | Il **tecnico riparatore** che rimette in pari lavagna e schede | Riconcilia lo stato reale (`PROGRESS.json`) con i marker dei tasks-file: ripara i casi sicuri, importa i `done` mancanti, segnala gli ambigui — senza decidere al posto tuo | Lo stato "non torna" (tipico dopo un **expand**) e vuoi **riallinearlo** |
 
 Due cose da sapere subito:
 
@@ -161,6 +162,14 @@ Esempi lineari. Le frasi tra virgolette sono **esattamente quello che scrivi** a
 
 > In una frase: il caposquadra **non tocca niente e non decide al posto tuo** — ti dice solo dove sei e qual è la mossa più sensata adesso. 🧭
 
+### Ricetta H — Lo stato "non torna" più: riallineo lavagna e schede 🔧
+1. *"flow-sync"* (oppure *"riallinea lo stato"*, *"ripara il drift"*)
+   → parte **flow-sync** in **preview**: ti mostra, task per task, cosa è in-sync, cosa riparerebbe (i casi sicuri), cosa importerebbe (`done` manuali mancanti) e cosa è ambiguo (lo segnala soltanto).
+2. Se il piano ti convince: *"applica"* (apply). Scrive **solo** le righe Status sicure e gli import conservativi; gli **ambigui** non li tocca mai.
+3. Caso tipico: dopo un *expand* (che riscrive i tasks-file e azzera i marker) lo stato del flow e le schede divergono → flow-sync li rimette in pari.
+
+> In una frase: **whats-next** ti dice *che* lo stato è sfasato (e non tocca niente); **flow-sync** lo **rimette in sincrono** — i casi sicuri da solo, gli ambigui solo segnalandoli. 🔧
+
 ---
 
 ## 8. Il giro completo, in un disegno
@@ -254,7 +263,7 @@ Buon lavoro — e se la squadra fa una domanda, non è perché è confusa: è pe
 /plugin install otto                         # installa il plugin
 ```
 
-Da lì hai subito disponibili le 7 skill (`project-planner`, `feature-planner`, `task-implementer`, `code-implementer`, `flow-run`, `critical-flow-analysis`, `whats-next`), i 2 agenti (`pm`, `dev`) e i 2 controlli automatici. Per partire ti basta una frase: *"pianifica la feature …"* oppure *"ho un'idea per un progetto"*.
+Da lì hai subito disponibili le 8 skill (`project-planner`, `feature-planner`, `task-implementer`, `code-implementer`, `flow-run`, `critical-flow-analysis`, `flow-sync`, `whats-next`), i 2 agenti (`pm`, `dev`) e i 2 controlli automatici. Per partire ti basta una frase: *"pianifica la feature …"* oppure *"ho un'idea per un progetto"*.
 
 > Nota tecnica (per chi pubblica): gli hook usano `${CLAUDE_PLUGIN_ROOT}`, quindi funzionano da qualunque path di installazione. Gli artefatti di lavoro (`docs/…`, `.flow/…`) vengono invece creati nella cartella del **tuo** progetto, dove devono stare.
 

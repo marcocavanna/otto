@@ -63,7 +63,7 @@ Tono: senior, denso, niente filler, niente cheerleading. Coerente con `flow-run`
 - **Niente dipendenze dichiarate** (`Dipende da: —` ovunque) → "nessuna dipendenza dichiarata: ordino per fase/categoria, non per critical-path."
 - **Effort è un range** → lo sprint/orizzonte è euristico, non garantito. Dillo.
 - **`.flow/PROGRESS.json` assente** → "stato d'esecuzione non tracciato (nessun `.flow`): uso lo `Status` del piano, che può non riflettere il lavoro reale."
-- **Drift PROGRESS.json ↔ tasks-file** → riportalo (volatile dopo un `expand`, che sovrascrive il tasks-file). Non risolverlo.
+- **Drift PROGRESS.json ↔ tasks-file** → riportalo (volatile dopo un `expand`, che sovrascrive il tasks-file). Non risolverlo: sei read-only. Per **ripararlo** usa `flow-sync` (`skills/flow-sync/`): preview di default, apply su conferma — ripara i drift sicuri + import conservativo, segnala gli ambigui/orphan. whats-next rileva, flow-sync ripara.
 - **Tasks-file in formato non riconoscibile / task mancante** → non inventare: salta e annotalo.
 
 ## Cosa NON fa

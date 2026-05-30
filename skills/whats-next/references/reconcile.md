@@ -28,6 +28,8 @@ Segnala quando le due fonti **non concordano** sullo stesso ID:
 - tasks-file `✅ done` ma `PROGRESS.json: pending`/assente → completamento segnato a mano fuori dal flow. Verità incerta: riportalo come **da confermare**, non darlo per fatto.
 - `PROGRESS.json: active` ma nessun `RESULT.json` → task lasciato a metà. Candidato forte per "riprendi prima di aprirne altri" (vedi `ranking.md`).
 
+> **Riparazione**: questa sezione *rileva* il drift e non lo corregge mai (read-only). Per *risanarlo* c'è `flow-sync` (`skills/flow-sync/`): riusa questa stessa lettura/classificazione e aggiunge la dimensione di scrittura (safe-repair PROGRESS→file + import conservativo; ambigui/orphan solo segnalati). Preview di default, apply su conferma. Classi e azioni vivono in `flow-sync/references/{reconciliation,apply-protocol}.md` — qui non si duplicano.
+
 ## Assenza di `.flow/PROGRESS.json`
 
 Nessun `.flow` = il piano non è ancora mai stato eseguito via `flow-run`. Lo stato d'esecuzione **non è tracciato**: usa solo lo `Status` del tasks-file e dichiaralo esplicitamente nell'output ("stato non tracciato, mi baso sui marker del piano"). Non assumere che `⚪ todo` significhi "mai iniziato a mano".
