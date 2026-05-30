@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+
+# Runtime/test artifacts — appartengono al progetto-utente, non al plugin.
+# Se compaiono qui è solo residuo dei test interni: non vanno versionati nel plugin.
+.flow/
+docs/
+
+# Backup generati dalle skill (es. tasks-active.md.bak)
+*.bak
