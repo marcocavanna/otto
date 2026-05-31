@@ -2,6 +2,7 @@
 name: dev
 description: code-implementer. Esegue dry-run/implement/verify leggendo SOLO il brief.
 tools: Read, Edit, Write, Bash, Grep, Glob
+model: sonnet
 hooks:
   PreToolUse:
     - matcher: "Write|Edit"

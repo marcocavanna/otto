@@ -1,6 +1,6 @@
 ---
 name: flow-run
-description: Orchestratore "attended" del loop PM→DEV su un piano di task. Eseguito dal main thread. Guida i subagent pm e dev (un solo livello di delega), che comunicano solo via file in .flow/. Si ferma a interpellare l'utente (AskUserQuestion) SOLO su escalation: deviazione fuori scope, verify fallito oltre i retry, cambio di contratto. A finalize riflette lo status su docs/planning/05-tasks-active.md (mirror non-canonico). Supporta full-run (tutti i pending) e single-task (un solo task indicato). Triggera su "avvia il flow", "esegui il piano", "flow-run", "fai girare il loop PM/DEV", "prossimo task del flow", "esegui solo T-NNN", "flow-run T-NNN".
+description: Orchestratore "attended" del loop PM→DEV su un piano di task. Eseguito dal main thread. Guida i subagent pm e dev (un solo livello di delega), che comunicano solo via file in .flow/. Spawna il DEV con un modello scelto dinamicamente in base alla complessità del task (tiering dal meta.json del PM), con possibilità di override manuale del modello per un run (es. "esegui solo T-003 con opus"). Si ferma a interpellare l'utente (AskUserQuestion) SOLO su escalation: deviazione fuori scope, verify fallito oltre i retry, cambio di contratto. A finalize riflette lo status su docs/planning/05-tasks-active.md (mirror non-canonico). Supporta full-run (tutti i pending) e single-task (un solo task indicato). Triggera su "avvia il flow", "esegui il piano", "flow-run", "fai girare il loop PM/DEV", "prossimo task del flow", "esegui solo T-NNN", "flow-run T-NNN", "esegui con opus", "forza il modello del dev".
 ---
 
 # Flow Run — orchestratore attended
@@ -32,6 +32,18 @@ All'avvio, determina la **modalità di esecuzione** dall'input dell'utente:
 
 In entrambe le modalità lo stato resta in `PROGRESS.json` e il protocollo per-task è identico.
 
+### Override manuale del modello (input utente)
+
+Oltre alla modalità d'esecuzione, estrai dall'input dell'utente un eventuale **override del modello**:
+- forma flag: `--model <haiku|sonnet|opus>`;
+- forma naturale: *"con/in/usa <haiku|sonnet|opus>"* (es. *"esegui il piano con haiku"*, *"solo T-003 in opus"*).
+
+Alias fuori dall'enum `{haiku, sonnet, opus}` o token non riconosciuto (es. *"modello veloce"*, *"con gpt4"*, *"turbo"*) → **nessun override**: comportamento dinamico (step 3b) + **nota nel summary** (l'orchestratore non inventa un modello, non escala).
+
+Default: l'override riguarda **solo il DEV**. Si estende anche allo spawn `pm` SOLO se l'utente lo indica esplicitamente (es. *"tutto in opus"*, *"PM e DEV in opus"*, *"opus, PM compreso"*) — coerente col boundary di feature (il PM non è tierizzabile dinamicamente; l'override manuale è l'unica leva, e va resa intenzionale).
+
+Precedenza: vedi [`references/model-tiering.md`](references/model-tiering.md) § Precedenza — **l'override utente vince su tutto**, mapping dinamico incluso. L'override è **effimero** (vive nel turno dell'orchestratore): non entra in `PROGRESS.json` né in alcun contratto su disco, come la derivazione dinamica.
+
 ## Protocollo (per ogni task)
 
 1. **Leggi piano + `PROGRESS.json`.**
@@ -39,8 +51,12 @@ In entrambe le modalità lo stato resta in `PROGRESS.json` e il protocollo per-t
    - Single-task: prendi il task indicato dall'utente.
 2. **Attiva il task PRIMA dello spawn DEV** (l'hook risolve il task da qui): in `PROGRESS.json` setta `current_task = <task>` e quel task `state = "active"`. Scrivi il file.
 3. **Spawn `pm` → `brief <task>`.** Al ritorno verifica che esistano e non siano vuoti `.flow/briefs/<task>/scope.txt` e `.flow/briefs/<task>/frozen.txt`. Se mancano/vuoti o c'è `ESCALATION.json` → **vai a 7**.
-4. **Spawn `dev` → `dry-run`.** Al ritorno: se esiste `.flow/briefs/<task>/ESCALATION.json` → **vai a 7**.
-5. **Spawn `dev` → `implement`** (implement + verify).
+3b. **Deriva il modello del DEV** (una sola volta per task, riusato in 4 e 5).
+    - **Override manuale presente** (vedi § "Override manuale del modello"): usa quel modello per il DEV (e per il PM se l'utente ha esteso l'override). **NON** leggere né applicare `meta.json` per la scelta: l'override ha precedenza massima e copre anche il caso `meta.json` assente/illeggibile (nessuna doppia logica, niente nota di degrado). Annota l'override applicato nel summary.
+    - **Nessun override**: leggi `.flow/briefs/<task>/meta.json` (`{ "complexity": "trivial|standard|critical", "category": "<str>" }`, emesso dal PM). Mappa `complexity` → modello via la single-source [`references/model-tiering.md`](references/model-tiering.md) (`trivial→haiku`, `standard→sonnet`, `critical→opus`); **non** ridefinire qui la tabella. Se `meta.json` è assente / illeggibile / `complexity` fuori enum → `model = sonnet` (default; **MAI** haiku) + **nota nel summary** del task.
+    Tieni il modello risolto (override o dinamico): lo **stesso** valore va usato in 4 e 5 (stesso task ⇒ stesso modello in dry-run e implement).
+4. **Spawn `dev` → `dry-run`** passando l'override `model: <derivato>`. Al ritorno: se esiste `.flow/briefs/<task>/ESCALATION.json` → **vai a 7**.
+5. **Spawn `dev` → `implement`** (implement + verify) con lo **stesso** `model: <derivato>` di 4.
 6. **Leggi `.flow/briefs/<task>/RESULT.json`.** Se `escalate==true` OPPURE `verify!="pass"` OPPURE esiste `ESCALATION.json` → **vai a 7**.
    Altrimenti: **spawn `pm` → `finalize <task>`**; in `PROGRESS.json` setta il task `state="done"`; poi **mirror dello status** (vedi sotto). In full-run torna a **1**; in single-task riporta summary e fermati.
 
@@ -58,10 +74,14 @@ Vincoli del mirror:
 
 - `pm` (brief): "Funzione: brief. TASK: <task>. Segui pm.md."
 - `pm` (finalize): "Funzione: finalize. TASK: <task>. Applica il gate attended."
-- `dev` (dry-run): "Modalità: dry-run. TASK: <task>. Leggi solo .flow/briefs/<task>/brief.md."
-- `dev` (implement): "Modalità: implement. TASK: <task>."
+- `dev` (dry-run): "Modalità: dry-run. TASK: <task>. Leggi solo .flow/briefs/<task>/brief.md." — spawn `Agent` con override `model: <derivato>` (vedi step 3b).
+- `dev` (implement): "Modalità: implement. TASK: <task>." — stesso `model: <derivato>` del dry-run.
 
 Non passare logica di business nel prompt: la fonte è il brief su disco. Tieni i prompt sottili.
+
+> Il `model` per-spawn del DEV è il valore risolto allo step 3b e **precede** il frontmatter del DEV. Se l'utente ha fornito un **override manuale** (§ "Override manuale del modello"), quel valore vince su tutto (derivazione dinamica inclusa) ed è il `model` per-spawn del DEV — e del `pm` solo se l'override è stato esteso esplicitamente. In assenza di override, il `model` deriva da `meta.json` via [`references/model-tiering.md`](references/model-tiering.md); su `meta.json` assente/illeggibile → `sonnet` + nota nel summary.
+>
+> Smoke-check (RISK-model-tiering-002): se la versione di Claude Code **non** onora il `model` per-spawn del tool `Agent`, il DEV gira sul `model:` del frontmatter (sonnet baseline) → **degrado grazioso**, da annotare nel summary; **non** è un'escalation.
 
 ## Regole
 
@@ -69,3 +89,5 @@ Non passare logica di business nel prompt: la fonte è il brief su disco. Tieni 
 - Un solo livello di delega: tu spawni pm/dev, loro non spawnano nulla.
 - Se `.flow/` non esiste, inizializzalo (PROGRESS.json con la lista task dal piano) prima del loop. Il "piano" può essere `docs/planning/05-tasks-active.md` (project-planner) **o** `docs/features/<slug>/tasks-active.md` (feature-planner): l'orchestratore tratta gli ID in modo opaco e non si cura della source.
 - Dopo ogni transizione di stato, **persisti `PROGRESS.json`** prima di proseguire.
+- La selezione del modello del DEV (step 3b) — sia la derivazione dinamica sia l'**override manuale** dell'utente — è **effimera**: vive nel turno dell'orchestratore, non entra in `PROGRESS.json` né in alcun contratto su disco. Se l'override per-spawn non è onorato, degrada al frontmatter del DEV — non è un'anomalia da escalare.
+- Precedenza del modello (single-source [`references/model-tiering.md`](references/model-tiering.md) § Precedenza): `override utente > mapping dinamico (DEV) > frontmatter > sessione`. Non ridefinire qui la regola, solo applicarla.

@@ -120,6 +120,24 @@ Regola di sicurezza di entrambi: **nel dubbio, chiedono.** Meglio una domanda in
 
 ---
 
+## 6-bis. Lo sviluppatore "cambia marcia" da solo 🚗
+
+Non tutti i lavori meritano lo stesso impegno: cambiare una virgola in un file di configurazione non è come riprogettare il cuore del dominio. Per questo il DEV **non gira sempre sullo stesso modello**.
+
+Funziona così, senza che tu debba pensarci:
+
+- Quando il PM scrive la scheda di un task, **valuta anche quanto è impegnativo** (banale, normale, delicato) e lo annota in un bigliettino.
+- Il capo-officina legge quel bigliettino e, **prima di mettere al lavoro il DEV**, sceglie il modello adatto: più leggero e veloce per le cose banali, più potente per quelle delicate. Risparmi tempo e risorse sulle cose semplici, tieni i muscoli per quelle che contano.
+- Nel dubbio fra due marce, **ingrana sempre la più alta** (meglio sovrastimare: un modello più forte costa poco, un task sbagliato costa di più). E se il bigliettino manca o è illeggibile, parte su un modello **affidabile di default** — mai al risparmio.
+
+Il PM, invece, gira sempre sul suo modello fisso: lavora **prima** che la complessità sia nota, quindi non avrebbe su cosa basarsi.
+
+> Vuoi i dettagli esatti (quale complessità → quale modello, e chi vince su chi)? Stanno scritti in un posto solo, per non avere due verità che litigano: [`skills/flow-run/references/model-tiering.md`](skills/flow-run/references/model-tiering.md).
+
+**E se voglio decidere io?** Puoi **forzare il modello** per un singolo run: la tua scelta batte tutto il resto. Vedi la FAQ "come forzo il modello" nel §10.
+
+---
+
 ## 7. Ricette pronte 🍳
 
 Esempi lineari. Le frasi tra virgolette sono **esattamente quello che scrivi** a Claude Code.
@@ -254,6 +272,12 @@ Sì. Stanno in cassetti diversi (`docs/planning/` vs `docs/features/<slug>/`) e 
 
 **"Devo committare io o lo fa la squadra?"**
 **Lo fai tu.** La squadra scrive codice e file, ma **non tocca git** di sua iniziativa. Il salvataggio definitivo resta una tua decisione.
+
+**"Perché il DEV a volte usa un modello diverso?"**
+Perché il modello viene scelto **in base a quanto è impegnativo il task**: il PM stima la complessità, il capo-officina sceglie di conseguenza (leggero per le cose banali, potente per quelle delicate). Così non sprechi un modello costoso per cambiare una virgola, né lasci un lavoro critico a uno troppo leggero. Nel dubbio, ingrana la marcia più alta; se la stima manca, parte su un default affidabile. Vedi il §6-bis e i dettagli esatti in [`skills/flow-run/references/model-tiering.md`](skills/flow-run/references/model-tiering.md).
+
+**"Come forzo il modello per un run?"**
+Dillo nella frase con cui lanci il task: la tua scelta **vince su tutto** (la stima del PM e il default degli agenti). Per esempio: *"esegui solo T-003 con opus"* (oppure `flow-run T-003 --model opus`). Vale per quel singolo run; il task dopo torna alla scelta automatica.
 
 **"C'è una cartella `.flow/` con dentro `T-SMOKE`. Che roba è?"**
 È un task-giocattolo usato per i test interni. Innocuo. Se ti dà fastidio: cancella `.flow/` e via.

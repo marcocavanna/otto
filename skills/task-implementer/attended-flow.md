@@ -21,9 +21,22 @@ Dopo aver generato `docs/tasks/T-NNN.md` come da flusso standard, materializza i
    - VO/interfacce/contratti citati in `technical-context.md` che questo task **consuma** ma non deve modificare;
    - voci della sezione "Out of scope per questo task" del brief.
 
+4. **`meta.json`** — complessità del task per il tiering dinamico del DEV, emessa nello
+   **stesso step** di `scope.txt`/`frozen.txt` (dopo aver generato il brief markdown):
+   `{ "complexity": "trivial|standard|critical", "category": "<categoria primaria>" }`.
+   - `complexity` assegnata applicando i criteri di [`references/complexity-criteria.md`](references/complexity-criteria.md) (fail-safe verso l'alto: in dubbio tra due tier, quello più alto).
+   - `category` = categoria primaria del task (set autorevole [`../code-implementer/context-loading.md`](../code-implementer/context-loading.md)).
+   - Consumato da `flow-run` prima dello spawn DEV; la mappa complessità→modello vive single-source in [`../flow-run/references/model-tiering.md`](../flow-run/references/model-tiering.md). Qui ci si ferma a `complexity`/`category`, non si replica il mapping al modello.
+
+   **Best-effort, NON bloccante** (a differenza di `scope.txt`/`frozen.txt`): se non producibile
+   o la classificazione è incerta al punto da non poter scegliere, NON scrivere `ESCALATION.json` e
+   NON bloccare il brief — ometterlo e annotarlo nel summary; `flow-run` degrada al default (Sonnet).
+
 ### Validazione di output (obbligatoria)
 
 `scope.txt` e `frozen.txt` devono esistere; `scope.txt` non deve essere vuoto. Se non producibili (planning assente, "File impattati" vuoto/non derivabile), NON inventare contenuto: scrivere `.flow/briefs/<TASK>/ESCALATION.json` = `{ "level":"L3", "reason":"brief non producibile: <motivo>" }` e fermarsi.
+
+`meta.json`, se prodotto, dev'essere JSON valido con `complexity` nell'enum `{trivial, standard, critical}`. La sua **assenza non blocca** il brief (degrado lato `flow-run` a Sonnet); il gate bloccante resta solo su `scope.txt`/`frozen.txt`.
 
 ## Override su `finalize T-NNN`
 
