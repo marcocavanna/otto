@@ -279,6 +279,9 @@ Perché il modello viene scelto **in base a quanto è impegnativo il task**: il 
 **"Come forzo il modello per un run?"**
 Dillo nella frase con cui lanci il task: la tua scelta **vince su tutto** (la stima del PM e il default degli agenti). Per esempio: *"esegui solo T-003 con opus"* (oppure `flow-run T-003 --model opus`). Vale per quel singolo run; il task dopo torna alla scelta automatica.
 
+**"Perché a volte il DEV salta il dry-run e va dritto a scrivere?"**
+Il dry-run (la "prova a vuoto" in cui il DEV dice cosa *farebbe* senza scrivere) costa come una seconda lettura del compito: ha senso solo dove c'è il rischio concreto di doversi fermare prima di toccare il codice. Per questo il capo-officina lo **salta sui task leggeri** (banali o standard) e lo **tiene sui task critici**, dove intercettare un problema prima di scrivere vale il costo. Se la stima di complessità manca, il dry-run viene fatto comunque (nel dubbio, si controlla). Puoi forzare la mano: *"salta il dry-run"* / `--no-dry-run` oppure *"forza il dry-run"* / `--dry-run`. Dettagli in [`skills/flow-run/references/model-tiering.md`](skills/flow-run/references/model-tiering.md).
+
 **"C'è una cartella `.flow/` con dentro `T-SMOKE`. Che roba è?"**
 È un task-giocattolo usato per i test interni. Innocuo. Se ti dà fastidio: cancella `.flow/` e via.
 

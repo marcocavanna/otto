@@ -44,6 +44,8 @@ Default: l'override riguarda **solo il DEV**. Si estende anche allo spawn `pm` S
 
 Precedenza: vedi [`references/model-tiering.md`](references/model-tiering.md) § Precedenza — **l'override utente vince su tutto**, mapping dinamico incluso. L'override è **effimero** (vive nel turno dell'orchestratore): non entra in `PROGRESS.json` né in alcun contratto su disco, come la derivazione dinamica.
 
+Estrai dall'input anche una eventuale **direttiva dry-run**: *"salta il dry-run"* / `--no-dry-run` → skip; *"forza il dry-run"* / `--dry-run` → run. Vince sulla policy per complessità (step 3b / 4). Anch'essa effimera.
+
 ## Protocollo (per ogni task)
 
 1. **Leggi piano + `PROGRESS.json`.**
@@ -51,14 +53,20 @@ Precedenza: vedi [`references/model-tiering.md`](references/model-tiering.md) §
    - Single-task: prendi il task indicato dall'utente.
 2. **Attiva il task PRIMA dello spawn DEV** (l'hook risolve il task da qui): in `PROGRESS.json` setta `current_task = <task>` e quel task `state = "active"`. Scrivi il file.
 3. **Spawn `pm` → `brief <task>`.** Al ritorno verifica che esistano e non siano vuoti `.flow/briefs/<task>/scope.txt` e `.flow/briefs/<task>/frozen.txt`. Se mancano/vuoti o c'è `ESCALATION.json` → **vai a 7**.
-3b. **Deriva il modello del DEV** (una sola volta per task, riusato in 4 e 5).
-    - **Override manuale presente** (vedi § "Override manuale del modello"): usa quel modello per il DEV (e per il PM se l'utente ha esteso l'override). **NON** leggere né applicare `meta.json` per la scelta: l'override ha precedenza massima e copre anche il caso `meta.json` assente/illeggibile (nessuna doppia logica, niente nota di degrado). Annota l'override applicato nel summary.
-    - **Nessun override**: leggi `.flow/briefs/<task>/meta.json` (`{ "complexity": "trivial|standard|critical", "category": "<str>" }`, emesso dal PM). Mappa `complexity` → modello via la single-source [`references/model-tiering.md`](references/model-tiering.md) (`trivial→haiku`, `standard→sonnet`, `critical→opus`); **non** ridefinire qui la tabella. Se `meta.json` è assente / illeggibile / `complexity` fuori enum → `model = sonnet` (default; **MAI** haiku) + **nota nel summary** del task.
-    Tieni il modello risolto (override o dinamico): lo **stesso** valore va usato in 4 e 5 (stesso task ⇒ stesso modello in dry-run e implement).
-4. **Spawn `dev` → `dry-run`** passando l'override `model: <derivato>`. Al ritorno: se esiste `.flow/briefs/<task>/ESCALATION.json` → **vai a 7**.
-5. **Spawn `dev` → `implement`** (implement + verify) con lo **stesso** `model: <derivato>` di 4.
+3b. **Deriva le policy del task** dalla single-source [`references/model-tiering.md`](references/model-tiering.md) (una sola volta per task). Tre output: **modello DEV**, **dry-run sì/no**, **modello del finalize PM**.
+    - **Override manuale presente** (vedi § "Override manuale del modello"): usa il modello forzato per il DEV (e per il PM/finalize se l'utente ha esteso l'override). **NON** leggere né applicare `meta.json` per il modello: l'override ha precedenza massima e copre anche il caso `meta.json` assente/illeggibile (nessuna doppia logica, niente nota di degrado). Per la **dry-run policy**, un eventuale override esplicito (*"salta/forza il dry-run"*) vince; altrimenti vale la policy per complessità (sotto). Annota l'override applicato nel summary.
+    - **Nessun override**: leggi `.flow/briefs/<task>/meta.json` (`{ "complexity": "trivial|standard|critical", "category": "<str>" }`, emesso dal PM) e applica le tre policy via la single-source — **non** ridefinire qui le tabelle:
+      - **modello DEV**: `trivial→haiku`, `standard→sonnet`, `critical→opus`;
+      - **dry-run**: `trivial`/`standard` → **skip**, `critical` → **run**;
+      - **modello finalize PM**: `trivial`/`standard` → `haiku`, `critical` → `sonnet`.
+      Se `meta.json` è assente / illeggibile / `complexity` fuori enum → **degrado conservativo**: modello DEV = `sonnet` (MAI haiku), **dry-run = run**, modello finalize = `sonnet`, + **nota nel summary** del task.
+    Tieni i valori risolti: il modello DEV è lo **stesso** in 4 e 5 (stesso task ⇒ stesso modello in dry-run e implement); la dry-run policy decide se 4 viene eseguito; il modello finalize si usa in 6.
+4. **Dry-run (condizionale, vedi 3b).**
+   - Policy = **run** (task `critical`, oppure `meta.json` assente/illeggibile, oppure override *"forza"*): **spawn `dev` → `dry-run`** passando `model: <derivato>`. Al ritorno: se esiste `.flow/briefs/<task>/ESCALATION.json` → **vai a 7**.
+   - Policy = **skip** (`trivial`/`standard`, salvo override): **non** spawnare il dry-run; vai diretto a 5. In tal caso il **primo** checkpoint di escalation è l'implement (step 6) — il DEV può comunque scrivere `ESCALATION.json` e lo `scope-check` hook resta attivo.
+5. **Spawn `dev` → `implement`** (implement + verify) con lo **stesso** `model: <derivato>` del DEV.
 6. **Leggi `.flow/briefs/<task>/RESULT.json`.** Se `escalate==true` OPPURE `verify!="pass"` OPPURE esiste `ESCALATION.json` → **vai a 7**.
-   Altrimenti: **spawn `pm` → `finalize <task>`**; in `PROGRESS.json` setta il task `state="done"`; poi **mirror dello status** (vedi sotto). In full-run torna a **1**; in single-task riporta summary e fermati.
+   Altrimenti: **spawn `pm` → `finalize <task>`** col `model: <finalize derivato>` (vedi 3b: `trivial`/`standard`→`haiku`, `critical`→`sonnet`; degrado/override → `sonnet`); in `PROGRESS.json` setta il task `state="done"`; poi **mirror dello status** (vedi sotto). In full-run torna a **1**; in single-task riporta summary e fermati.
 
 ### Mirror status sul tasks-file della source (a finalize OK)
 
@@ -73,8 +81,8 @@ Vincoli del mirror:
 ## Spawn — cosa passare ai subagent
 
 - `pm` (brief): "Funzione: brief. TASK: <task>. Segui pm.md."
-- `pm` (finalize): "Funzione: finalize. TASK: <task>. Applica il gate attended."
-- `dev` (dry-run): "Modalità: dry-run. TASK: <task>. Leggi solo .flow/briefs/<task>/brief.md." — spawn `Agent` con override `model: <derivato>` (vedi step 3b).
+- `pm` (finalize): "Funzione: finalize. TASK: <task>. Applica il gate attended." — spawn `Agent` col `model: <finalize derivato>` (vedi step 3b: tier più basso del DEV perché il finalize è prevalentemente meccanico).
+- `dev` (dry-run): "Modalità: dry-run. TASK: <task>. Leggi solo .flow/briefs/<task>/brief.md." — spawn `Agent` con override `model: <derivato>` (vedi step 3b). **Eseguito solo se la dry-run policy = run** (step 4).
 - `dev` (implement): "Modalità: implement. TASK: <task>." — stesso `model: <derivato>` del dry-run.
 
 Non passare logica di business nel prompt: la fonte è il brief su disco. Tieni i prompt sottili.
