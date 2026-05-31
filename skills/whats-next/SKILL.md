@@ -20,6 +20,7 @@ Con un macro-plan + feature parallele **non esiste un "next" globale determinist
 - `docs/planning/05-tasks-active.md` — task atomici **della sola milestone attiva** (project source).
 - `docs/planning/03-milestones.md` — stato macro delle milestone (🔵 active / ⚪ planned / ✅ done / ⏸ paused).
 - `docs/features/*/tasks-active.md` — task delle feature parallele (feature source, campo `Feature`).
+- `docs/epics/*/roadmap.md` — **(opzionale, additivo)** coordinamento di un epic: raggruppa più feature `<epic>-<feat>` sotto un epic e ne dichiara ordine + dipendenze inter-feature. Layer **non-canonico**: se assente, le feature restano piatte (comportamento storico). Vedi `references/epic-rollup.md`.
 - `.flow/PROGRESS.json` — stato d'esecuzione **canonico** per gli ID che contiene.
 
 Formato task (identico project/feature, vedi `../project-planner/task-expansion.md` e `../feature-planner/feature-artifacts.md`): ID, categoria, `Effort` (range ore), `Dipende da`, `Status` (⚪🔵✅⏸). ID globalmente unici (`T-NNN` project, `<slug>-NNN` feature) — trattali in modo **opaco**.
@@ -30,6 +31,7 @@ Formato task (identico project/feature, vedi `../project-planner/task-expansion.
 - **plan**: "…del piano / del progetto / del macro-plan" → solo `docs/planning/`.
 - **milestone**: "…nella milestone M[N]" → vedi sotto (i task atomici esistono **solo** per la milestone attiva).
 - **feature**: "…nella feature <slug>" → solo `docs/features/<slug>/`. Se lo slug non esiste o è ambiguo, elenca le feature disponibili e chiedi.
+- **epic**: "…nell'epic <epic>" → le feature `<epic>-*` raggruppate via `docs/epics/<epic>/roadmap.md`, con next che rispetta la sequenza inter-feature. Vedi `references/epic-rollup.md`. Epic inesistente → elenca gli epic disponibili e chiedi.
 
 ## Protocollo
 
@@ -41,8 +43,9 @@ Formato task (identico project/feature, vedi `../project-planner/task-expansion.
    - **next del piano** = tra gli sbloccati, quello con peso di critical-path maggiore (n. di task che dipendono da esso); a parità, ordine del file
    - **avanzamento** = ✅ / totale (per conteggio; nota se effort-pesato cambia il quadro)
    - **blockers** = task `⏸` o `todo` con deps non soddisfatte (indica da cosa dipendono)
-4. **Ranking cross-plan** (solo modalità global) — vedi `references/ranking.md`: WIP-avanzato → critical-path macro-plan → quick-win. È **euristica esposta**, non verità.
-5. **Output a 3 livelli** (vedi sotto).
+4. **Roll-up epic** (additivo) — se esistono `docs/epics/*/roadmap.md`, raggruppa le feature `<epic>-<feat>` sotto il loro epic, calcola l'avanzamento epic dai task reali e rispetta l'ordine/dipendenze inter-feature della roadmap. Vedi `references/epic-rollup.md`. Se non ci sono epic, salta: le feature restano piani piatti.
+5. **Ranking cross-plan** (solo modalità global) — vedi `references/ranking.md`: WIP-avanzato → critical-path macro-plan → quick-win. È **euristica esposta**, non verità. Con epic presenti, l'unità di ranking può essere l'epic (vedi `epic-rollup.md`).
+6. **Output a 3 livelli** (vedi sotto).
 
 ### Milestone scoped — caso speciale
 

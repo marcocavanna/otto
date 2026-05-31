@@ -13,12 +13,13 @@ Questa guida si legge dall'alto verso il basso. Se sei di fretta, salta dritto a
 
 ## 1. Chi c'è nella squadra
 
-Immagina un piccolo studio di sviluppo. Otto ruoli, ognuno con un compito preciso:
+Immagina un piccolo studio di sviluppo. Nove ruoli, ognuno con un compito preciso:
 
 | Ruolo (skill/agente) | Metafora | Cosa fa | Quando lo chiami |
 |---|---|---|---|
 | **project-planner** | L'architetto che progetta una casa da zero | Trasforma un'idea grezza in un piano completo: pitch, milestone, fasi, task | Stai partendo con un **progetto nuovo** |
 | **feature-planner** | Il geometra che progetta **una stanza in più** in una casa già costruita | Pianifica **una singola feature** su un progetto **esistente** → uno o più task, niente milestone | Vuoi aggiungere **una cosa specifica** a qualcosa che c'è già |
+| **epic-planner** | Il **direttore lavori** che divide una ristrutturazione grande in cantieri ordinati | Scompone un **lavoro grande** (più di una feature, ma non un progetto nuovo) in **più feature logiche e sequenziali**; crea i bundle feature standard + una **roadmap** di coordinamento | Hai un'implementazione **grossa** da spezzare in **più feature** con un ordine sensato |
 | **task-implementer** (agente **PM**) | Il tech lead che scrive la scheda di lavoro | Prende un task e produce un **brief tecnico**: cosa toccare, come, con quali vincoli | Quasi sempre lo chiama il capo-officina per te |
 | **code-implementer** (agente **DEV**) | Lo sviluppatore con le mani sulla tastiera | Legge il brief e **scrive il codice**, poi controlla che compili | Idem: di solito lo chiama il capo-officina |
 | **flow-run** | Il **capo-officina / direttore d'orchestra** | Fa lavorare PM e DEV in sequenza, da solo, fermandosi solo quando serve te | Quando vuoi **andare in automatico** su un piano di task |
@@ -59,12 +60,19 @@ docs/
     05-tasks-active.md      i task, chiamati T-001, T-002, …
     (+ pitch, milestone, fasi)
 
-  features/              ← una cartella per ogni FEATURE (la crea feature-planner)
-    <nome-feature>/
+  features/              ← una cartella per ogni FEATURE (la crea feature-planner;
+    <nome-feature>/          le figlie di un epic stanno QUI, col prefisso <epic>-…)
       00-context.md         contesto della feature
       02-abstract.md        approccio tecnico della feature
       technical-context.md  build, pattern, convenzioni da seguire
       tasks-active.md       i task, chiamati <nome-feature>-001, -002, …
+
+  epics/                 ← una cartella per ogni EPIC (la crea epic-planner)
+    <nome-epic>/             SOLO coordinamento, NON contiene task
+      00-context.md         contesto d'insieme + assunzioni condivise
+      02-abstract.md        decisioni tecniche condivise
+      technical-context.md  seed condiviso (ereditato dalle feature figlie)
+      roadmap.md            ordine delle feature + dipendenze tra feature
 
   tasks/                 ← i "brief" tecnici, uno per task (li scrive il PM)
     <id-task>.md
@@ -128,6 +136,14 @@ Esempi lineari. Le frasi tra virgolette sono **esattamente quello che scrivi** a
 3. Esegui con la Ricetta C o D.
 
 > Differenza con la Ricetta A in una frase: project-planner **fonda una città**, feature-planner **apre un negozio in una via che c'è già**.
+
+### Ricetta B-bis — Ho un lavoro GROSSO da spezzare in più feature ordinate 🏗️
+1. *"Pianifica l'epic: rifacimento dell'area pagamenti"*
+   → parte **epic-planner**. Sbircia il codice, ti fa poche domande e soprattutto ti propone una **decomposizione**: 2–6 feature logiche, in ordine, con le dipendenze tra loro. Tu confermi.
+2. Materializza ogni feature come un bundle standard in `docs/features/<epic>-…/` (es. `payments-revamp-foundation`, `payments-revamp-api`, …) **più** una `roadmap.md` di coordinamento in `docs/epics/payments-revamp/`.
+3. Da qui le feature sono normalissime: chiedi *"whats-next"* per sapere da quale partire (rispetta l'ordine dell'epic), poi esegui con la Ricetta C/D.
+
+> In una frase: feature-planner apre **un** negozio; epic-planner **pianifica un quartiere** di negozi da aprire nell'ordine giusto — ma senza fondare una città nuova (quello è project-planner). E non rompe nulla: le figlie sono feature come tutte le altre.
 
 ### Ricetta C — Eseguo tutto il piano in automatico
 1. *"Avvia il flow"*
@@ -263,7 +279,7 @@ Buon lavoro — e se la squadra fa una domanda, non è perché è confusa: è pe
 /plugin install otto                         # installa il plugin
 ```
 
-Da lì hai subito disponibili le 8 skill (`project-planner`, `feature-planner`, `task-implementer`, `code-implementer`, `flow-run`, `critical-flow-analysis`, `flow-sync`, `whats-next`), i 2 agenti (`pm`, `dev`) e i 2 controlli automatici. Per partire ti basta una frase: *"pianifica la feature …"* oppure *"ho un'idea per un progetto"*.
+Da lì hai subito disponibili le 9 skill (`project-planner`, `epic-planner`, `feature-planner`, `task-implementer`, `code-implementer`, `flow-run`, `critical-flow-analysis`, `flow-sync`, `whats-next`), i 2 agenti (`pm`, `dev`) e i 2 controlli automatici. Per partire ti basta una frase: *"pianifica la feature …"* oppure *"ho un'idea per un progetto"*.
 
 > Nota tecnica (per chi pubblica): gli hook usano `${CLAUDE_PLUGIN_ROOT}`, quindi funzionano da qualunque path di installazione. Gli artefatti di lavoro (`docs/…`, `.flow/…`) vengono invece creati nella cartella del **tuo** progetto, dove devono stare.
 
