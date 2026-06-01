@@ -14,6 +14,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 FIXTURE_DIR="$SCRIPT_DIR/fixture"
 RUNS_DIR="$SCRIPT_DIR/runs"
+# Root del repo plugin (tests/harness → repo root): caricato via --plugin-dir per
+# testare la otto del WORKING TREE, scavalcando quella installata globalmente, SENZA
+# toccare l'installazione globale né l'auth (no --bare). Meccanismo verificato:
+# `--plugin-dir <repo>` con plugin omonimo → la copia locale prevale per la sessione.
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # --- Parsing argomenti ---
 
@@ -38,7 +43,15 @@ done
 # D1: se l'interfaccia CLI cambia, modificare solo questa funzione.
 run_pm_brief() {
   local task_id="$1"
-  (cd "$FIXTURE_DIR" && claude --print -p "Funzione: brief. TASK: $task_id.")
+  # --plugin-dir "$REPO_ROOT": usa la otto del working tree (override della globale), auth intatta.
+  # Modalità ATTENDED esplicita: gli artefatti .flow/briefs/<id>/ (scope/frozen/meta) li produce
+  # normalmente il subagent pm spawnato da flow-run; in headless --print lo emuliamo istruendolo.
+  # ⚠ DA VALIDARE alla prima esecuzione: se .flow/briefs/<id>/ resta vuoto, l'emulazione attended
+  #   non basta → rivedere l'invocazione (es. far girare l'orchestratore flow-run sul golden-task).
+  (cd "$FIXTURE_DIR" && claude --print \
+     --plugin-dir "$REPO_ROOT" \
+     --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
+     -p "Agisci come il subagent 'pm' di otto/flow-run seguendo agents/pm.md in modalità ATTENDED. Funzione: brief. TASK: $task_id. Oltre al brief co-locato, materializza in .flow/briefs/$task_id/ gli artefatti machine-readable scope.txt, frozen.txt, meta.json e brief.md come da attended-flow.md.")
 }
 
 # collect_artifacts: copia gli artefatti prodotti dal PM nel run-output.
