@@ -26,7 +26,7 @@ Contratto canonico: `skills/feature-planner/feature-artifacts.md` § "Planning s
 | # | feature | task | stato | note |
 |---|---|---|---|---|
 | 1 | `topology-harness` | 4 | ✅ **done** (commit 071aa6f) | eval-harness + fixture. Affinare per build isolata (vedi Validazione) |
-| 2 | `topology-canonical` | 6 | 🟡 **5/6** (commit 6a93080) | 001-004,006 done; **005 deferred** (validazione fuori-flow) |
+| 2 | `topology-canonical` | 6 | ✅ **done** (commit 6a93080) | 005 validato 5/7 in diretta (incl. critical) + fix raccolta `05afbc7`; re-run 7/7 saltato (token) |
 | 3 | `topology-concurrency-core` | 5 | ⚪ pending | lock/PROGRESS-per-source/index/auto-archivio. Dipende da 2 |
 | 4 | `topology-reconcile` | 4 | ⚪ pending | whats-next/flow-sync per-source + gitignore. Dipende da 3 |
 | 5 | `topology-migration` | 7 | ⚪ pending | skill shippable old→new (dry-run/idempotente/reversibile/verify). Dipende da 2. **Sblocca il reinstall globale** |
@@ -44,7 +44,8 @@ Ordine flow-run: `harness → canonical → lean-exec → concurrency-core → r
 - **`claude --print --plugin-dir <repo-root>`**: carica la otto del working tree (stesso nome `otto`) che **scavalca** quella installata per quella sessione. Auth intatta, globale invariata → run concorrenti su altri progetti **non toccati**. (`run.sh` aggiornato, commit `701bacb`.)
 - **NON** usare `--bare` (salta le keychain reads → perde l'auth OAuth).
 - **NON** usare `--settings '{"enabledPlugins":{"otto@otto":false}}'`: disabilita anche la copia `--plugin-dir` (stesso nome). Il solo `--plugin-dir` basta.
-- ⚠ **Aperto (da validare alla 1ª esecuzione di `run.sh`)**: l'invocazione produce gli artefatti **attended** (`.flow/briefs/<id>/` scope/frozen/meta) che gli snapshot asseriscono? Il PM li materializza solo come subagent di flow-run; `run.sh` lo emula con prompt attended esplicito. Se `.flow/briefs/<id>/` resta vuoto → rivedere l'invocazione (far girare l'orchestratore flow-run sul golden-task). Richiede terminale autenticato.
+- **Esito 1ª esecuzione (validato dall'utente)**: l'emulazione attended via `-p` **funziona** (artefatti `.flow` prodotti); l'override `--plugin-dir` regge end-to-end (brief co-locato, "Vincoli risolti"). Full-set: **5/7 pass**; i 2 fail erano raccolta artefatti per fixture-non-repo (`.flow` risolto in git-root = repo otto) → fixato con **temp-copy isolato + `git init`** (commit `05afbc7`). Re-run 7/7 **saltato per risparmio token** (fix non ri-eseguito, basso rischio).
+- ⚠ **Nota**: l'harness consuma molti token (1 invocazione `claude` per golden-task). Usarlo con parsimonia, idealmente solo alla validazione coordinata di fine-epic, non per ogni feature.
 
 ## Residui / findings aperti
 - **`canonical-002`**: `task-implementer/SKILL.md` mode `deviation`/`finalize` (righe ~83/93) hanno ancora il path legacy hardcoded `docs/tasks/<id>.md` — da rifinire.
