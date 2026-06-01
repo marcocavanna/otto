@@ -11,12 +11,30 @@
 # leak. Eseguendo in una temp dir con git init proprio, `.flow` risolve sempre lì:
 # deterministico e senza toccare il repo otto.
 #
+# Robustezza headless (lezione appresa):
+#  - `--permission-mode bypassPermissions`: in headless NON c'è nessuno che risponde
+#    ai prompt di permesso/hook → senza questo il `claude --print` si blocca all'infinito.
+#    Sicuro: gira in una temp dir usa-e-getta.
+#  - watchdog di timeout per task (TASK_TIMEOUT, default 300s): se una invocazione si
+#    impianta comunque, viene uccisa e il task è marcato `error` (fail-fast, non hang).
+#    Portabile: non dipende da `timeout`/`gtimeout` (assenti su macOS di base).
+#
+# ⚠️ FRAGILITÀ NOTA (lezione appresa): pilotare il PM *attended* via un `claude --print`
+# headless è intrinsecamente fragile — abbiamo sbattuto su auth (--bare rompe il keychain),
+# poi prompt di permesso, poi hang anche con --permission-mode bypassPermissions (probabile
+# rate-limit/stall headless). L'hardening qui (bypass+watchdog) evita il hang infinito, ma
+# la validazione COMPORTAMENTALE affidabile si ottiene meglio in modo INTERATTIVO:
+# eseguire la skill `migrate` (preview→apply→post-verify) su una COPIA di un progetto reale,
+# col terminale autenticato (niente headless). Usa questo harness con cautela / per check
+# strutturali, non come unica fonte di verità comportamentale.
+#
 # Uso:
 #   ./tests/harness/run.sh [--run-id <name>] [--task <golden-id>]
+#   TASK_TIMEOUT=600 ./tests/harness/run.sh --task fixture-feat-002   # timeout custom
 #
 # Dipendenze: bash 5, jq, git, claude CLI nel PATH.
 
-set -euo pipefail
+set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 FIXTURE_DIR="$SCRIPT_DIR/fixture"
@@ -26,6 +44,9 @@ RUNS_DIR="$SCRIPT_DIR/runs"
 # toccare l'installazione globale né l'auth (no --bare). Meccanismo verificato:
 # `--plugin-dir <repo>` con plugin omonimo → la copia locale prevale per la sessione.
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Timeout per singola invocazione claude (secondi). Override via env.
+TASK_TIMEOUT="${TASK_TIMEOUT:-300}"
 
 # --- Parsing argomenti ---
 
@@ -60,17 +81,27 @@ make_workdir() {
 
 # run_pm_brief: unico punto di contatto con la CLI claude.
 # Invoca il PM (attended) con cwd = workdir isolata, plugin dal working tree.
+# Args: <task_id> <workdir> <errfile>. Ritorna l'exit code di claude (o ≠0 se ucciso dal watchdog).
 # D1: se l'interfaccia CLI cambia, modificare solo questa funzione.
 run_pm_brief() {
-  local task_id="$1"
-  local workdir="$2"
-  # --plugin-dir "$REPO_ROOT": usa la otto del working tree (override della globale), auth intatta.
-  # Modalità ATTENDED esplicita: emula il subagent pm di flow-run, che materializza gli artefatti
-  # machine-readable in .flow/briefs/<id>/ (scope/frozen/meta/brief.md).
-  (cd "$workdir" && claude --print \
-     --plugin-dir "$REPO_ROOT" \
-     --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
-     -p "Agisci come il subagent 'pm' di otto/flow-run seguendo agents/pm.md in modalità ATTENDED. Funzione: brief. TASK: $task_id. Oltre al brief co-locato, materializza in .flow/briefs/$task_id/ gli artefatti machine-readable scope.txt, frozen.txt, meta.json e brief.md come da attended-flow.md.")
+  local task_id="$1" workdir="$2" errfile="$3"
+
+  # watchdog: se claude per QUESTO task supera TASK_TIMEOUT, lo uccide (match sul prompt unico).
+  # In subshell backgrounded: il suo exit non tocca il set -e del main.
+  ( sleep "$TASK_TIMEOUT"; pkill -f "TASK: ${task_id}\." ) >/dev/null 2>&1 &
+  local wd_pid=$!
+
+  ( cd "$workdir" && claude --print \
+       --plugin-dir "$REPO_ROOT" \
+       --permission-mode bypassPermissions \
+       --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
+       -p "Agisci come il subagent 'pm' di otto/flow-run seguendo agents/pm.md in modalità ATTENDED. Funzione: brief. TASK: ${task_id}. Oltre al brief co-locato, materializza in .flow/briefs/${task_id}/ gli artefatti machine-readable scope.txt, frozen.txt, meta.json e brief.md come da attended-flow.md." ) 2>"$errfile"
+  local rc=$?
+
+  # claude è finito (in tempo o ucciso): cancella il watchdog se ancora vivo.
+  kill "$wd_pid" 2>/dev/null || true
+  wait "$wd_pid" 2>/dev/null || true
+  return "$rc"
 }
 
 # collect_artifacts: copia gli artefatti prodotti dal PM (in workdir/.flow/briefs/<id>/) nel run-output.
@@ -99,25 +130,32 @@ main() {
     # D4: supporto subset via --task
     [[ -n "$SINGLE_TASK" && "$task_id" != "$SINGLE_TASK" ]] && continue
 
+    local dest="$run_out/$task_id"
+    mkdir -p "$dest"
+
     # Isolamento per-task: copia temporanea del fixture (vedi header).
     local workdir
     workdir="$(make_workdir)"
 
+    echo "→ $task_id (timeout ${TASK_TIMEOUT}s) ..."
     local status="ok"
     exit_code=0
-    run_pm_brief "$task_id" "$workdir" || exit_code=$?
+    run_pm_brief "$task_id" "$workdir" "$dest/claude-stderr.txt" || exit_code=$?
 
-    collect_artifacts "$task_id" "$workdir" "$run_out/$task_id"
+    collect_artifacts "$task_id" "$workdir" "$dest"
 
     if [[ $exit_code -ne 0 ]]; then
       status="error"
-      printf "claude exited with code %d for task %s\n" "$exit_code" "$task_id" \
-        > "$run_out/$task_id/RUNNER_ERROR.txt"
+      printf "claude uscito con codice %d per %s (TASK_TIMEOUT=%ss). Causa probabile: timeout/blocco headless. Vedi claude-stderr.txt.\n" \
+        "$exit_code" "$task_id" "$TASK_TIMEOUT" > "$dest/RUNNER_ERROR.txt"
+      echo "  ✗ $task_id → error (exit $exit_code)"
+    else
+      echo "  ✓ $task_id → ok"
     fi
 
     rm -rf "$workdir"
 
-    summary_entries+=("{\"task_id\":\"$task_id\",\"status\":\"$status\",\"artifacts\":\"$run_out/$task_id\"}")
+    summary_entries+=("{\"task_id\":\"$task_id\",\"status\":\"$status\",\"artifacts\":\"$dest\"}")
   done
 
   # Scrive run-summary.json via jq per JSON valido garantito
