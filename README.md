@@ -11,6 +11,30 @@ Questa guida si legge dall'alto verso il basso. Se sei di fretta, salta dritto a
 
 ---
 
+## ⚠️ Aggiornare a 1.0.0 — breaking changes & migrazione
+
+La **1.0.0** è un cambio **major**: cambia *dove* otto scrive gli artefatti e *come* tiene lo stato. Se vieni da una versione `0.x`, leggi qui prima di aggiornare.
+
+**Cosa cambia (topologia canonica):**
+- **Brief co-locati**: prima i brief stavano tutti insieme in `docs/tasks/<id>.md`; ora vivono **sotto la loro source** in `<context-root>/tasks/<id>.md` (es. `docs/features/<slug>/tasks/<id>.md`).
+- **Brief self-sufficient**: il brief contiene una sezione **"Vincoli risolti"** (stack, librerie, pattern) → il DEV non rilegge più i file di planning.
+- **Stato per-source**: prima un solo `.flow/PROGRESS.json`; ora `.flow/sources/<slug>/PROGRESS.json` + roll-up `.flow/index.json` + lock `.flow/locks/`.
+- **Concorrenza source-level**: più flow in parallelo, **uno per source** (lock atomico). `flow-run` reclama una feature alla volta.
+- **Archivio**: le source concluse vanno in `docs/archive/` (escluse dallo scan dei task attivi).
+
+**Cosa NON si rompe subito (compatibilità transitoria):**
+- Un **back-compat fallback** fa ancora risolvere i brief flat esistenti in `docs/tasks/<id>.md` → i progetti pre-1.0.0 **continuano a funzionare** dopo l'aggiornamento. ⚠️ Il fallback è **deprecato e transitorio**: verrà rimosso in una release successiva. **Migra** per non romperti allora.
+
+**Come migrare (skill `migrate`)** — vedi la **Ricetta I** nel §7:
+1. *"migra il progetto"* / *"migrate"* → parte in **preview** (default): mostra il piano, **non scrive nulla**.
+2. Confermi → **apply**: backup con timestamp (`docs/.bak-<...>/`), `git mv` **idempotente** dei brief sotto la source, archivio dei conclusi, manifest dell'operazione.
+3. **post-verify** automatico: verifica che ogni task risolva al path canonico e che non restino brief orfani; report pass/fail.
+- È **reversibile** (dal backup), **idempotente** (rilanciarla è no-op) e **non committa** mai da sola.
+
+> In una frase: aggiorni → tutto continua a girare grazie al fallback → quando puoi, lanci *"migra il progetto"* e converti il repo al layout nuovo, in sicurezza.
+
+---
+
 ## 1. Chi c'è nella squadra
 
 Immagina un piccolo studio di sviluppo. Nove ruoli, ognuno con un compito preciso:

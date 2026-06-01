@@ -45,7 +45,7 @@ Tutte e 6 le feature sono **costruite e committate** (working tree, plugin cache
 1. **Validazione coordinata** (token-heavy, una volta): build isolata `--plugin-dir` + harness sui golden-task aggiornati al layout co-locato → chiude i `deferred`: `canonical-005`, `lean-exec-003`, `reconcile-004`.
 2. **Migrazione progetti esterni**: su ogni progetto otto in uso, `migrate` preview → apply → post-verify (con la dev installata in isolamento o post-reinstall).
 3. **`topology-migration-006`**: (a) migrazione interna dei 12 brief di *questo* repo + (b) rimozione del back-compat fallback dal contratto — **solo dopo** 1+2.
-4. **Reinstall globale** del plugin 0.6.0 + smoke-check su un run reale.
+4. **Reinstall globale** del plugin 1.0.0 + smoke-check su un run reale.
 - Ordine vincolante: 1 → 2 → 3(b) → 4. La 3(b) (rimozione fallback) è l'ultimo punto di non-ritorno.
 
 ### Meccanismo di isolamento — CONFERMATO (claude 2.1.158, auth login/keychain)
