@@ -52,6 +52,10 @@ Regola di non-contraddizione: `technical-context.md` **non può** contenere deci
 
 ### Mode 1: `brief T-NNN` — generare brief tecnico per un task
 
+> Reference lazy: leggi ogni reference solo allo step che la usa.
+> `technical-context.md`: solo se esiste e non è vuoto (già condizionale allo step 2).
+> `complexity-criteria.md`: solo se produzione `meta.json` (funzione brief), mai nel finalize.
+
 Flusso:
 1. **Risolvere la context-root** del task (supporta sia `project-planner` sia `feature-planner`). L'ID task è trattato in modo opaco (`T-NNN` per project, `<slug>-NNN` per feature). Vedi il contratto canonico in `../feature-planner/feature-artifacts.md` § "Planning source contract":
    - scan di `docs/planning/05-tasks-active.md` + `docs/features/*/tasks-active.md`; il file che contiene l'ID definisce la source e la **context-root** (la sua directory) + il tasks-file;

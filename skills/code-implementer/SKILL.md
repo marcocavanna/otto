@@ -37,6 +37,10 @@ Regola di scope: la skill **non** modifica `02-abstract.md`, `00-context.md`, `0
 
 Flusso obbligatorio:
 
+> Reference lazy: leggi ogni reference solo allo step che la usa.
+> `decision-classification.md`: solo se step 3 identifica decisioni cross-task.
+> `build-verification.md`: solo se step 5 ha un build command dichiarato.
+
 1. **Pre-flight check** (vedi `references/preflight.md`):
    - **Risolve la context-root** dall'header `Context-root:` del brief (default `docs/planning/`) e individua il path del brief (canonico `<context-root>/tasks/<id>.md`, fallback `docs/tasks/<id>.md`)
    - Brief `<id>` esiste, è in stato active (non finalized né paused)

@@ -23,9 +23,12 @@ Più avanti nel brief: file impattati, shape di implementazione, assunzioni loca
 
 Eccezione: se il brief NON ha la sezione "Vincoli risolti" (brief legacy pre-topology-canonical), procedere come da fallback preflight (vedi `preflight.md` § Check 1-bis).
 
-### 2. Identificazione categoria del costrutto
+### 2. Categoria del costrutto (dal preflight)
 
-Dal brief, la skill identifica la **categoria primaria** del task. Esempi:
+La categoria primaria è già stata identificata in preflight Check 6. **Non ricalcolarla.**
+Leggerla dal report preflight (riga `ℹ Categoria: ...`).
+
+Tabella di riferimento (mapping indicatori → categoria):
 
 | Indicatori nel brief | Categoria |
 |----------------------|-----------|
@@ -44,14 +47,18 @@ Dal brief, la skill identifica la **categoria primaria** del task. Esempi:
 | Configuration | `config` |
 | Middleware | `middleware` |
 
-Se il task tocca più categorie (es. controller + DTO + validator), categoria primaria = quella con più file impattati o quella centrale del task. Le altre saranno gestite con sample dedicati se disponibili (vedi sotto).
+Se il task tocca più categorie: categoria primaria = quella con più file impattati o quella centrale.
+Le altre saranno gestite con sample dedicati se disponibili.
 
 ### 3. Sample reading (al massimo 1)
 
-Cercare nel codebase un file che rappresenta un esempio già esistente della categoria primaria.
+Il sample path è già stato risolto in preflight Check 6 — **non rieseguire la ricerca**.
 
-**Strategia di ricerca:**
+- Se preflight ha trovato un sample → leggere quel file (path dal report, riga `ℹ Categoria: ... | Sample: <path>`).
+- Se preflight ha riportato `Sample: nessuno` → nessun sample, procedere senza.
 
+Fallback per brief legacy (senza preflight recente o brief pre-topology-canonical):
+usare la strategia di ricerca originale — naming pattern per categoria, file più recente se più candidati:
 1. Se `technical-context.md` ha una sezione "Struttura cartelle", usarla come mappa
 2. Cercare per pattern di naming:
    - `controller` → `*Controller.cs`, `*Controller.ts`
@@ -59,7 +66,7 @@ Cercare nel codebase un file che rappresenta un esempio già esistente della cat
    - `command-handler` → `*Handler.cs` con tipi `*Command`
    - `domain-entity` → file in `Domain/Entities/`
    - ecc.
-3. Se più candidati: scegliere il più recente per data modifica (tendenzialmente lo stile più aggiornato)
+3. Se più candidati: scegliere il più recente per data modifica
 4. Se nessun candidato: nessun sample, procedere senza
 
 **Leggere il sample completo.** Non frammenti.

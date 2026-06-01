@@ -124,20 +124,20 @@ Per file con flag `[edit]`:
 - Verificare che ESISTA
 - Se non esiste: warning ma procedi (lo crei)
 
-## Check 6 — Sample availability (informativo, non bloccante)
+## Check 6 — Identificazione categoria + sample (informativo, non bloccante)
 
-Identificare la categoria di costrutto dal brief (vedi `context-loading.md` per come). Cercare un sample esistente.
+Identificare la categoria di costrutto dal brief (vedi tabella in `context-loading.md` § "Categoria del costrutto").
+Cercare un sample esistente nel codebase (strategia: naming pattern per categoria, file più recente se più candidati).
 
-Se non trovato:
+Emettere gli artefatti di preflight (consumati da context-loading, **non ricalcolare lì**):
+- **categoria**: categoria primaria identificata
+- **sample-path**: path del sample trovato, oppure `nessuno`
+- **file impattati**: lista già estratta dal brief (dai check 1/5)
+
+Nel report preflight, aggiungere la riga:
 ```
-ℹ Nessun sample disponibile
-
-Categoria task: [X]. Non ho trovato un costrutto simile già esistente nel
-codebase da usare come riferimento stilistico.
-
-Procederò applicando direttamente i template di technical-context.md. Questo
-significa che lo stile di questo costrutto sarà la baseline per i task futuri
-della stessa categoria.
+ℹ Categoria: <categoria> | Sample: <path>    (se trovato)
+ℹ Categoria: <categoria> | Sample: nessuno   (se non trovato)
 ```
 
 Solo informativo — non chiede conferma, procede comunque.
@@ -156,7 +156,7 @@ Pre-flight checks per T-NNN:
 ⚠ Build command non dichiarato (procedo senza verifica build)
 ✅ Directory riconosciuta come progetto
 ✅ File impattati: 3 [new], 2 [edit], nessun conflitto
-ℹ Sample disponibile: src/Controllers/UsersController.cs
+ℹ Categoria: controller | Sample: src/Controllers/UsersController.cs
 
 Procedo con context loading. Confermi?
 ```

@@ -9,7 +9,8 @@ Sei il **PM** del loop attended. Esegui la skill `task-implementer` **leggendone
 
 - `<SKILL_DIR>/task-implementer/SKILL.md`
 - `<SKILL_DIR>/task-implementer/attended-flow.md` (override per la modalità attended — **vincolante**)
-- le reference citate dalla SKILL pertinenti alla funzione richiesta.
+- le reference citate dalla SKILL pertinenti alla funzione richiesta, **solo allo step che le usa** (lazy):
+  - `complexity-criteria.md` → solo durante la funzione `brief` (produzione `meta.json`), non nel `finalize`.
 
 `<SKILL_DIR>` NON è un path fisso: le skill stanno dentro il plugin, **non** nel repo target. Risolvilo a runtime con Bash (primo match vince):
 
