@@ -27,7 +27,7 @@ Contratto canonico: `skills/feature-planner/feature-artifacts.md` § "Planning s
 |---|---|---|---|---|
 | 1 | `topology-harness` | 4 | ✅ **done** (commit 071aa6f) | eval-harness + fixture. Affinare per build isolata (vedi Validazione) |
 | 2 | `topology-canonical` | 6 | ✅ **done** (commit 6a93080) | 005 validato 5/7 in diretta (incl. critical) + fix raccolta `05afbc7`; re-run 7/7 saltato (token) |
-| 3 | `topology-concurrency-core` | 5 | ⚪ pending | lock/PROGRESS-per-source/index/auto-archivio. Dipende da 2 |
+| 3 | `topology-concurrency-core` | 5 | ✅ **done** (commit 4debcc9) | lock+PROGRESS-per-source+index+auto-archivio; **005 validato per davvero** (3 scenari bash verdi) |
 | 4 | `topology-reconcile` | 4 | ⚪ pending | whats-next/flow-sync per-source + gitignore. Dipende da 3 |
 | 5 | `topology-migration` | 7 | ⚪ pending | skill shippable old→new (dry-run/idempotente/reversibile/verify). Dipende da 2. **Sblocca il reinstall globale** |
 | 6 | `topology-lean-exec` | 4 | ✅ **done** (commit a74574b) | B+C fatti (001/002/004); 003 (harness) deferred come canonical-005 |
@@ -48,6 +48,8 @@ Ordine flow-run: `harness → canonical → lean-exec → concurrency-core → r
 - ⚠ **Nota**: l'harness consuma molti token (1 invocazione `claude` per golden-task). Usarlo con parsimonia, idealmente solo alla validazione coordinata di fine-epic, non per ogni feature.
 
 ## Residui / findings aperti
+- **Scope-check da stringere (NON entrato in concurrency-core)**: era previsto fra i findings ma la decomposizione di `topology-concurrency-core` non l'ha incluso come task. Il DEV (specie su haiku) ha scritto `.flow/PROGRESS.json` fuori scope ×2. Con il nuovo layout, `hooks/scope-check.sh` dovrebbe vietare al DEV `.flow/{sources,locks,index.json}` (consentire solo `.flow/briefs/<task>/**`). Follow-up: piccolo task dedicato o fold in `reconcile`/`migration`.
+- **Scenario C (concurrency-005) test-hygiene**: lascia residuo `docs/archive/` (gitignored); dovrebbe girare in temp dir come A/B.
 - **`canonical-002`**: `task-implementer/SKILL.md` mode `deviation`/`finalize` (righe ~83/93) hanno ancora il path legacy hardcoded `docs/tasks/<id>.md` — da rifinire.
 - **Tier haiku, disciplina lasca**: subagent haiku hanno scritto `.flow/PROGRESS.json` fuori scope (×2). → stringere `scope-check` in `concurrency-core` e/o finalize a sonnet anche su standard.
 - **Brief in transizione**: `001` in `docs/tasks/` legacy, resto co-locato → uniformati da `migration`.
