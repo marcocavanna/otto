@@ -1,13 +1,20 @@
 #!/usr/bin/env bash
 # tests/harness/run.sh — Runner harness topology
 #
-# Esegue il loop PM (Funzione: brief) su ciascun golden-task del fixture,
-# raccoglie gli artefatti prodotti e scrive un run-summary.json.
+# Per ogni golden-task: copia il fixture in una dir temporanea ISOLATA (fuori dal
+# repo otto, con `git init` proprio), invoca il PM lì, raccoglie gli artefatti e
+# scrive run-summary.json.
+#
+# Perché la copia temporanea: il fixture non è un repo git proprio; eseguendo il PM
+# direttamente dentro il fixture, la risoluzione di `.flow/` via git-root finiva (in
+# modo NON deterministico) nel `.flow` del repo otto reale → artefatti non raccolti +
+# leak. Eseguendo in una temp dir con git init proprio, `.flow` risolve sempre lì:
+# deterministico e senza toccare il repo otto.
 #
 # Uso:
 #   ./tests/harness/run.sh [--run-id <name>] [--task <golden-id>]
 #
-# Dipendenze: bash 5, jq, claude CLI nel PATH.
+# Dipendenze: bash 5, jq, git, claude CLI nel PATH.
 
 set -euo pipefail
 
@@ -38,29 +45,41 @@ done
 
 # --- Funzioni ---
 
+# make_workdir: crea una copia isolata del fixture in una temp dir con git init proprio.
+# Stampa il path della workdir su stdout.
+make_workdir() {
+  local wd
+  wd="$(mktemp -d)"
+  cp -R "$FIXTURE_DIR"/. "$wd"/
+  # parti pulito: niente .flow ereditato, niente golden-tasks (non serve al PM)
+  rm -rf "$wd/.flow" "$wd/golden-tasks"
+  # git init proprio → git-root = workdir → `.flow` risolve QUI (deterministico, no leak)
+  git -C "$wd" init -q
+  echo "$wd"
+}
+
 # run_pm_brief: unico punto di contatto con la CLI claude.
-# Invoca il PM in modalità non-interattiva con cwd = fixture.
+# Invoca il PM (attended) con cwd = workdir isolata, plugin dal working tree.
 # D1: se l'interfaccia CLI cambia, modificare solo questa funzione.
 run_pm_brief() {
   local task_id="$1"
+  local workdir="$2"
   # --plugin-dir "$REPO_ROOT": usa la otto del working tree (override della globale), auth intatta.
-  # Modalità ATTENDED esplicita: gli artefatti .flow/briefs/<id>/ (scope/frozen/meta) li produce
-  # normalmente il subagent pm spawnato da flow-run; in headless --print lo emuliamo istruendolo.
-  # ⚠ DA VALIDARE alla prima esecuzione: se .flow/briefs/<id>/ resta vuoto, l'emulazione attended
-  #   non basta → rivedere l'invocazione (es. far girare l'orchestratore flow-run sul golden-task).
-  (cd "$FIXTURE_DIR" && claude --print \
+  # Modalità ATTENDED esplicita: emula il subagent pm di flow-run, che materializza gli artefatti
+  # machine-readable in .flow/briefs/<id>/ (scope/frozen/meta/brief.md).
+  (cd "$workdir" && claude --print \
      --plugin-dir "$REPO_ROOT" \
      --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
      -p "Agisci come il subagent 'pm' di otto/flow-run seguendo agents/pm.md in modalità ATTENDED. Funzione: brief. TASK: $task_id. Oltre al brief co-locato, materializza in .flow/briefs/$task_id/ gli artefatti machine-readable scope.txt, frozen.txt, meta.json e brief.md come da attended-flow.md.")
 }
 
-# collect_artifacts: copia gli artefatti prodotti dal PM nel run-output.
+# collect_artifacts: copia gli artefatti prodotti dal PM (in workdir/.flow/briefs/<id>/) nel run-output.
 collect_artifacts() {
   local task_id="$1"
-  local dest="$2"
+  local workdir="$2"
+  local dest="$3"
   mkdir -p "$dest"
-  # Copia da fixture/.flow/briefs/<id>/ → dest/; ignora assenza (il PM potrebbe non aver prodotto nulla)
-  cp -r "$FIXTURE_DIR/.flow/briefs/$task_id/." "$dest/" 2>/dev/null || true
+  cp -r "$workdir/.flow/briefs/$task_id/." "$dest/" 2>/dev/null || true
 }
 
 # --- Main ---
@@ -80,21 +99,23 @@ main() {
     # D4: supporto subset via --task
     [[ -n "$SINGLE_TASK" && "$task_id" != "$SINGLE_TASK" ]] && continue
 
-    # D2: pulizia .flow/ tra task per garantire isolamento
-    rm -rf "$FIXTURE_DIR/.flow"
+    # Isolamento per-task: copia temporanea del fixture (vedi header).
+    local workdir
+    workdir="$(make_workdir)"
 
     local status="ok"
     exit_code=0
-    run_pm_brief "$task_id" || exit_code=$?
+    run_pm_brief "$task_id" "$workdir" || exit_code=$?
 
-    collect_artifacts "$task_id" "$run_out/$task_id"
+    collect_artifacts "$task_id" "$workdir" "$run_out/$task_id"
 
     if [[ $exit_code -ne 0 ]]; then
       status="error"
-      # Registra il codice di errore senza interrompere il run
       printf "claude exited with code %d for task %s\n" "$exit_code" "$task_id" \
         > "$run_out/$task_id/RUNNER_ERROR.txt"
     fi
+
+    rm -rf "$workdir"
 
     summary_entries+=("{\"task_id\":\"$task_id\",\"status\":\"$status\",\"artifacts\":\"$run_out/$task_id\"}")
   done
