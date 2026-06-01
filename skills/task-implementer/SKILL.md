@@ -57,7 +57,7 @@ Flusso:
    - 0 match → errore "task sconosciuto"; >1 match → errore "ID ambiguo";
    - override esplicito: se l'utente/orchestratore passa `feature <slug>`, usare quella source senza scan.
    (Retro-compatibile: progetto classico → context-root `docs/planning/`, tasks-file `05-tasks-active.md`.)
-2. Leggere TUTTI questi file dalla **context-root** risolta (in quest'ordine):
+2. Leggere TUTTI questi file dalla **context-root** risolta (in un **unico batch di Read paralleli** — non hanno dipendenze di lettura tra loro; l'ordine sotto è solo logico):
    - `00-context.md` (assunzioni, vincoli)
    - `02-abstract.md` (decisioni strategiche, **vincolanti**)
    - `technical-context.md` se esiste (decisioni tattiche già prese)

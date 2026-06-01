@@ -6,6 +6,8 @@ Caricamento del contesto necessario **prima** della generazione di codice. La fi
 
 ### 1. Planning files (obbligatorio)
 
+> **Performance**: questi file **non** hanno dipendenze di lettura tra loro. Emetti i Read in un **unico batch parallelo** (un solo messaggio con N Read), non in sequenza. L'ordine sotto è solo quello in cui *ragionarli*, non un vincolo di lettura.
+
 Leggere in quest'ordine, accumulando contesto:
 
 1. `docs/planning/00-context.md` — assunzioni di progetto, vincoli, rischi
