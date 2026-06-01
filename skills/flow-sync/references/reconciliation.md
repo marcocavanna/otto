@@ -6,11 +6,15 @@ Matrice canonica di `flow-sync`: per ogni combinazione `(PROGRESS.state, tasks-f
 
 Riusa la **gerarchia di verità** e la **mappatura stati** di `../../whats-next/references/reconcile.md`:
 
-- **PROGRESS arbitro per gli ID che contiene**: se l'ID è in `.flow/PROGRESS.json`, lo stato canonico è il suo `state` lì. Solo per gli ID *assenti* si fa fallback sullo `Status` del tasks-file.
+- **PROGRESS arbitro per-source**: se `.flow/sources/<slug>/PROGRESS.json` esiste, è la verità per gli ID di quella source. Fallback: `.flow/PROGRESS.json` radice (back-compat, stessa semantica). La gerarchia resta identica per gli ID presenti; cambia solo da dove si carica il file.
 - Mappatura per ID presenti in entrambe le fonti: `pending ↔ ⚪ todo`, `active ↔ 🔵 in progress`, `done ↔ ✅ done`. `⏸ blocked` esiste **solo** nel tasks-file (stato dichiarato da utente/planner, mai prodotto da `flow-run`).
 - Drift già enumerati lì (post-`expand`, done manuale, active a metà): qui si **estendono** con la dimensione di scrittura (classe + azione). La logica di lettura non si ridiscute né si riduplica.
 
+**Source archiviata (`archived=true` in `index.json`)**: caso speciale — classificazione `in-sync` forzata su tutti i suoi task. Non entra nella matrice (nessuna cella da calcolare): la source è done congelata, nessuna azione.
+
 Questa reference aggiunge **solo** la dimensione di scrittura. Per stabilire *quale* sia la verità di lettura, l'autorità resta `reconcile.md`.
+
+**Pre-filtro source archiviata**: se `index.json` riporta `archived=true` per `<slug>`, saltare l'intera source senza consultare la matrice. Log: "source `<slug>` archiviata — done congelata, nessuna riconciliazione." Non è un errore.
 
 ## Domini degli assi
 

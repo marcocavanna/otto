@@ -51,6 +51,18 @@ EPIC payments-revamp — 42% (3/7 feature complete) — next sbloccato: payments
 
 Feature non appartenenti a nessun epic restano righe piatte come oggi.
 
+## Stato figli archiviati
+
+Se una feature figlia è archiviata (la sua directory non compare sotto `docs/features/` ma sotto `docs/archive/features/<slug>/`):
+- Stato della feature = **done congelato** (tutti i task done).
+- Per il rollup epic: contarla come completata al 100%.
+- Non scansionare il suo `tasks-active.md` per task ancora aperti.
+- Il path di lettura è `docs/archive/features/<slug>/tasks-active.md` — lettura sola, per sapere quanti task erano nella feature al momento dell'archivio e alimentare il conteggio del rollup.
+
+Questo chiude RISK-topology-reconcile-001: una feature-figlia archiviata non blocca il rollup epic — è già done.
+
+Coerenza con `reconcile.md`: se `index.json` riporta `archived=true` per uno slug, quello slug rientra in questa categoria — non aprire il suo `tasks-active.md` live, usa il path di archivio.
+
 ## Degradazioni oneste
 
 - **Nessun `docs/epics/`** → niente roll-up: comportamento storico, non menzionare epic.

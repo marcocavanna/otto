@@ -41,6 +41,16 @@ ROOT=$(pwd -P) || ask "pwd fallita"
 ABS=$(abspath "$FP") || ask "impossibile normalizzare il path (realpath -m e python3 assenti)"
 case "$ABS" in "$ROOT"/*) REL=${ABS#"$ROOT"/} ;; *) ask "fuori repo: $ABS" ;; esac
 
+# Blocklist: stato orchestratore — mai scrivibile dal DEV indipendentemente da scope.txt
+case "$REL" in
+  .flow/PROGRESS.json|\
+  .flow/index.json|\
+  .flow/sources/*|\
+  .flow/locks/*)
+    ask "path '$REL' è territorio dell'orchestratore (off-limits per il DEV)"
+    ;;
+esac
+
 while IFS= read -r g; do
   [ -z "$g" ] && continue
   case "$REL" in $g) allow;; esac

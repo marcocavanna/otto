@@ -7,11 +7,13 @@ description: Reconcile/repair del drift tra .flow/PROGRESS.json (stato d'esecuzi
 
 Ripari il **drift** tra `.flow/PROGRESS.json` (stato d'esecuzione canonico) e i marker `Status` dei tasks-file. Chiudi il loop di `whats-next`: quella **rileva** il drift in sola lettura e ti rimanda qui; tu lo **classifichi** e, solo sui casi sicuri, lo **ripari**. Non sei un esecutore di task (`flow-run`) né un planner (`*-planner`): agisci solo sullo stato.
 
-## Principio (PROGRESS arbitro + auto solo sui sicuri + import conservativo)
+## Principio (PROGRESS arbitro per-source + auto solo sui sicuri + import conservativo)
 
-Principio non negoziabile della skill (ASSUMPTION-flow-sync-001/002/003):
+Principio non negoziabile della skill (ASSUMPTION-flow-sync-001/002/003 — invariato; esteso):
 
-- **PROGRESS arbitro** per gli ID che contiene: per gli ID presenti in `PROGRESS.tasks[]` la verità è il loro `state`; per gli ID assenti, fallback sul `Status` del tasks-file.
+- **PROGRESS arbitro per-source**: per ogni source attiva, la verità è `.flow/sources/<slug>/PROGRESS.json`. Per gli ID presenti nel suo `tasks[]` lo stato canonico è il loro `state`; per gli ID assenti, fallback sul `Status` del tasks-file della source.
+- **Source archiviata → done congelata**: se `index.json` riporta `archived=true` per uno slug, tutti i suoi task sono trattati come `done`. Nessun repair né import: classificazione `in-sync` forzata, nessuna scrittura.
+- **Fallback radice**: `.flow/PROGRESS.json` radice è back-compat per source non ancora migrate a layout per-source. Consultato solo se `.flow/sources/<slug>/PROGRESS.json` è assente per quello slug.
 - **Auto solo sui drift sicuri**: si scrive **esclusivamente** dove la riconciliazione classifica `safe-repair` (mirror PROGRESS→file, solo in avanti nella progressione) o `import` (file `✅` + ID assente in PROGRESS). Tutto il resto è solo report.
 - **Import conservativo**: il file→PROGRESS avviene **solo** per i `✅ done` assenti dal loop, marcati `imported` e sempre visibili in preview prima dell'apply (RISK-flow-sync-001).
 
@@ -25,7 +27,7 @@ Scope come `whats-next` (`../whats-next/SKILL.md` § Modalità), risolto dall'in
 - **plan**: "…del piano / del macro-plan" → solo `docs/planning/`.
 - **feature**: "…nella feature <slug>" → solo `docs/features/<slug>/`. Slug inesistente/ambiguo → elenca le feature e chiedi.
 
-Risoluzione context-root **via scan** (`docs/planning/05-tasks-active.md` + `docs/features/*/tasks-active.md`); ID globalmente unici e **opachi** (vedi `../feature-planner/feature-artifacts.md` § "Planning source contract"). Per ogni piano in scope: il suo tasks-file + `.flow/PROGRESS.json`.
+Risoluzione context-root **via scan** (`docs/planning/05-tasks-active.md` + `docs/features/*/tasks-active.md`); ID globalmente unici e **opachi** (vedi `../feature-planner/feature-artifacts.md` § "Planning source contract"). Per ogni piano in scope: il suo tasks-file + `.flow/sources/<slug>/PROGRESS.json` (o `.flow/PROGRESS.json` radice come fallback se la source non ha ancora la directory per-source).
 
 Modalità di esecuzione:
 
@@ -34,7 +36,11 @@ Modalità di esecuzione:
 
 ## Protocollo
 
-1. **Scoperta.** In base alla modalità individua i piani in scope; per ciascuno trova tasks-file + `.flow/PROGRESS.json`. Nessun piano → dillo e suggerisci `project-planner`/`feature-planner`. Non inventare.
+1. **Scoperta.** In base alla modalità individua i piani in scope; per ciascuno:
+   - Ricava lo `<slug>` della source (da tasks-file o `context_root`).
+   - Cerca `.flow/sources/<slug>/PROGRESS.json`; se assente, fallback su `.flow/PROGRESS.json` radice.
+   - Controlla `index.json`: se lo slug ha `archived=true`, non proseguire con la riconciliazione per quello slug (nessun repair/import, log "source archiviata — done congelata").
+   - Nessun piano attivo trovato → dillo e suggerisci `project-planner`/`feature-planner`. Non inventare.
 2. **Riconciliazione + classificazione.** La **lettura** (gerarchia di verità, mappatura stati, enumerazione drift) riusa `../whats-next/references/reconcile.md` — citala, non duplicarla. La **scrittura** aggiunge la dimensione classe + azione per ogni task secondo `references/reconciliation.md`: classi `in-sync` / `safe-repair` / `import` / `ambiguous` / `orphan`.
 3. **Preview.** Report di classificazione (board per-task) + diff della riga `Status` per i `safe-repair` e entry proposta per gli `import`. Ambigui/orphan elencati come "non toccati" con la ragione. **NON scrive.**
 4. **Apply** (su conferma): esegue `safe-repair` + `import` secondo la sequenza ordinata di `references/apply-protocol.md` (guardia globale su `PROGRESS.json` → backup tasks-file → riscrittura sola riga `Status` → append import → persist/rivalida). `current_task` intoccato.
@@ -60,7 +66,7 @@ Tono: senior, italiano denso, fail-closed, niente filler/cheerleading. Coerente 
 
 ## Regole di onestà sui gap (mutuate da whats-next)
 
-- **`.flow/PROGRESS.json` assente/illeggibile** → dillo, non inventare. Senza PROGRESS non c'è arbitro: **niente safe-repair, niente import**. Se manca del tutto, suggerisci `flow-run` (proprietario dell'init del loop). Se è presente ma illeggibile/schema invalido in apply → ABORT totale, 0 scritture (RISK-flow-sync-002).
+- **`.flow/sources/<slug>/PROGRESS.json` assente E `.flow/PROGRESS.json` radice assente/illeggibile per quello slug** → dillo, non inventare. Senza PROGRESS non c'è arbitro per quella source: **niente safe-repair, niente import su quella source**. Suggerisci `flow-run` (proprietario dell'init del loop). Le altre source proseguono normalmente. Se il PROGRESS è presente ma illeggibile/schema invalido in apply → ABORT per quella source, 0 scritture su di essa (RISK-flow-sync-002).
 - **Tasks-file in formato non riconoscibile / task (riga `Status`) non individuabile** → salta *quel* task e segnalalo, nessuna scrittura su di esso (read-only, RISK-flow-sync-003). Non blocca l'intero apply.
 - **Drift volatile post-`expand`** → contestualizza: `project-planner`/`feature-planner` `expand` sovrascrivono il tasks-file azzerando i marker mentre `PROGRESS.json` resta. È il caso tipico `done × ⚪` (safe-repair). Lo stato durevole è sempre `PROGRESS.json`.
 

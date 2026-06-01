@@ -86,10 +86,15 @@ docs/
 
 .flow/                   ← la lavagna del capo-officina (stato del lavoro)
   PROGRESS.json             a che punto siamo
+  sources/<slug>/           stato per-source (PROGRESS.json per ogni source attiva)
+  locks/<slug>/             lock atomici POSIX per le source in esecuzione
+  index.json                roll-up cached (ricostruibile da scan)
   briefs/<task>/            i bigliettini che PM e DEV si scambiano
 ```
 
 Metafora: `docs/` è **l'archivio ufficiale** (la verità a lungo termine), `.flow/` è **la lavagna in officina** (lo stato del lavoro di oggi, cancellabile).
+
+**Nota per i contributor**: tutti i path sotto `.flow/` (eccetto `briefs/`) sono stato effimero d'orchestrazione — non vanno versionati. Il `.gitignore` del plugin copre sia la riga globale `.flow/` sia le voci esplicite per `sources/`, `locks/`, `index.json`.
 
 Il brief in `tasks/` è **self-sufficient**: il PM ha già distillato lì stack, librerie e convenzioni — il DEV non deve cercare altrove. I dettagli tecnici del meccanismo di risoluzione stanno in [`skills/feature-planner/feature-artifacts.md`](skills/feature-planner/feature-artifacts.md) § "Planning source contract".
 

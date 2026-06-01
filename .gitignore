@@ -4,6 +4,13 @@
 # Runtime/test artifacts — appartengono al progetto-utente, non al plugin.
 # Se compaiono qui è solo residuo dei test interni: non vanno versionati nel plugin.
 .flow/
+
+# Stato d'orchestrazione per-source — effimero, non versionare.
+# Ridondante rispetto a `.flow/` ma documenta l'intenzione architetturale
+# e copre il caso di rimozione della riga globale.
+.flow/sources/
+.flow/locks/
+.flow/index.json
 docs/
 
 # Eccezione: il fixture dell'eval-harness è test-infra DEL plugin → va versionato,
