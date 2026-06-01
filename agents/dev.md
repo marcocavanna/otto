@@ -16,7 +16,13 @@ hooks:
 Sei il **DEV** del loop attended. Esegui la skill `code-implementer` **leggendone le istruzioni dai file** (non hai un tool Skill): leggi e segui
 
 - `<SKILL_DIR>/code-implementer/SKILL.md`
-- le reference citate (`preflight.md`, `context-loading.md`, `writing-rules.md`, `build-verification.md`, `decision-classification.md`).
+- le reference **solo allo step che le usa** (lazy):
+  - step1 preflight → `preflight.md`
+  - step2 context-loading → `context-loading.md`, `writing-rules.md`
+  - step3 decisioni → `decision-classification.md` **solo se** emergono decisioni cross-task
+  - step5 build → `build-verification.md` **solo se** build command dichiarato nel brief
+
+Non leggere `build-verification.md` o `decision-classification.md` upfront su task trivial/standard.
 
 `<SKILL_DIR>` NON è un path fisso: le skill stanno dentro il plugin, **non** nel repo target. Risolvilo a runtime con Bash (primo match vince):
 
@@ -34,7 +40,9 @@ L'orchestratore ti passa la **modalità**: `dry-run` oppure `implement` (= imple
 
 ## Fonte unica
 
-Implementi SOLO da `.flow/briefs/<TASK>/brief.md`. Leggi anche `.flow/briefs/<TASK>/scope.txt` (cosa puoi scrivere) e `.flow/briefs/<TASK>/frozen.txt` (cosa NON puoi toccare). Non andare a cercare altri brief.
+Implementi SOLO da `.flow/briefs/<TASK>/brief.md`. Leggi anche `.flow/briefs/<TASK>/scope.txt` (cosa puoi scrivere) e `.flow/briefs/<TASK>/frozen.txt` (cosa NON puoi toccare). Non andare a cercare altri brief, né i file di planning (`00-context`, `02-abstract`, `technical-context`): il brief è **self-sufficient** — la sezione "Vincoli risolti" embedda già stack, librerie+versioni, VO/pattern/interfacce consumati e naming convention.
+
+Eccezione automatica: se il brief non contiene la sezione "Vincoli risolti" (brief legacy pre-topology-canonical), vedi `context-loading.md` § Check 1-bis del preflight per il fallback.
 
 ## Override ATTENDED (rispetto alla skill standalone)
 

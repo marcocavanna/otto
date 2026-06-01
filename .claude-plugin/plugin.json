@@ -1,6 +1,6 @@
 {
   "name": "otto",
-  "version": "0.5.1",
+  "version": "1.0.0",
   "description": "Your attended autopilot for planning → brief → code. A tiny specialized crew that plans a project, an epic, or a feature, audits an existing flow for bugs, writes the brief, ships the code, and taps you on the shoulder only when a real decision is needed.",
   "author": { "name": "Marco Cavanna", "email": "info@marcocavanna.com" },
   "keywords": ["planning", "orchestration", "agents", "workflow", "attended", "audit", "analysis"]

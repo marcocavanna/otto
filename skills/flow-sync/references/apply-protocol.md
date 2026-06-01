@@ -29,17 +29,17 @@ La preview enumera, per ogni task in scope, cosa accadrebbe — **senza scrivere
 
 L'ordine è vincolante (fail-closed: la guardia globale precede ogni scrittura).
 
-0. **Guardia globale — PROGRESS.json.** Leggi e valida `.flow/PROGRESS.json` contro lo schema `{ "current_task": "<id>", "tasks": [ { "id", "state" } ] }` (`technical-context.md` § Value Objects). Validazione con `python3 -m json.tool` / `jq`. Se illeggibile o schema non valido → **ABORT totale**, **0 scritture** (RISK-flow-sync-002). Segnala il rifiuto, non toccare nulla.
-1. **Backup.** Per ogni tasks-file che verrà toccato da almeno un safe-repair: crea `<tasks-file>.bak` **una sola volta** prima della prima modifica a quel file (ASSUMPTION-flow-sync-004, coerente con `expand`). Un tasks-file senza safe-repair non viene né toccato né backuppato.
+0. **Guardia globale — PROGRESS.json (per-source).** Per ogni source in scope (non archiviata): leggi e valida `.flow/sources/<slug>/PROGRESS.json` (o `.flow/PROGRESS.json` radice come fallback) contro lo schema `{ "source", "context_root", "owner", "current_task", "tasks": [ { "id", "state" } ] }` (come definito in `topology-concurrency-core/technical-context.md` § Primitivi). Validazione con `python3 -m json.tool` / `jq`. Se illeggibile o schema non valido per quella source → **ABORT per quella source**, **0 scritture su di essa**. Le altre source proseguono normalmente. (La guardia globale è per-source: un PROGRESS corrotto non blocca l'intero apply.)
+1. **Backup.** Per ogni tasks-file di una source con almeno un safe-repair: crea `<tasks-file>.bak` **una sola volta** prima della prima modifica a quel file (ASSUMPTION-flow-sync-004, coerente con `expand`). Un tasks-file di una source diversa non viene toccato né backuppato.
 2. **safe-repair (PROGRESS→file).** Per ogni task `apply`: individua il blocco del task per ID nel tasks-file, riscrivi **solo** la riga `- **Status**: ...`. La derivazione `PROGRESS.state → emoji+label` è quella di `./reconciliation.md` / `technical-context.md` § Value Objects ("Riga Status tasks-file") — non ridefinita qui. Nessun'altra riga del blocco né del file viene toccata.
-3. **import (file→PROGRESS).** Per ogni task `import`: appendi `{ "id": "<id>", "state": "done" }` a `PROGRESS.tasks[]`. `current_task` **INTOCCATO** (RISK-flow-sync-002). Nessun altro campo modificato.
-4. **Persisti e rivalida.** Scrivi `PROGRESS.json` preservando schema e ordine delle chiavi; rivalida l'output (`python3 -m json.tool` / `jq`). Se la rivalidazione fallisce, segnala come anomalia (il `.bak` dei tasks-file e lo stato pre-scrittura restano la rete di recupero).
+3. **import (file→PROGRESS).** Per ogni task `import`: appendi `{ "id": "<id>", "state": "done" }` a `.flow/sources/<slug>/PROGRESS.json` (o al fallback radice). `current_task` **INTOCCATO** (RISK-flow-sync-002). Nessun altro campo modificato.
+4. **Persisti e rivalida per-source.** Per ogni PROGRESS per-source modificato: scrivi il file preservando schema e ordine delle chiavi; rivalida l'output (`python3 -m json.tool` / `jq`). Un fallimento di rivalidazione su una source non blocca le altre già scritte. Se la rivalidazione fallisce, segnala come anomalia (il `.bak` dei tasks-file e lo stato pre-scrittura restano la rete di recupero).
 
 ## Guardie
 
 | condizione | azione | effetto |
 |---|---|---|
-| `PROGRESS.json` illeggibile / schema invalido | **ABORT totale** | 0 scritture, rifiuto segnalato (RISK-flow-sync-002) |
+| `PROGRESS.json` per-source illeggibile / schema invalido | **ABORT per quella source** | 0 scritture su quella source, le altre proseguono (RISK-flow-sync-002) |
 | tasks-file in formato non riconoscibile | **skip quel task** | segnala, nessuna scrittura su quel file (RISK-flow-sync-003) |
 | riga `Status` del task non individuabile | **skip quel task** | segnala, nessuna scrittura (read-only come `whats-next`) |
 | stato già allineato (in-sync) | **no-op** | nessun diff, nessun backup (idempotenza) |
@@ -73,6 +73,8 @@ Le derivazioni `PROGRESS.state → emoji/label` (`active → 🔵 in progress`, 
 - **Righe del tasks-file diverse dalla riga `Status`** del task in scope: mai toccate. Nessun refactoring del file, nessuna riformattazione.
 - **`docs/tasks/<id>.md`** (namespace dei brief): mai toccato (`02-abstract.md` § Contratti da preservare).
 - **Retrocessione di un marker**: vietata per costruzione — il protocollo scrive solo dove `./reconciliation.md` ha classificato `apply`/`import`, ovvero solo in avanti nella progressione. Se il file è *avanti* su PROGRESS → la matrice è `ambiguous` → `report`, qui non si scrive.
+- **`.flow/PROGRESS.json` radice**: non viene creato né eliminato da flow-sync; se esiste, viene usato come back-compat. La gestione del suo ciclo di vita è fuori scope di flow-sync.
+- **`index.json`**: letto (per il pre-filtro source archiviata in `./reconciliation.md`) ma **mai scritto** da flow-sync. Scrittura di `index.json` appartiene a `flow-run`.
 
 ## Riferimenti
 

@@ -4,7 +4,22 @@
 # Runtime/test artifacts — appartengono al progetto-utente, non al plugin.
 # Se compaiono qui è solo residuo dei test interni: non vanno versionati nel plugin.
 .flow/
+
+# Stato d'orchestrazione per-source — effimero, non versionare.
+# Ridondante rispetto a `.flow/` ma documenta l'intenzione architetturale
+# e copre il caso di rimozione della riga globale.
+.flow/sources/
+.flow/locks/
+.flow/index.json
 docs/
+
+# Eccezione: il fixture dell'eval-harness è test-infra DEL plugin → va versionato,
+# anche se contiene una sottocartella docs/ (è un mini-progetto di prova, non residue).
+!tests/harness/fixture/docs/
+!tests/harness/fixture/docs/**
+# ...ma i brief GENERATI a runtime dentro il fixture (docs/**/tasks/) sono output,
+# non input → non versionarli (con la temp-copy isolata non vi finiscono più, ma è guardia).
+tests/harness/fixture/docs/**/tasks/
 
 # Backup generati dalle skill (es. tasks-active.md.bak)
 *.bak

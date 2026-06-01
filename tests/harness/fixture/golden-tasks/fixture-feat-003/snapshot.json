@@ -1,0 +1,27 @@
+{
+  "$schema": "versione 1",
+  "task_id": "fixture-feat-003",
+  "source": "feature",
+  "context_root": "docs/features/sample-feature",
+  "invariants": {
+    "resolver": {
+      "resolves_to_one": true,
+      "expected_context_root": "docs/features/sample-feature"
+    },
+    "brief": {
+      "required_sections": ["Obiettivo", "Vincoli risolti", "File impattati", "Out of scope"],
+      "must_not_be_empty": ["Obiettivo", "File impattati"]
+    },
+    "scope": {
+      "must_contain": ["web/src/components/ShareDialog.tsx"],
+      "must_contain_service_glob": ".flow/briefs/fixture-feat-003/**"
+    },
+    "frozen": {
+      "must_contain": []
+    },
+    "meta": {
+      "complexity_in_enum": true,
+      "expected_complexity": "standard"
+    }
+  }
+}

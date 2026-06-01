@@ -4,30 +4,31 @@ Caricamento del contesto necessario **prima** della generazione di codice. La fi
 
 ## Cosa leggere (in quest'ordine)
 
-### 1. Planning files (obbligatorio)
+### 1. Brief del task (obbligatorio)
 
-Leggere in quest'ordine, accumulando contesto:
+Leggere il brief del task `<id>`:
+- Path canonico: `<context-root>/tasks/<id>.md`
+  (vedi `../feature-planner/feature-artifacts.md` § "Planning source contract" per risoluzione context-root e fallback legacy `docs/tasks/<id>.md`)
+- In modalità attended: `.flow/briefs/<TASK>/brief.md` (copia del co-locato)
 
-1. `docs/planning/00-context.md` — assunzioni di progetto, vincoli, rischi
-2. `docs/planning/02-abstract.md` — stack, pattern strategici, esclusioni tecniche
-3. `docs/planning/technical-context.md` — librerie esatte, VO, pattern adottati, naming
-4. `docs/tasks/T-NNN.md` — brief specifico del task
+Il brief è **self-sufficient**: la sezione `## Vincoli risolti` embedda già tutto il contesto necessario, distillato dal PM:
+- Stack (linguaggio/runtime/framework)
+- Librerie + versioni
+- VO/pattern/interfacce consumati (da NON modificare)
+- Naming convention
 
-Dopo questi 4 file, la skill ha:
-- Lo stack tecnologico esatto
-- Le librerie con versione
-- I pattern già adottati
-- I VO già definiti
-- Le naming conventions
-- I file impattati dal task
-- Lo shape code proposto
-- Le assunzioni locali del task
+Più avanti nel brief: file impattati, shape di implementazione, assunzioni locali del task.
 
-**Non leggere altro dai file di planning.** Niente `03-milestones.md`, `04-phases.md`, `05-tasks-active.md` durante implementazione — sono fuori scope.
+**NON leggere** `00-context`, `02-abstract`, `technical-context` — il PM li ha già distillati nella sezione "Vincoli risolti". Vedi § "Cosa NON leggere".
 
-### 2. Identificazione categoria del costrutto
+Eccezione: se il brief NON ha la sezione "Vincoli risolti" (brief legacy pre-topology-canonical), procedere come da fallback preflight (vedi `preflight.md` § Check 1-bis).
 
-Dal brief, la skill identifica la **categoria primaria** del task. Esempi:
+### 2. Categoria del costrutto (dal preflight)
+
+La categoria primaria è già stata identificata in preflight Check 6. **Non ricalcolarla.**
+Leggerla dal report preflight (riga `ℹ Categoria: ...`).
+
+Tabella di riferimento (mapping indicatori → categoria):
 
 | Indicatori nel brief | Categoria |
 |----------------------|-----------|
@@ -46,14 +47,18 @@ Dal brief, la skill identifica la **categoria primaria** del task. Esempi:
 | Configuration | `config` |
 | Middleware | `middleware` |
 
-Se il task tocca più categorie (es. controller + DTO + validator), categoria primaria = quella con più file impattati o quella centrale del task. Le altre saranno gestite con sample dedicati se disponibili (vedi sotto).
+Se il task tocca più categorie: categoria primaria = quella con più file impattati o quella centrale.
+Le altre saranno gestite con sample dedicati se disponibili.
 
 ### 3. Sample reading (al massimo 1)
 
-Cercare nel codebase un file che rappresenta un esempio già esistente della categoria primaria.
+Il sample path è già stato risolto in preflight Check 6 — **non rieseguire la ricerca**.
 
-**Strategia di ricerca:**
+- Se preflight ha trovato un sample → leggere quel file (path dal report, riga `ℹ Categoria: ... | Sample: <path>`).
+- Se preflight ha riportato `Sample: nessuno` → nessun sample, procedere senza.
 
+Fallback per brief legacy (senza preflight recente o brief pre-topology-canonical):
+usare la strategia di ricerca originale — naming pattern per categoria, file più recente se più candidati:
 1. Se `technical-context.md` ha una sezione "Struttura cartelle", usarla come mappa
 2. Cercare per pattern di naming:
    - `controller` → `*Controller.cs`, `*Controller.ts`
@@ -61,7 +66,7 @@ Cercare nel codebase un file che rappresenta un esempio già esistente della cat
    - `command-handler` → `*Handler.cs` con tipi `*Command`
    - `domain-entity` → file in `Domain/Entities/`
    - ecc.
-3. Se più candidati: scegliere il più recente per data modifica (tendenzialmente lo stile più aggiornato)
+3. Se più candidati: scegliere il più recente per data modifica
 4. Se nessun candidato: nessun sample, procedere senza
 
 **Leggere il sample completo.** Non frammenti.
@@ -90,40 +95,40 @@ Per ogni file con flag `[edit]` in "File impattati", leggere il file esistente p
 
 Esplicitamente fuori scope:
 
-- Documentazione di progetto fuori da `docs/planning/`
+- `00-context.md`, `02-abstract.md`, `technical-context.md` — già distillati nel brief (sezione "Vincoli risolti"). Leggerli sarebbe ridondante e ignora la garanzia di self-sufficiency del brief.
+- Documentazione di progetto fuori dalla context-root
 - File README del progetto (a meno che la categoria del task sia "documentation")
 - File CI/CD (`.github/workflows/`, `*.yml`)
 - File di configurazione build profondi (`vite.config.ts`, `tsconfig.json`) salvo se task li tocca direttamente
 - Test esistenti (a meno che task richieda di estendere test)
 - Git history
 
-Lo scope di lettura è **bounded**: planning + brief + 1 sample + file da editare. Massimo 7-10 file letti per task. Se il task richiede di leggere di più, è probabilmente troppo grande o il brief è inadeguato.
+Lo scope di lettura è **bounded**: brief + 1 sample + file da editare. Massimo 7-10 file letti per task. Se il task richiede di leggere di più, è probabilmente troppo grande o il brief è inadeguato.
 
 ## Output del context loading
 
 Al termine, la skill ha mentalmente:
 
-1. **Vincoli strategici** (da 02-abstract.md): stack, esclusioni
-2. **Vincoli tattici** (da technical-context.md): librerie, pattern, VO, naming
-3. **Specifica del task** (da T-NNN.md): cosa fare, file, shape, assunzioni locali
-4. **Stile di riferimento** (dal sample): come scrivere concretamente
-5. **Stato dei file da modificare** (dai file [edit])
+1. **Vincoli risolti** (dalla sezione "Vincoli risolti" del brief): stack, librerie+versioni, VO/pattern/interfacce consumati, naming
+2. **Specifica del task** (dal resto del brief): cosa fare, file, shape, assunzioni locali
+3. **Stile di riferimento** (dal sample): come scrivere concretamente
+4. **Stato dei file da modificare** (dai file [edit])
 
 Da qui parte la fase di **decision identification** (vedi `decision-classification.md`).
 
-## Cosa fare se i 4 file di planning sono inconsistenti
+## Cosa fare se il brief è incoerente al suo interno
 
-Se durante la lettura la skill rileva inconsistenze tra i file di planning (es. `02-abstract.md` dice "no MediatR" ma `technical-context.md` ha entry per MediatR), bloccare:
+Se durante la lettura la skill rileva incoerenze interne al brief (es. la sezione "Vincoli risolti" dichiara "no MediatR" ma la shape di implementazione usa MediatR), bloccare:
 
 ```
-⛔ Inconsistenza nel planning
+⛔ Incoerenza nel brief
 
-Rilevata inconsistenza:
-- 02-abstract.md sezione "Esclusioni tecniche": [X]
-- technical-context.md: [Y, che contraddice X]
+Rilevata incoerenza:
+- "Vincoli risolti": [X]
+- Shape di implementazione / obiettivo: [Y, che contraddice X]
 
-Non posso procedere con implementazione finché il planning è inconsistente.
-Usa project-planner (revise) o task-implementer per risolvere.
+Non posso procedere finché il brief è incoerente.
+Usa task-implementer (revise del brief) o feature-planner per risolvere.
 ```
 
 Non tentare di risolvere automaticamente.

@@ -11,6 +11,30 @@ Questa guida si legge dall'alto verso il basso. Se sei di fretta, salta dritto a
 
 ---
 
+## ⚠️ Aggiornare a 1.0.0 — breaking changes & migrazione
+
+La **1.0.0** è un cambio **major**: cambia *dove* otto scrive gli artefatti e *come* tiene lo stato. Se vieni da una versione `0.x`, leggi qui prima di aggiornare.
+
+**Cosa cambia (topologia canonica):**
+- **Brief co-locati**: prima i brief stavano tutti insieme in `docs/tasks/<id>.md`; ora vivono **sotto la loro source** in `<context-root>/tasks/<id>.md` (es. `docs/features/<slug>/tasks/<id>.md`).
+- **Brief self-sufficient**: il brief contiene una sezione **"Vincoli risolti"** (stack, librerie, pattern) → il DEV non rilegge più i file di planning.
+- **Stato per-source**: prima un solo `.flow/PROGRESS.json`; ora `.flow/sources/<slug>/PROGRESS.json` + roll-up `.flow/index.json` + lock `.flow/locks/`.
+- **Concorrenza source-level**: più flow in parallelo, **uno per source** (lock atomico). `flow-run` reclama una feature alla volta.
+- **Archivio**: le source concluse vanno in `docs/archive/` (escluse dallo scan dei task attivi).
+
+**Cosa NON si rompe subito (compatibilità transitoria):**
+- Un **back-compat fallback** fa ancora risolvere i brief flat esistenti in `docs/tasks/<id>.md` → i progetti pre-1.0.0 **continuano a funzionare** dopo l'aggiornamento. ⚠️ Il fallback è **deprecato e transitorio**: verrà rimosso in una release successiva. **Migra** per non romperti allora.
+
+**Come migrare (skill `migrate`)** — vedi la **Ricetta I** nel §7:
+1. *"migra il progetto"* / *"migrate"* → parte in **preview** (default): mostra il piano, **non scrive nulla**.
+2. Confermi → **apply**: backup con timestamp (`docs/.bak-<...>/`), `git mv` **idempotente** dei brief sotto la source, archivio dei conclusi, manifest dell'operazione.
+3. **post-verify** automatico: verifica che ogni task risolva al path canonico e che non restino brief orfani; report pass/fail.
+- È **reversibile** (dal backup), **idempotente** (rilanciarla è no-op) e **non committa** mai da sola.
+
+> In una frase: aggiorni → tutto continua a girare grazie al fallback → quando puoi, lanci *"migra il progetto"* e converti il repo al layout nuovo, in sicurezza.
+
+---
+
 ## 1. Chi c'è nella squadra
 
 Immagina un piccolo studio di sviluppo. Nove ruoli, ognuno con un compito preciso:
@@ -26,6 +50,7 @@ Immagina un piccolo studio di sviluppo. Nove ruoli, ognuno con un compito precis
 | **critical-flow-analysis** | L'**ispettore** che entra nel codice esistente con la torcia | Analizza a fondo un flusso già scritto, stila un referto di bug/debolezze e — se glielo chiedi — trasforma il piano di riparazione in task | Vuoi **scovare bug** in qualcosa che già esiste (e poi sistemarli col flow) |
 | **whats-next** | Il **caposquadra** che guarda la lavagna e ti dice da dove ripartire | Legge tutti i piani attivi (progetto + feature), riconcilia lo stato reale e ti dice **cosa fare adesso** e perché — senza toccare niente | Hai tanti task aperti e non sai **qual è il prossimo passo** |
 | **flow-sync** | Il **tecnico riparatore** che rimette in pari lavagna e schede | Riconcilia lo stato reale (`PROGRESS.json`) con i marker dei tasks-file: ripara i casi sicuri, importa i `done` mancanti, segnala gli ambigui — senza decidere al posto tuo | Lo stato "non torna" (tipico dopo un **expand**) e vuoi **riallinearlo** |
+| **migrate** | Il tecnico del trasloco | Porta un progetto otto dal vecchio layout al nuovo: preview obbligatoria → apply idempotente + backup → post-verify | Hai un progetto otto **pre-canonico** e vuoi portarlo al nuovo layout |
 
 Due cose da sapere subito:
 
@@ -58,6 +83,9 @@ docs/
     00-context.md           contesto, assunzioni, rischi
     02-abstract.md          scelte tecniche di fondo
     05-tasks-active.md      i task, chiamati T-001, T-002, …
+    tasks/                  brief tecnici dei task di progetto
+      T-001.md
+      T-002.md
     (+ pitch, milestone, fasi)
 
   features/              ← una cartella per ogni FEATURE (la crea feature-planner;
@@ -66,6 +94,9 @@ docs/
       02-abstract.md        approccio tecnico della feature
       technical-context.md  build, pattern, convenzioni da seguire
       tasks-active.md       i task, chiamati <nome-feature>-001, -002, …
+      tasks/                brief tecnici dei task della feature
+        <nome-feature>-001.md
+        <nome-feature>-002.md
 
   epics/                 ← una cartella per ogni EPIC (la crea epic-planner)
     <nome-epic>/             SOLO coordinamento, NON contiene task
@@ -74,15 +105,23 @@ docs/
       technical-context.md  seed condiviso (ereditato dalle feature figlie)
       roadmap.md            ordine delle feature + dipendenze tra feature
 
-  tasks/                 ← i "brief" tecnici, uno per task (li scrive il PM)
-    <id-task>.md
+  archive/               ← feature/epic concluse (non partecipano allo scan dei task)
+    features/<slug>/
+    epics/<slug>/
 
 .flow/                   ← la lavagna del capo-officina (stato del lavoro)
   PROGRESS.json             a che punto siamo
+  sources/<slug>/           stato per-source (PROGRESS.json per ogni source attiva)
+  locks/<slug>/             lock atomici POSIX per le source in esecuzione
+  index.json                roll-up cached (ricostruibile da scan)
   briefs/<task>/            i bigliettini che PM e DEV si scambiano
 ```
 
 Metafora: `docs/` è **l'archivio ufficiale** (la verità a lungo termine), `.flow/` è **la lavagna in officina** (lo stato del lavoro di oggi, cancellabile).
+
+**Nota per i contributor**: tutti i path sotto `.flow/` (eccetto `briefs/`) sono stato effimero d'orchestrazione — non vanno versionati. Il `.gitignore` del plugin copre sia la riga globale `.flow/` sia le voci esplicite per `sources/`, `locks/`, `index.json`.
+
+Il brief in `tasks/` è **self-sufficient**: il PM ha già distillato lì stack, librerie e convenzioni — il DEV non deve cercare altrove. I dettagli tecnici del meccanismo di risoluzione stanno in [`skills/feature-planner/feature-artifacts.md`](skills/feature-planner/feature-artifacts.md) § "Planning source contract".
 
 ---
 
@@ -204,6 +243,27 @@ Esempi lineari. Le frasi tra virgolette sono **esattamente quello che scrivi** a
 
 > In una frase: **whats-next** ti dice *che* lo stato è sfasato (e non tocca niente); **flow-sync** lo **rimette in sincrono** — i casi sicuri da solo, gli ambigui solo segnalandoli. 🔧
 
+### Ricetta I — Migro un progetto otto dal vecchio al nuovo layout 📦
+
+Utile quando: hai un progetto otto già esistente con brief in `docs/tasks/` flat e vuoi portarlo al layout canonico (`docs/features/<slug>/tasks/`).
+
+1. *"migra il progetto"* → parte **migrate** in modalità **preview** (default).
+   Elenca ogni brief che verrebbe spostato, dove va, e i casi ambigui (non verranno toccati).
+   Non scrive nulla: è solo un piano.
+
+2. Controlla il piano. Se ti convince: *"apply"*
+   → backup automatico in `docs/.bak-<timestamp>/`, poi sposta i brief ai path canonici.
+   Le source concluse finiscono in `docs/archive/features/<slug>/`.
+   Niente commit automatici.
+
+3. Dopo l'apply, esegui il **post-verify**: *"verifica la migrazione"*
+   → per ogni ID, il resolver deve trovare il brief al path canonico. Report pass/fail.
+   Se qualcosa non torna: istruzioni di ripristino dal backup nel report.
+
+Se il piano di preview ha casi ambigui o orfani: non verranno mai toccati automaticamente (fail-closed). Risolvili a mano prima di rieseguire apply.
+
+> In una frase: **migrate** ti fa vedere il piano prima di muovere un file, sposta tutto con backup automatico, e ti conferma che ogni brief è atterrato dove deve. 📦
+
 ---
 
 ## 8. Il giro completo, in un disegno
@@ -253,6 +313,8 @@ Esempi lineari. Le frasi tra virgolette sono **esattamente quello che scrivi** a
 | **Context-root** | La cartella da cui si legge il contesto di un task (planning o feature) |
 | **PROGRESS.json** | La lavagna che dice "a che punto siamo" |
 | **Attended / sorvegliato** | Automatico, ma pronto a chiamarti per le decisioni vere |
+| **Brief self-sufficient** | Il brief scritto dal PM embedda già stack, librerie, pattern e naming: il DEV non ri-legge i file di planning |
+| **Layout canonico** | Il modo "giusto" di organizzare i brief: ognuno sotto la sua feature, quelli delle feature concluse in `docs/archive/`. Opposto del layout vecchio (brief flat in `docs/tasks/`). |
 
 ---
 
@@ -306,7 +368,7 @@ Buon lavoro — e se la squadra fa una domanda, non è perché è confusa: è pe
 /plugin install otto                         # installa il plugin
 ```
 
-Da lì hai subito disponibili le 9 skill (`project-planner`, `epic-planner`, `feature-planner`, `task-implementer`, `code-implementer`, `flow-run`, `critical-flow-analysis`, `flow-sync`, `whats-next`), i 2 agenti (`pm`, `dev`) e i 2 controlli automatici. Per partire ti basta una frase: *"pianifica la feature …"* oppure *"ho un'idea per un progetto"*.
+Da lì hai subito disponibili le 10 skill (`project-planner`, `epic-planner`, `feature-planner`, `task-implementer`, `code-implementer`, `flow-run`, `critical-flow-analysis`, `flow-sync`, `whats-next`, `migrate`), i 2 agenti (`pm`, `dev`) e i 2 controlli automatici. Per partire ti basta una frase: *"pianifica la feature …"* oppure *"ho un'idea per un progetto"*.
 
 > Nota tecnica (per chi pubblica): gli hook usano `${CLAUDE_PLUGIN_ROOT}`, quindi funzionano da qualunque path di installazione. Gli artefatti di lavoro (`docs/…`, `.flow/…`) vengono invece creati nella cartella del **tuo** progetto, dove devono stare.
 
