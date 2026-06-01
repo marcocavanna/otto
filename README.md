@@ -26,6 +26,7 @@ Immagina un piccolo studio di sviluppo. Nove ruoli, ognuno con un compito precis
 | **critical-flow-analysis** | L'**ispettore** che entra nel codice esistente con la torcia | Analizza a fondo un flusso già scritto, stila un referto di bug/debolezze e — se glielo chiedi — trasforma il piano di riparazione in task | Vuoi **scovare bug** in qualcosa che già esiste (e poi sistemarli col flow) |
 | **whats-next** | Il **caposquadra** che guarda la lavagna e ti dice da dove ripartire | Legge tutti i piani attivi (progetto + feature), riconcilia lo stato reale e ti dice **cosa fare adesso** e perché — senza toccare niente | Hai tanti task aperti e non sai **qual è il prossimo passo** |
 | **flow-sync** | Il **tecnico riparatore** che rimette in pari lavagna e schede | Riconcilia lo stato reale (`PROGRESS.json`) con i marker dei tasks-file: ripara i casi sicuri, importa i `done` mancanti, segnala gli ambigui — senza decidere al posto tuo | Lo stato "non torna" (tipico dopo un **expand**) e vuoi **riallinearlo** |
+| **migrate** | Il tecnico del trasloco | Porta un progetto otto dal vecchio layout al nuovo: preview obbligatoria → apply idempotente + backup → post-verify | Hai un progetto otto **pre-canonico** e vuoi portarlo al nuovo layout |
 
 Due cose da sapere subito:
 
@@ -218,6 +219,27 @@ Esempi lineari. Le frasi tra virgolette sono **esattamente quello che scrivi** a
 
 > In una frase: **whats-next** ti dice *che* lo stato è sfasato (e non tocca niente); **flow-sync** lo **rimette in sincrono** — i casi sicuri da solo, gli ambigui solo segnalandoli. 🔧
 
+### Ricetta I — Migro un progetto otto dal vecchio al nuovo layout 📦
+
+Utile quando: hai un progetto otto già esistente con brief in `docs/tasks/` flat e vuoi portarlo al layout canonico (`docs/features/<slug>/tasks/`).
+
+1. *"migra il progetto"* → parte **migrate** in modalità **preview** (default).
+   Elenca ogni brief che verrebbe spostato, dove va, e i casi ambigui (non verranno toccati).
+   Non scrive nulla: è solo un piano.
+
+2. Controlla il piano. Se ti convince: *"apply"*
+   → backup automatico in `docs/.bak-<timestamp>/`, poi sposta i brief ai path canonici.
+   Le source concluse finiscono in `docs/archive/features/<slug>/`.
+   Niente commit automatici.
+
+3. Dopo l'apply, esegui il **post-verify**: *"verifica la migrazione"*
+   → per ogni ID, il resolver deve trovare il brief al path canonico. Report pass/fail.
+   Se qualcosa non torna: istruzioni di ripristino dal backup nel report.
+
+Se il piano di preview ha casi ambigui o orfani: non verranno mai toccati automaticamente (fail-closed). Risolvili a mano prima di rieseguire apply.
+
+> In una frase: **migrate** ti fa vedere il piano prima di muovere un file, sposta tutto con backup automatico, e ti conferma che ogni brief è atterrato dove deve. 📦
+
 ---
 
 ## 8. Il giro completo, in un disegno
@@ -268,6 +290,7 @@ Esempi lineari. Le frasi tra virgolette sono **esattamente quello che scrivi** a
 | **PROGRESS.json** | La lavagna che dice "a che punto siamo" |
 | **Attended / sorvegliato** | Automatico, ma pronto a chiamarti per le decisioni vere |
 | **Brief self-sufficient** | Il brief scritto dal PM embedda già stack, librerie, pattern e naming: il DEV non ri-legge i file di planning |
+| **Layout canonico** | Il modo "giusto" di organizzare i brief: ognuno sotto la sua feature, quelli delle feature concluse in `docs/archive/`. Opposto del layout vecchio (brief flat in `docs/tasks/`). |
 
 ---
 
@@ -321,7 +344,7 @@ Buon lavoro — e se la squadra fa una domanda, non è perché è confusa: è pe
 /plugin install otto                         # installa il plugin
 ```
 
-Da lì hai subito disponibili le 9 skill (`project-planner`, `epic-planner`, `feature-planner`, `task-implementer`, `code-implementer`, `flow-run`, `critical-flow-analysis`, `flow-sync`, `whats-next`), i 2 agenti (`pm`, `dev`) e i 2 controlli automatici. Per partire ti basta una frase: *"pianifica la feature …"* oppure *"ho un'idea per un progetto"*.
+Da lì hai subito disponibili le 10 skill (`project-planner`, `epic-planner`, `feature-planner`, `task-implementer`, `code-implementer`, `flow-run`, `critical-flow-analysis`, `flow-sync`, `whats-next`, `migrate`), i 2 agenti (`pm`, `dev`) e i 2 controlli automatici. Per partire ti basta una frase: *"pianifica la feature …"* oppure *"ho un'idea per un progetto"*.
 
 > Nota tecnica (per chi pubblica): gli hook usano `${CLAUDE_PLUGIN_ROOT}`, quindi funzionano da qualunque path di installazione. Gli artefatti di lavoro (`docs/…`, `.flow/…`) vengono invece creati nella cartella del **tuo** progetto, dove devono stare.
 
