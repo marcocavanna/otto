@@ -9,13 +9,18 @@ Sei il **main thread** = l'ORCHESTRATORE. PM e DEV sono subagent figli diretti (
 
 ## Principio di stato
 
-Lo stato del loop vive in **`.flow/PROGRESS.json`**, MAI nella tua memoria. Così il loop regge la compattazione del contesto: a ogni ripresa rileggi `PROGRESS.json` e riparti. Non ricostruire lo stato a mente.
+Lo stato del loop vive in **`.flow/sources/<slug>/PROGRESS.json`** (per-source, la verità d'esecuzione), MAI nella tua memoria. Così il loop regge la compattazione del contesto: a ogni ripresa rileggi il PROGRESS della source acquisita e riparti. Non ricostruire lo stato a mente.
 
-`.flow/PROGRESS.json`:
+`.flow/sources/<slug>/PROGRESS.json`:
 ```json
-{ "current_task": "T-001",
+{ "source": "<slug>",
+  "context_root": "docs/features/<slug>/",
+  "owner": "<descrittore del flow>",
+  "current_task": "T-001",
   "tasks": [ { "id": "T-001", "state": "pending|active|done" } ] }
 ```
+
+`.flow/PROGRESS.json` (radice) è **legacy**: la migrazione al PROGRESS per-source è completa, quindi lo scan lo ignora — il PROGRESS per-source è la sola fonte di verità d'esecuzione. Il file non è rimosso fisicamente (fuori scope), ma non va più letto né scritto come stato del loop.
 
 ## Modalità attended
 
@@ -46,12 +51,90 @@ Precedenza: vedi [`references/model-tiering.md`](references/model-tiering.md) §
 
 Estrai dall'input anche una eventuale **direttiva dry-run**: *"salta il dry-run"* / `--no-dry-run` → skip; *"forza il dry-run"* / `--dry-run` → run. Vince sulla policy per complessità (step 3b / 4). Anch'essa effimera.
 
+### Claim source (pre-condizione al loop task)
+
+Prima di eseguire il protocollo per-task, il flow **acquisisce la source** via lock advisory.
+Dettagli dell'algoritmo (struttura lock, soglia di reclaim, formato heartbeat): single-source in
+[`references/concurrency.md`](references/concurrency.md) — non duplicare qui.
+
+1. Scorre le source con task `pending`, in ordine.
+2. Per ogni source: tenta `mkdir .flow/locks/<slug>/`.
+   - Successo → lock acquisito: scrive `heartbeat.ts`, entra.
+   - Fallisce (EEXIST) → controlla se il lock è **stantio** (vedi `references/concurrency.md`
+     § Semantica "source viva" / § Soglia di reclaim):
+     - Stantio → **reclaim** ed entra.
+     - Vivo → **skip**, prossima source.
+3. Se nessun claim riesce (tutte vive sotto altri flow, o nessuna source pending) → riporta
+   "nessuna source disponibile" nel summary e termina con successo (exit 0). Non è un'escalation.
+4. **Inizializza il PROGRESS per-source** (subito dopo il claim riuscito, PRIMA del loop task):
+   - Se `.flow/sources/<slug>/PROGRESS.json` **esiste già** → caricalo e riusalo (reclaim di una
+     source già avviata: il PROGRESS preesistente è la verità, non re-inizializzare — idempotente).
+   - Se **non esiste** → `mkdir -p .flow/sources/<slug>/`, poi costruisci il PROGRESS dal
+     `tasks-active.md` della source: per ogni task, `state="done"` se la sua riga `Status` è done,
+     altrimenti `state="pending"`; `current_task=null`; `owner` = descrittore del flow;
+     `context_root` = directory della feature (es. `docs/features/<slug>/`). Schema canonico:
+     `{ source, context_root, owner, current_task, tasks[] }` (single-source in `technical-context.md`).
+     Aggiorna `heartbeat.ts` dopo questo write (ordine PROGRESS → heartbeat).
+     Dopo l'init del PROGRESS, **upsert entry** in `.flow/index.json` (slug → `{ owner, alive:true,
+     active:null, done, pending, archived:false }`); se `index.json` è assente o non valido,
+     **ricostruiscilo prima** (vedi § Ricostruzione index.json).
+5. Source acquisita: esegue il protocollo per-task sotto, leggendo/scrivendo **solo** il PROGRESS
+   per-source della source acquisita. Aggiorna `heartbeat.ts` a ogni transizione di stato
+   (ordine: scrivi `PROGRESS` → aggiorna `heartbeat.ts`; vedi
+   `references/concurrency.md` § Aggiornamento heartbeat).
+6. Al termine della source (o ad abbandono): **release** (`rm -rf .flow/locks/<slug>/`, idempotente).
+   Aggiorna `index.json`: `alive=false`, `active=null` per la source rilasciata; lascia `done`/`pending`
+   ai valori correnti.
+
+### Ricostruzione index.json
+
+Se `.flow/index.json` è assente o JSON non valido, ricostruiscilo prima di qualunque
+operazione sull'index:
+
+1. Scansiona `.flow/locks/`: ogni subdirectory `<slug>/` → source candidata.
+2. Per ogni `<slug>`: leggi `.flow/sources/<slug>/PROGRESS.json`.
+   - Esiste → popola entry: `owner` dal PROGRESS, `alive` da mtime `heartbeat.ts`
+     (semantica `concurrency.md` § Semantica "source viva"), `active`/`done`/`pending`
+     dal PROGRESS, `archived: false`.
+   - Non esiste → entry minima `{ owner:"unknown", alive:false, active:null,
+     done:0, pending:0, archived:false }`.
+3. Scansiona `.flow/sources/`: PROGRESS senza lock corrispondente → entry con `alive:false`.
+4. Scrivi il file ricostruito.
+
+`index.json` è cache tollerante: un PROGRESS corrotto produce entry degradata, non errore fatale.
+Il campo `archived` è sempre inizializzato a `false` in ricostruzione; `true` è responsabilità
+esclusiva dell'auto-archivio a fine source (sotto).
+
+### Auto-archivio a fine source
+
+Trigger: tutti i task nel PROGRESS per-source hanno `state="done"` (verificato **dopo** aver segnato
+`done` l'ultimo task, prima di tornare al loop). Scatta solo sul task corrente che porta il conteggio a
+"tutti done", mai su reclaim. Sequenza obbligatoria, **sotto lock** (l'ordine è vincolante per idempotenza):
+
+1. **git mv** `docs/features/<slug>/` → `docs/archive/features/<slug>/` (`mkdir -p docs/archive/features/` prima).
+   Recovery crash: se DST esiste e SRC non esiste → già spostato, salta. Se entrambi esistono → scrivi
+   `.flow/briefs/<task>/ESCALATION.json` `{ "level":"L2", "reason":"archivio parziale non recuperabile: SRC e DST coesistono" }`
+   e interrompi la sequenza. Se `git mv` fallisce perché la source non è tracciata da git → `mv` come fallback (annotalo nel summary).
+2. **Pulizia** `.flow/sources/<slug>/` (`rm -rf`, idempotente).
+3. **Release lock** (`rm -rf .flow/locks/<slug>/`, idempotente). È l'ultimo passo prima dell'update index: il lock si tiene per tutta la sequenza.
+4. **Aggiorna** `index.json`: `archived=true`, `alive=false`, `active=null`
+   (`jq '.[$slug].archived=true | .[$slug].alive=false | .[$slug].active=null'`). Se mancante/corrotto:
+   ricostruisci on-demand (§ Ricostruzione index.json) poi aggiorna. Questa è la **sola** scrittura di `archived=true`.
+
+Nessun commit, mai. L'orchestratore annota nel summary: "Source `<slug>` archiviata in `docs/archive/features/<slug>/`. Commit NON eseguito."
+
 ## Protocollo (per ogni task)
 
-1. **Leggi piano + `PROGRESS.json`.**
-   - Full-run: prendi il prossimo task `pending`. Se nessuno → loop finito, riporta summary e fermati.
+1. **Leggi piano + PROGRESS per-source** (`.flow/sources/<slug>/PROGRESS.json` della source acquisita).
+   - Full-run: prendi il prossimo task `pending`. Se nessuno → tutti i task sono `done`: esegui
+     l'auto-archivio (vedi § Auto-archivio a fine source), poi termina la source e riporta summary.
    - Single-task: prendi il task indicato dall'utente.
-2. **Attiva il task PRIMA dello spawn DEV** (l'hook risolve il task da qui): in `PROGRESS.json` setta `current_task = <task>` e quel task `state = "active"`. Scrivi il file.
+2. **Attiva il task PRIMA dello spawn DEV** (l'hook risolve il task da qui): nel PROGRESS **per-source**
+   (`.flow/sources/<slug>/PROGRESS.json`) setta `current_task = <task>` e quel task `state = "active"`.
+   Scrivi il file; poi aggiorna `heartbeat.ts` (ordine: PROGRESS → heartbeat; vedi
+   `references/concurrency.md` § Aggiornamento heartbeat).
+   Aggiorna `index.json`: `active = <task>`, `done`, `pending` aggiornati dai conteggi correnti del
+   PROGRESS per-source (ordine invariante: index dopo PROGRESS e heartbeat).
 3. **Spawn `pm` → `brief <task>`.** Al ritorno verifica che esistano e non siano vuoti `.flow/briefs/<task>/scope.txt` e `.flow/briefs/<task>/frozen.txt`. Se mancano/vuoti o c'è `ESCALATION.json` → **vai a 7**.
 3b. **Deriva le policy del task** dalla single-source [`references/model-tiering.md`](references/model-tiering.md) (una sola volta per task). Tre output: **modello DEV**, **dry-run sì/no**, **modello del finalize PM**.
     - **Override manuale presente** (vedi § "Override manuale del modello"): usa il modello forzato per il DEV (e per il PM/finalize se l'utente ha esteso l'override). **NON** leggere né applicare `meta.json` per il modello: l'override ha precedenza massima e copre anche il caso `meta.json` assente/illeggibile (nessuna doppia logica, niente nota di degrado). Per la **dry-run policy**, un eventuale override esplicito (*"salta/forza il dry-run"*) vince; altrimenti vale la policy per complessità (sotto). Annota l'override applicato nel summary.
@@ -69,7 +152,7 @@ Estrai dall'input anche una eventuale **direttiva dry-run**: *"salta il dry-run"
    Altrimenti **finalizza**, con due percorsi:
    - **Finalize inline (fast-path)** — SE il task è `trivial`/`standard` (mai `critical`) E `RESULT.deviations` non contiene deviazioni *funzionali* (solo note d'ambiente tipo `"build skipped..."` → ammesso; qualunque deviazione sostanziale o dubbio → percorso PM): l'orchestratore chiude il task **senza spawnare il PM**. Risolve il path del brief on-disk da `Context-root:` nell'header di `.flow/briefs/<task>/brief.md`: path canonico `<context-root>/tasks/<id>.md`; fallback legacy `docs/tasks/<id>.md` (se il co-locato non esiste o `Context-root:` è assente). Marca `Status: ✅ finalized` nel brief risolto. **Non** tocca `technical-context.md` (deviazioni vuote ⇒ nessuna decisione cumulativa; l'eventuale append è già avvenuto al `brief`). Salta la ri-verifica semantica del PM: su un task leggero che ha passato il `verify-gate` il suo valore marginale non giustifica uno spawn a freddo (~90s). Il gate (`verify=="pass"`, no escalation) l'hai **già** applicato qui sopra.
    - **Finalize PM (default)** — altrimenti (task `critical`, deviazioni funzionali, o override esteso al PM): **spawn `pm` → `finalize <task>`** col `model: <finalize derivato>` (vedi 3b: `trivial`/`standard`→`haiku`, `critical`→`sonnet`; degrado/override → `sonnet`). Qui restano la ri-verifica realtà-brief e l'eventuale update di `technical-context.md`.
-   In entrambi i casi: in `PROGRESS.json` setta il task `state="done"`; poi **mirror dello status** (vedi sotto). In full-run torna a **1**; in single-task riporta summary e fermati.
+   In entrambi i casi: nel PROGRESS **per-source** (`.flow/sources/<slug>/PROGRESS.json`) setta il task `state="done"`, scrivi il file e aggiorna `heartbeat.ts` (ordine PROGRESS → heartbeat); poi **mirror dello status** (vedi sotto). In full-run, dopo aver segnato `done` l'ultimo task: verifica se **tutti** i task della source sono `done`; in caso → esegui § Auto-archivio a fine source (la source è chiusa, non tornare a 1). Altrimenti torna a **1**; in single-task riporta summary e fermati.
 
 ### Mirror status sul tasks-file della source (a finalize OK)
 
@@ -112,6 +195,6 @@ Nessun lock/concorrenza per l'archive (fuori scope — feature `topology-concurr
 - Mai `git commit`/`push`. Mai modificare i due sub-progetti fuori da ciò che il brief dichiara.
 - Un solo livello di delega: tu spawni pm/dev, loro non spawnano nulla.
 - Se `.flow/` non esiste, inizializzalo (PROGRESS.json con la lista task dal piano) prima del loop. Il "piano" può essere `docs/planning/05-tasks-active.md` (project-planner) **o** `docs/features/<slug>/tasks-active.md` (feature-planner): l'orchestratore tratta gli ID in modo opaco e non si cura della source.
-- Dopo ogni transizione di stato, **persisti `PROGRESS.json`** prima di proseguire.
+- Dopo ogni transizione di stato, **persisti il PROGRESS per-source** (`.flow/sources/<slug>/PROGRESS.json`) — poi `heartbeat.ts` — prima di proseguire. Il `.flow/PROGRESS.json` radice è legacy (vedi § Principio di stato): ignorato dallo scan, non più scritto.
 - La selezione del modello del DEV (step 3b) — sia la derivazione dinamica sia l'**override manuale** dell'utente — è **effimera**: vive nel turno dell'orchestratore, non entra in `PROGRESS.json` né in alcun contratto su disco. Se l'override per-spawn non è onorato, degrada al frontmatter del DEV — non è un'anomalia da escalare.
 - Precedenza del modello (single-source [`references/model-tiering.md`](references/model-tiering.md) § Precedenza): `override utente > mapping dinamico (DEV) > frontmatter > sessione`. Non ridefinire qui la regola, solo applicarla.
