@@ -29,7 +29,7 @@ Contratto canonico: `skills/feature-planner/feature-artifacts.md` § "Planning s
 | 2 | `topology-canonical` | 6 | ✅ **done** (commit 6a93080) | 005 validato 5/7 in diretta (incl. critical) + fix raccolta `05afbc7`; re-run 7/7 saltato (token) |
 | 3 | `topology-concurrency-core` | 5 | ✅ **done** (commit 4debcc9) | lock+PROGRESS-per-source+index+auto-archivio; **005 validato per davvero** (3 scenari bash verdi) |
 | 4 | `topology-reconcile` | 5 | ✅ **done** (commit 31654ea) | whats-next/flow-sync per-source + gitignore + **scope-check hardening** (005, validato 7/7); 004 (board LLM) deferred |
-| 5 | `topology-migration` | 7 | ⚪ pending | skill shippable old→new (dry-run/idempotente/reversibile/verify). Dipende da 2. **Sblocca il reinstall globale** |
+| 5 | `topology-migration` | 7 | ✅ **build-complete** (commit e8859fe) | skill `migrate` costruita (001-005,007); **006 = atto di rilascio, deferred a Fase 3**. **Sblocca il reinstall globale** |
 | 6 | `topology-lean-exec` | 4 | ✅ **done** (commit a74574b) | B+C fatti (001/002/004); 003 (harness) deferred come canonical-005 |
 
 Ordine flow-run: `harness → canonical → lean-exec → concurrency-core → reconcile → migration`.
@@ -39,6 +39,14 @@ Ordine flow-run: `harness → canonical → lean-exec → concurrency-core → r
 2. Valida su **build isolata** del plugin (working tree), mai sulla cache globale condivisa.
 3. **Reinstall globale solo alla fine**, dopo `topology-migration` (è lei che rende sicuro il passaggio per i progetti esistenti).
 - `topology-canonical-005` resta `deferred` fino a questa validazione coordinata.
+
+### EPIC BUILD-COMPLETE — checklist Fase 3 (rilascio, gated dall'utente)
+Tutte e 6 le feature sono **costruite e committate** (working tree, plugin cached invariato → run in corso intatti). Resta solo il rilascio coordinato, in finestra tranquilla:
+1. **Validazione coordinata** (token-heavy, una volta): build isolata `--plugin-dir` + harness sui golden-task aggiornati al layout co-locato → chiude i `deferred`: `canonical-005`, `lean-exec-003`, `reconcile-004`.
+2. **Migrazione progetti esterni**: su ogni progetto otto in uso, `migrate` preview → apply → post-verify (con la dev installata in isolamento o post-reinstall).
+3. **`topology-migration-006`**: (a) migrazione interna dei 12 brief di *questo* repo + (b) rimozione del back-compat fallback dal contratto — **solo dopo** 1+2.
+4. **Reinstall globale** del plugin 0.6.0 + smoke-check su un run reale.
+- Ordine vincolante: 1 → 2 → 3(b) → 4. La 3(b) (rimozione fallback) è l'ultimo punto di non-ritorno.
 
 ### Meccanismo di isolamento — CONFERMATO (claude 2.1.158, auth login/keychain)
 - **`claude --print --plugin-dir <repo-root>`**: carica la otto del working tree (stesso nome `otto`) che **scavalca** quella installata per quella sessione. Auth intatta, globale invariata → run concorrenti su altri progetti **non toccati**. (`run.sh` aggiornato, commit `701bacb`.)
