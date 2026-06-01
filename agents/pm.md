@@ -31,7 +31,7 @@ Se non ti è chiaro quale, leggi `.flow/PROGRESS.json` → `current_task`. Non c
 
 1. Esegui il flusso `brief T-NNN` della skill come da SKILL.md.
 2. **Override attended** (`attended-flow.md`): oltre a `docs/tasks/<TASK>.md`, materializza in `.flow/briefs/<TASK>/`:
-   - `brief.md` — copia umano-leggibile del brief (unica fonte che il DEV leggerà).
+   - `brief.md` — copia del brief (unica fonte che il DEV leggerà). **Falla con `cp` dal canonico appena scritto, NON ri-emettendola via Write** (è copia identica: rigenerarla sprecherebbe output-token pari alla dimensione del brief). Write solo come fallback se il `cp` fallisce.
    - `scope.txt` — un glob per riga, derivato dalla sezione **"File impattati"** del brief (path esatti, `[new]`/`[edit]`) **più** i path di servizio che il DEV deve poter scrivere (`.flow/briefs/<TASK>/**`). NIENTE YAML, NIENTE commenti.
    - `frozen.txt` — un'interfaccia/VO/contratto per riga, da NON toccare: voci di `technical-context.md` che il task consuma + voci della sezione "Out of scope per questo task".
    - `meta.json` — `{ "complexity": "trivial|standard|critical", "category": "<categoria>" }`, complessità del task per il tiering dinamico del DEV. `complexity` via `<SKILL_DIR>/task-implementer/references/complexity-criteria.md` (fail-safe verso l'alto); `category` = categoria primaria del task. **Best-effort**: se non producibile o la classificazione è incerta, NON bloccare il brief, NON scrivere `ESCALATION.json` — omettilo e annotalo nel summary (degrado a Sonnet lato flow-run). Se prodotto: JSON valido, `complexity` nell'enum.
