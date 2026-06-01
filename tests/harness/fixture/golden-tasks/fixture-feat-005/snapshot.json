@@ -1,0 +1,30 @@
+{
+  "$schema": "versione 1",
+  "task_id": "fixture-feat-005",
+  "source": "feature",
+  "context_root": "docs/features/sample-feature",
+  "invariants": {
+    "resolver": {
+      "resolves_to_one": true,
+      "expected_context_root": "docs/features/sample-feature"
+    },
+    "brief": {
+      "required_sections": ["Obiettivo", "Vincoli risolti", "File impattati", "Out of scope"],
+      "must_not_be_empty": ["Obiettivo", "File impattati"]
+    },
+    "scope": {
+      "must_contain": [
+        "src/Application/Configuration/ShareOptions.cs",
+        "src/appsettings.json"
+      ],
+      "must_contain_service_glob": ".flow/briefs/fixture-feat-005/**"
+    },
+    "frozen": {
+      "must_contain": []
+    },
+    "meta": {
+      "complexity_in_enum": true,
+      "expected_complexity": "standard"
+    }
+  }
+}

@@ -6,5 +6,10 @@
 .flow/
 docs/
 
+# Eccezione: il fixture dell'eval-harness è test-infra DEL plugin → va versionato,
+# anche se contiene una sottocartella docs/ (è un mini-progetto di prova, non residue).
+!tests/harness/fixture/docs/
+!tests/harness/fixture/docs/**
+
 # Backup generati dalle skill (es. tasks-active.md.bak)
 *.bak

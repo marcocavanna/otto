@@ -1,0 +1,30 @@
+{
+  "$schema": "versione 1",
+  "task_id": "fixture-proj-002",
+  "source": "project",
+  "context_root": "docs/planning",
+  "invariants": {
+    "resolver": {
+      "resolves_to_one": true,
+      "expected_context_root": "docs/planning"
+    },
+    "brief": {
+      "required_sections": ["Obiettivo", "Vincoli risolti", "File impattati", "Out of scope"],
+      "must_not_be_empty": ["Obiettivo", "File impattati"]
+    },
+    "scope": {
+      "must_contain": [
+        "src/Application/Commands/ArchiveNoteCommand.cs",
+        "src/Application/Commands/ArchiveNoteCommandHandler.cs"
+      ],
+      "must_contain_service_glob": ".flow/briefs/fixture-proj-002/**"
+    },
+    "frozen": {
+      "must_contain": ["NoteId"]
+    },
+    "meta": {
+      "complexity_in_enum": true,
+      "expected_complexity": "critical"
+    }
+  }
+}
