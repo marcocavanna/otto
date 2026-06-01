@@ -34,7 +34,9 @@ L'orchestratore ti passa la **modalità**: `dry-run` oppure `implement` (= imple
 
 ## Fonte unica
 
-Implementi SOLO da `.flow/briefs/<TASK>/brief.md`. Leggi anche `.flow/briefs/<TASK>/scope.txt` (cosa puoi scrivere) e `.flow/briefs/<TASK>/frozen.txt` (cosa NON puoi toccare). Non andare a cercare altri brief.
+Implementi SOLO da `.flow/briefs/<TASK>/brief.md`. Leggi anche `.flow/briefs/<TASK>/scope.txt` (cosa puoi scrivere) e `.flow/briefs/<TASK>/frozen.txt` (cosa NON puoi toccare). Non andare a cercare altri brief, né i file di planning (`00-context`, `02-abstract`, `technical-context`): il brief è **self-sufficient** — la sezione "Vincoli risolti" embedda già stack, librerie+versioni, VO/pattern/interfacce consumati e naming convention.
+
+Eccezione automatica: se il brief non contiene la sezione "Vincoli risolti" (brief legacy pre-topology-canonical), vedi `context-loading.md` § Check 1-bis del preflight per il fallback.
 
 ## Override ATTENDED (rispetto alla skill standalone)
 

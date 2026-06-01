@@ -58,6 +58,9 @@ docs/
     00-context.md           contesto, assunzioni, rischi
     02-abstract.md          scelte tecniche di fondo
     05-tasks-active.md      i task, chiamati T-001, T-002, …
+    tasks/                  brief tecnici dei task di progetto
+      T-001.md
+      T-002.md
     (+ pitch, milestone, fasi)
 
   features/              ← una cartella per ogni FEATURE (la crea feature-planner;
@@ -66,6 +69,9 @@ docs/
       02-abstract.md        approccio tecnico della feature
       technical-context.md  build, pattern, convenzioni da seguire
       tasks-active.md       i task, chiamati <nome-feature>-001, -002, …
+      tasks/                brief tecnici dei task della feature
+        <nome-feature>-001.md
+        <nome-feature>-002.md
 
   epics/                 ← una cartella per ogni EPIC (la crea epic-planner)
     <nome-epic>/             SOLO coordinamento, NON contiene task
@@ -74,8 +80,9 @@ docs/
       technical-context.md  seed condiviso (ereditato dalle feature figlie)
       roadmap.md            ordine delle feature + dipendenze tra feature
 
-  tasks/                 ← i "brief" tecnici, uno per task (li scrive il PM)
-    <id-task>.md
+  archive/               ← feature/epic concluse (non partecipano allo scan dei task)
+    features/<slug>/
+    epics/<slug>/
 
 .flow/                   ← la lavagna del capo-officina (stato del lavoro)
   PROGRESS.json             a che punto siamo
@@ -83,6 +90,8 @@ docs/
 ```
 
 Metafora: `docs/` è **l'archivio ufficiale** (la verità a lungo termine), `.flow/` è **la lavagna in officina** (lo stato del lavoro di oggi, cancellabile).
+
+Il brief in `tasks/` è **self-sufficient**: il PM ha già distillato lì stack, librerie e convenzioni — il DEV non deve cercare altrove. I dettagli tecnici del meccanismo di risoluzione stanno in [`skills/feature-planner/feature-artifacts.md`](skills/feature-planner/feature-artifacts.md) § "Planning source contract".
 
 ---
 
@@ -253,6 +262,7 @@ Esempi lineari. Le frasi tra virgolette sono **esattamente quello che scrivi** a
 | **Context-root** | La cartella da cui si legge il contesto di un task (planning o feature) |
 | **PROGRESS.json** | La lavagna che dice "a che punto siamo" |
 | **Attended / sorvegliato** | Automatico, ma pronto a chiamarti per le decisioni vere |
+| **Brief self-sufficient** | Il brief scritto dal PM embedda già stack, librerie, pattern e naming: il DEV non ri-legge i file di planning |
 
 ---
 

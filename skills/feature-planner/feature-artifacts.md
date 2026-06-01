@@ -6,7 +6,7 @@ Template dei 4 file generati in `docs/features/<slug>/` e definizione **canonica
 
 ## Planning source contract (CANONICO)
 
-> Questa sezione è la fonte di verità del meccanismo di risoluzione. `task-implementer` e `code-implementer` vi puntano. Non duplicarla altrove: linkarla.
+> Questa sezione è la **fonte di verità** del meccanismo di risoluzione. `task-implementer`, `code-implementer` e `flow-run` vi puntano. Non duplicarla altrove: linkarla.
 
 Una **planning source** = una directory **context-root** che contiene:
 
@@ -23,18 +23,31 @@ Una **planning source** = una directory **context-root** che contiene:
 
 **Risoluzione della context-root per un task `X`** (la fa `task-implementer` in `brief X`):
 1. Scan di `docs/planning/05-tasks-active.md` + `docs/features/*/tasks-active.md`.
+   — Lo scan **esclude** `docs/archive/**`: i brief e i task-file archiviati non partecipano alla risoluzione.
 2. Il file la cui lista contiene `X` definisce la source; context-root = la sua directory; tasks-file = quel file.
 3. 0 match → errore "task sconosciuto". >1 match → errore "ID ambiguo" (gli ID devono essere unici).
 4. Override esplicito ammesso: l'utente/orchestratore può passare la source (`feature <slug>`), saltando lo scan.
 
-**Header del brief** (`docs/tasks/<id>.md`, scritto da `task-implementer`, letto da `code-implementer`):
+**Path del brief**:
+- **Canonico**: `<context-root>/tasks/<id>.md` — co-locato con la planning source. Scritto dal PM (`task-implementer`), consumato dal DEV via la copia effimera in `.flow/briefs/<id>/`.
+- **Fallback legacy** (⚠ temporaneo — rimosso dalla feature `topology-migration`): `docs/tasks/<id>.md`. Usato solo per i brief storici non ancora migrati al layout co-locato. Il resolver tenta prima il path canonico, poi il fallback.
+
+**Header del brief** (scritto da `task-implementer`, letto da `code-implementer`):
 ```
 **Origin**: project-planner | feature-planner
 **Context-root**: docs/planning/ | docs/features/<slug>/
 ```
-`code-implementer` carica `00-context.md`/`02-abstract.md`/`technical-context.md` da `Context-root`. Se l'header manca → default `docs/planning/` (retro-compatibilità con i brief storici).
+`code-implementer` risolve la `Context-root` dall'header. Se l'header manca → default `docs/planning/` (retro-compatibilità con i brief storici).
 
-I brief vivono **sempre** in `docs/tasks/<id>.md` (namespace condiviso): per questo l'unicità degli ID è obbligatoria.
+**Sezione obbligatoria del brief — "Vincoli risolti"**:
+Ogni brief generato da `task-implementer` deve contenere la sezione **"Vincoli risolti"**, che embedda nel brief tutto ciò che serve al DEV. Campi obbligatori:
+- **Stack** — linguaggio/runtime/framework rilevanti per il task
+- **Librerie + versioni** — quelle effettivamente usate nel task
+- **VO/pattern/interfacce consumati** — costrutti esistenti che il task consuma e NON deve modificare
+- **Naming convention** — convenzione applicata nel task
+
+→ Template dettagliato della sezione: `skills/task-implementer/references/brief-template.md`.
+→ Conseguenza (pattern **brief self-sufficient**): il DEV legge **solo** il brief — non ri-legge `00-context.md` / `02-abstract.md` / `technical-context.md`. Il reading-set del DEV è `brief.md` + `scope.txt` + `frozen.txt` + 1 sample + i file `[edit]`.
 
 ---
 

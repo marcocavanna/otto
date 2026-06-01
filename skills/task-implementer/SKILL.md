@@ -29,18 +29,19 @@ Tre regole non negoziabili:
 ## Architettura della skill
 
 ```
-docs/planning/
-  02-abstract.md          # strategico — vincolo per technical-context.md
-  technical-context.md    # tattico — gestito da QUESTA skill
-  
-docs/tasks/               # NUOVO — gestito da QUESTA skill
-  T-001.md
-  T-002.md
+<context-root>/             # docs/planning/ (project) | docs/features/<slug>/ (feature)
+  02-abstract.md            # strategico — vincolo per technical-context.md
+  technical-context.md      # tattico — gestito da QUESTA skill
+  tasks/                    # CANONICO — brief co-locati, gestiti da QUESTA skill
+    <id>.md                 # T-NNN (project) | <slug>-NNN (feature)
+    ...
+
+docs/tasks/                 # ⚠ LEGACY (fallback in lettura/finalize) — temporaneo, rimosso da topology-migration
+  T-001.md                  # brief storici non ancora migrati al layout co-locato
   ...
   archive/
     M1/
       T-001.md
-      T-002.md
     M2/
       ...
 ```
@@ -64,11 +65,17 @@ Flusso:
    - il tasks-file (il task + i task vicini per dipendenze)
 3. Run elicitation per task (vedi `references/brief-elicitation.md`).
 4. Validare coerenza: il brief proposto contraddice qualcosa in `technical-context.md`? Se sì, sollevare e risolvere PRIMA di scrivere.
-5. Generare `docs/tasks/<id>.md` (vedi `references/brief-template.md`). **Scrivere nell'header** `Origin:` e `Context-root:` (e `Feature:` al posto di `Milestone:` per task feature). Gli ID feature non hanno milestone: non inventarla.
+5. Generare il brief nel path **canonico** co-locato `<context-root>/tasks/<id>.md` (vedi `../feature-planner/feature-artifacts.md` § "Planning source contract" e `references/brief-template.md`).
+   - Creare la cartella `tasks/` sotto la context-root se non esiste (scrivendo il file la si crea implicitamente).
+   - Path legacy `docs/tasks/<id>.md`: usato **solo come fallback** in lettura/finalize per i brief storici non ancora migrati (⚠ temporaneo — rimosso dalla feature `topology-migration`). Non scrivere nuovi brief in `docs/tasks/`.
+   - **Scrivere nell'header** `Origin:` e `Context-root:` (e `Feature:` al posto di `Milestone:` per task feature). Gli ID feature non hanno milestone: non inventarla.
+   - Il brief **deve** includere la sezione obbligatoria `## Vincoli risolti` (vedi `references/brief-template.md` § "Vincoli risolti"): rende il brief self-sufficient per il DEV.
 6. Se il brief introduce nuove decisioni cumulative (VO nuovo, pattern nuovo, libreria nuova), aggiornare il `technical-context.md` **della context-root risolta** in append-only.
 7. Print summary: cosa è stato deciso, quali voci di `technical-context.md` sono state aggiunte.
 
 > **Modalità attended** (solo se invocata dall'orchestratore `flow-run`): dopo lo step 5, materializzare anche `scope.txt` e `frozen.txt` machine-readable. Vedi `references/attended-flow.md`. Additivo: non cambia la generazione del brief.
+>
+> La copia `.flow/briefs/<id>/brief.md` è una **copia** del brief co-locato in `<context-root>/tasks/<id>.md` (non una fonte separata): il DEV attended la legge, ma la fonte di verità resta il brief co-locato.
 
 ### Mode 2: `deviation T-NNN` — annotare deviazione durante implementazione
 

@@ -2,32 +2,56 @@
 
 Controlli da eseguire **prima** di iniziare qualsiasi operazione di implementazione. Se un check fallisce, la skill si ferma con messaggio chiaro all'utente.
 
-## Check 1 — Esistenza file di planning
+## Check 1 — Esistenza e integrità del brief
 
-File richiesti:
-- `docs/planning/00-context.md`
-- `docs/planning/02-abstract.md`
-- `docs/planning/technical-context.md`
-- `docs/tasks/T-NNN.md` (per il task richiesto)
+File richiesto:
+- `<context-root>/tasks/<id>.md` (canonico) oppure `docs/tasks/<id>.md` (fallback legacy)
 
-Se mancano:
+Risoluzione context-root: header `Context-root:` del brief; default `docs/planning/`.
+Contratto canonico: `../feature-planner/feature-artifacts.md` § "Planning source contract".
+
+Se il brief non esiste in nessuno dei due path:
 ```
 ⛔ Setup incompleto
 
-Mancano file di planning richiesti:
-- [lista file mancanti]
+Brief non trovato:
+- <context-root>/tasks/<id>.md (canonico)
+- docs/tasks/<id>.md (fallback legacy)
 
-La skill richiede che project-planner e task-implementer siano stati eseguiti
-prima. Non posso procedere senza il contesto strategico/tattico.
+La skill richiede che task-implementer abbia generato il brief prima.
 
 Suggerimento: esegui prima:
-- project-planner init (se nessun planning esiste)
-- task-implementer brief T-NNN (se manca il brief)
+- task-implementer brief <id> (se manca il brief)
+```
+
+Il brief è la **fonte unica** di contesto: la skill NON verifica più la presenza
+di `00-context`, `02-abstract`, `technical-context` (il PM li ha già distillati nel
+brief — vedi `context-loading.md`).
+
+## Check 1-bis — Sezione "Vincoli risolti" nel brief
+
+Se il brief esiste, verificare che contenga la sezione `## Vincoli risolti`.
+
+- **Presente** → reading-set ridotto attivo: brief + 1 sample + file `[edit]`.
+  NON leggere i 3 file di planning.
+- **Assente** (brief legacy pre-topology-canonical) → warning non bloccante:
+  procedere con lettura fallback dei 3 file di planning (modalità pre-topologia).
+
+```
+⚠ Brief senza "Vincoli risolti" (brief legacy)
+
+Il brief <id> non contiene la sezione "Vincoli risolti".
+Questo brief è stato generato prima di topology-canonical-002.
+Procedo con lettura dei file di planning (modalità pre-topologia):
+- <context-root>/00-context.md
+- <context-root>/02-abstract.md
+- <context-root>/technical-context.md
+[warning non bloccante — continua]
 ```
 
 ## Check 2 — Stato del brief
 
-Il brief `docs/tasks/T-NNN.md` deve essere in stato `active`. Status accettati:
+Il brief (risolto al Check 1) deve essere in stato `active`. Status accettati:
 - 🔵 `active` → procedi
 - ⏸ `paused` → chiedi conferma esplicita all'utente prima di procedere
 - ✅ `finalized` → blocca
@@ -47,19 +71,18 @@ b) Se serve modificare codice di un task finalizzato, è probabile che serva
 
 ## Check 3 — Build command dichiarato
 
-Cercare in `technical-context.md` sezione "Convenzioni di progetto" → voce `build_command`.
+Cercare il build command nella sezione "Vincoli risolti" del brief (stack/convenzioni). In fallback legacy: `technical-context.md` sezione "Convenzioni di progetto" → voce `build_command`.
 
 Se assente:
 ```
 ⚠ Build command non dichiarato
 
-In technical-context.md non è dichiarato come buildare il progetto. La verifica
-build dopo implementazione sarà saltata.
+Il brief non dichiara come buildare il progetto. La verifica build dopo
+implementazione sarà saltata.
 
 Suggerimento (non bloccante):
-Aggiungi in technical-context.md sezione "Convenzioni di progetto":
-
-  build_command: [comando reale del tuo progetto, es: `dotnet build`]
+Dichiara il build command nella sezione "Vincoli risolti" del brief (stack),
+es: `dotnet build`.
 
 Procedo senza verifica build? (sì/no)
 ```
@@ -127,7 +150,8 @@ Output preflight ben formato:
 ```
 Pre-flight checks per T-NNN:
 
-✅ File di planning presenti
+✅ Brief trovato (context-root risolta)
+✅ Sezione "Vincoli risolti" presente (reading-set ridotto)
 ✅ Brief in stato active
 ⚠ Build command non dichiarato (procedo senza verifica build)
 ✅ Directory riconosciuta come progetto

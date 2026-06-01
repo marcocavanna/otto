@@ -1,6 +1,6 @@
 ---
 name: flow-run
-description: Orchestratore "attended" del loop PM→DEV su un piano di task. Eseguito dal main thread. Guida i subagent pm e dev (un solo livello di delega), che comunicano solo via file in .flow/. Spawna il DEV con un modello scelto dinamicamente in base alla complessità del task (tiering dal meta.json del PM), con possibilità di override manuale del modello per un run (es. "esegui solo T-003 con opus"). Si ferma a interpellare l'utente (AskUserQuestion) SOLO su escalation: deviazione fuori scope, verify fallito oltre i retry, cambio di contratto. A finalize riflette lo status su docs/planning/05-tasks-active.md (mirror non-canonico). Supporta full-run (tutti i pending) e single-task (un solo task indicato). Triggera su "avvia il flow", "esegui il piano", "flow-run", "fai girare il loop PM/DEV", "prossimo task del flow", "esegui solo T-NNN", "flow-run T-NNN", "esegui con opus", "forza il modello del dev".
+description: Orchestratore "attended" del loop PM→DEV su un piano di task. Eseguito dal main thread. Guida i subagent pm e dev (un solo livello di delega), che comunicano solo via file in .flow/. Spawna il DEV con un modello scelto dinamicamente in base alla complessità del task (tiering dal meta.json del PM), con possibilità di override manuale del modello per un run (es. "esegui solo T-003 con opus"). Si ferma a interpellare l'utente (AskUserQuestion) SOLO su escalation: deviazione fuori scope, verify fallito oltre i retry, cambio di contratto. A finalize riflette lo status nel tasks-file della source del task: docs/planning/05-tasks-active.md (project) o docs/features/<slug>/tasks-active.md (feature) — mirror non-canonico. Supporta full-run (tutti i pending) e single-task (un solo task indicato). Triggera su "avvia il flow", "esegui il piano", "flow-run", "fai girare il loop PM/DEV", "prossimo task del flow", "esegui solo T-NNN", "flow-run T-NNN", "esegui con opus", "forza il modello del dev".
 ---
 
 # Flow Run — orchestratore attended
@@ -67,7 +67,7 @@ Estrai dall'input anche una eventuale **direttiva dry-run**: *"salta il dry-run"
 5. **Spawn `dev` → `implement`** (implement + verify) con lo **stesso** `model: <derivato>` del DEV.
 6. **Leggi `.flow/briefs/<task>/RESULT.json`.** Se `escalate==true` OPPURE `verify!="pass"` OPPURE esiste `ESCALATION.json` → **vai a 7**.
    Altrimenti **finalizza**, con due percorsi:
-   - **Finalize inline (fast-path)** — SE il task è `trivial`/`standard` (mai `critical`) E `RESULT.deviations` non contiene deviazioni *funzionali* (solo note d'ambiente tipo `"build skipped..."` → ammesso; qualunque deviazione sostanziale o dubbio → percorso PM): l'orchestratore chiude il task **senza spawnare il PM**. Marca `Status: ✅ finalized` nel brief `docs/tasks/<id>.md` e **non** tocca `technical-context.md` (deviazioni vuote ⇒ nessuna decisione cumulativa; l'eventuale append è già avvenuto al `brief`). Salta la ri-verifica semantica del PM: su un task leggero che ha passato il `verify-gate` il suo valore marginale non giustifica uno spawn a freddo (~90s). Il gate (`verify=="pass"`, no escalation) l'hai **già** applicato qui sopra.
+   - **Finalize inline (fast-path)** — SE il task è `trivial`/`standard` (mai `critical`) E `RESULT.deviations` non contiene deviazioni *funzionali* (solo note d'ambiente tipo `"build skipped..."` → ammesso; qualunque deviazione sostanziale o dubbio → percorso PM): l'orchestratore chiude il task **senza spawnare il PM**. Risolve il path del brief on-disk da `Context-root:` nell'header di `.flow/briefs/<task>/brief.md`: path canonico `<context-root>/tasks/<id>.md`; fallback legacy `docs/tasks/<id>.md` (se il co-locato non esiste o `Context-root:` è assente). Marca `Status: ✅ finalized` nel brief risolto. **Non** tocca `technical-context.md` (deviazioni vuote ⇒ nessuna decisione cumulativa; l'eventuale append è già avvenuto al `brief`). Salta la ri-verifica semantica del PM: su un task leggero che ha passato il `verify-gate` il suo valore marginale non giustifica uno spawn a freddo (~90s). Il gate (`verify=="pass"`, no escalation) l'hai **già** applicato qui sopra.
    - **Finalize PM (default)** — altrimenti (task `critical`, deviazioni funzionali, o override esteso al PM): **spawn `pm` → `finalize <task>`** col `model: <finalize derivato>` (vedi 3b: `trivial`/`standard`→`haiku`, `critical`→`sonnet`; degrado/override → `sonnet`). Qui restano la ri-verifica realtà-brief e l'eventuale update di `technical-context.md`.
    In entrambi i casi: in `PROGRESS.json` setta il task `state="done"`; poi **mirror dello status** (vedi sotto). In full-run torna a **1**; in single-task riporta summary e fermati.
 
@@ -93,6 +93,19 @@ Non passare logica di business nel prompt: la fonte è il brief su disco. Tieni 
 > Il `model` per-spawn del DEV è il valore risolto allo step 3b e **precede** il frontmatter del DEV. Se l'utente ha fornito un **override manuale** (§ "Override manuale del modello"), quel valore vince su tutto (derivazione dinamica inclusa) ed è il `model` per-spawn del DEV — e del `pm` solo se l'override è stato esteso esplicitamente. In assenza di override, il `model` deriva da `meta.json` via [`references/model-tiering.md`](references/model-tiering.md); su `meta.json` assente/illeggibile → `sonnet` + nota nel summary.
 >
 > Smoke-check (RISK-model-tiering-002): se la versione di Claude Code **non** onora il `model` per-spawn del tool `Agent`, il DEV gira sul `model:` del frontmatter (sonnet baseline) → **degrado grazioso**, da annotare nel summary; **non** è un'escalation.
+
+## Convenzione docs/archive
+
+Feature e epic concluse vengono archiviate in:
+- `docs/archive/features/<slug>/` — feature archiviate
+- `docs/archive/epics/<slug>/` — epic archiviate
+
+**Regola di esclusione**: `docs/archive/**` non partecipa allo scan di risoluzione (context-root e tasks-file): i task archiviati non sono mai `pending`.
+Fonte: `skills/feature-planner/feature-artifacts.md` § "Planning source contract".
+
+Lo spostamento fisico in archive è responsabilità di `feature-planner`/`project-planner`.
+Il mirror status è inerte su task già `done` in feature archiviate.
+Nessun lock/concorrenza per l'archive (fuori scope — feature `topology-concurrency-core`).
 
 ## Regole
 
