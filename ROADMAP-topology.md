@@ -30,7 +30,7 @@ Contratto canonico: `skills/feature-planner/feature-artifacts.md` § "Planning s
 | 3 | `topology-concurrency-core` | 5 | ⚪ pending | lock/PROGRESS-per-source/index/auto-archivio. Dipende da 2 |
 | 4 | `topology-reconcile` | 4 | ⚪ pending | whats-next/flow-sync per-source + gitignore. Dipende da 3 |
 | 5 | `topology-migration` | 7 | ⚪ pending | skill shippable old→new (dry-run/idempotente/reversibile/verify). Dipende da 2. **Sblocca il reinstall globale** |
-| 6 | `topology-lean-exec` | 4 | ⚪ pending | B+C: lazy refs + dedup preflight⟷context-loading. Dipende da 1; dopo 2 (stessi file) |
+| 6 | `topology-lean-exec` | 4 | ✅ **done** (commit a74574b) | B+C fatti (001/002/004); 003 (harness) deferred come canonical-005 |
 
 Ordine flow-run: `harness → canonical → lean-exec → concurrency-core → reconcile → migration`.
 
