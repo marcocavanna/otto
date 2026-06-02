@@ -6,6 +6,11 @@ Template dei 4 file generati in `docs/features/<slug>/` e definizione **canonica
 
 ## Planning source contract (CANONICO)
 
+> **⚠ LEGACY v1** — Il contratto canonico è stato relocato in
+> `skills/planner/planning-source-contract.md` (v2). Questa sezione
+> è mantenuta per retrocompatibilità dei brief storici. Per nuovi task
+> usare il file v2.
+
 > Questa sezione è la **fonte di verità** del meccanismo di risoluzione. `task-implementer`, `code-implementer` e `flow-run` vi puntano. Non duplicarla altrove: linkarla.
 
 Una **planning source** = una directory **context-root** che contiene:
