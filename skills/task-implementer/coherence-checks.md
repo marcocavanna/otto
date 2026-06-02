@@ -50,7 +50,7 @@ c) Mostrami le motivazioni e decido manualmente
 
 ### Check 3: brief vs altri brief della stessa milestone
 
-Durante `brief T-NNN`, leggere brevemente i brief già esistenti in `docs/tasks/` (solo della milestone attiva) e verificare:
+Durante `brief T-NNN`, leggere brevemente i brief già esistenti co-locati sotto la context-root (`<context-root>/tasks/`, solo della milestone/feature attiva) e verificare:
 
 - VO definiti in un task precedente sono **referenziati** correttamente, non **ri-definiti**?
 - File impattati: ci sono **conflitti di file** (es. T-007 dice "modifica X.cs in modo A", T-008 dice "modifica X.cs in modo B incompatibile")?
@@ -88,7 +88,7 @@ Su richiesta esplicita, audit completo:
 
 3. **Allineamento con planning**:
    - Tutti i task in `05-tasks-active.md` hanno un brief? (warning se mancano)
-   - Tutti i brief in `docs/tasks/` hanno un task corrispondente in `05-tasks-active.md`? (warning se orfani)
+   - Tutti i brief co-locati in `<context-root>/tasks/` hanno un task corrispondente nel tasks-file? (warning se orfani)
 
 Output del check-coherence: report markdown con sezione per ogni problema. Niente modifiche automatiche.
 

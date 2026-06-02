@@ -1,15 +1,15 @@
 ---
 name: code-implementer
-description: Use this skill when the user wants to translate a finalized technical brief (docs/tasks/T-NNN.md produced by task-implementer) into actual code in the repository — creating or modifying source files, running build verification, and recording implementation decisions back in the brief. Triggers on phrases like "implementa T-NNN", "scrivi il codice del task", "esegui il task", "implementa l'analisi", "passa all'esecuzione". Acts as a disciplined senior developer that loads full context from planning artifacts before writing, mimics the existing codebase style via sample reading, verifies build after writing, and tracks cross-task decisions back into the planning system.
+description: Use this skill when the user wants to translate a finalized technical brief (the co-located <context-root>/tasks/<id>.md produced by task-implementer) into actual code in the repository — creating or modifying source files, running build verification, and recording implementation decisions back in the brief. Triggers on phrases like "implementa T-NNN", "scrivi il codice del task", "esegui il task", "implementa l'analisi", "passa all'esecuzione". Acts as a disciplined senior developer that loads full context from planning artifacts before writing, mimics the existing codebase style via sample reading, verifies build after writing, and tracks cross-task decisions back into the planning system.
 ---
 
 # Code Implementer
 
-Skill che traduce un brief tecnico (`docs/tasks/T-NNN.md`) in codice reale nel repository, mantenendo coerenza con il codebase esistente e tracciando le decisioni di implementazione.
+Skill che traduce un brief tecnico (il brief co-locato `<context-root>/tasks/<id>.md`) in codice reale nel repository, mantenendo coerenza con il codebase esistente e tracciando le decisioni di implementazione.
 
 ## Operating principles
 
-Questa skill lavora **a valle** di `task-implementer`. Presuppone che esista il brief `<context-root>/tasks/<id>.md` (o il fallback `docs/tasks/<id>.md` per brief legacy), **self-sufficient** con la sezione "Vincoli risolti" (stack · librerie+versioni · VO/pattern/interfacce consumati · naming). Il brief embedda già tutto il contesto: la skill **non** legge `00-context`, `02-abstract`, `technical-context`.
+Questa skill lavora **a valle** di `task-implementer`. Presuppone che esista il brief co-locato `<context-root>/tasks/<id>.md`, **self-sufficient** con la sezione "Vincoli risolti" (stack · librerie+versioni · VO/pattern/interfacce consumati · naming). Il brief embedda già tutto il contesto: la skill **non** legge `00-context`, `02-abstract`, `technical-context`.
 
 **Risoluzione della context-root**: leggere l'header del brief. `Context-root: docs/planning/` (project-planner) oppure `docs/features/<slug>/` (feature-planner). Se l'header manca → default `docs/planning/` (retro-compatibilità). Contratto canonico: `../feature-planner/feature-artifacts.md` § "Planning source contract". La context-root serve a risolvere il **path del brief**, non a caricare file di contesto separati.
 
@@ -26,7 +26,7 @@ Tre regole non negoziabili:
 ## Architettura della skill
 
 La skill opera su due file system:
-- **Read-only**: il brief (`<context-root>/tasks/<id>.md` o fallback legacy), codice esistente del progetto
+- **Read-only**: il brief co-locato (`<context-root>/tasks/<id>.md`), codice esistente del progetto
 - **Write**: codice sorgente del progetto, sezioni specifiche del brief, `technical-context.md` (solo per decisioni cross-task confermate)
 
 Regola di scope: la skill **non** modifica `02-abstract.md`, `00-context.md`, `03-milestones.md`, `04-phases.md`, `05-tasks-active.md` (né li legge in flusso ordinario). Se qualcuno di questi va modificato, indirizza a `project-planner` (revise).
@@ -42,7 +42,7 @@ Flusso obbligatorio:
 > `build-verification.md`: solo se step 5 ha un build command dichiarato.
 
 1. **Pre-flight check** (vedi `references/preflight.md`):
-   - **Risolve la context-root** dall'header `Context-root:` del brief (default `docs/planning/`) e individua il path del brief (canonico `<context-root>/tasks/<id>.md`, fallback `docs/tasks/<id>.md`)
+   - **Risolve la context-root** dall'header `Context-root:` del brief (default `docs/planning/`) e individua il path del brief co-locato `<context-root>/tasks/<id>.md`
    - Brief `<id>` esiste, è in stato active (non finalized né paused)
    - Brief contiene la sezione "Vincoli risolti" (se no: warning + fallback legacy, Check 1-bis)
    - Build command dichiarato nel brief (se no: warning)

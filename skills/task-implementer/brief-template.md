@@ -1,6 +1,6 @@
 # Brief template
 
-Template del file `docs/tasks/T-NNN.md`. Markdown denso, niente filler.
+Template del brief co-locato `<context-root>/tasks/<id>.md`. Markdown denso, niente filler.
 
 ## Template completo
 

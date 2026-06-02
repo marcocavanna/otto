@@ -8,7 +8,7 @@ PM e DEV non si parlano: comunicano via file su disco in `.flow/briefs/<TASK>/`.
 
 ## Override su `brief T-NNN`
 
-Dopo aver generato `docs/tasks/T-NNN.md` come da flusso standard, materializza in `.flow/briefs/<TASK>/`:
+Dopo aver generato il brief co-locato `<context-root>/tasks/<id>.md` come da flusso standard, materializza in `.flow/briefs/<TASK>/`:
 
 1. **`brief.md`** — copia del brief generato. È l'**unica** fonte che il DEV leggerà (isolamento file-based; il DEV non legge il brief canonico). **Produrlo con `cp` dal canonico appena scritto, NON ri-emetterlo via Write**: il contenuto è per definizione identico, quindi copia byte-a-byte invece di rigenerare il markdown nel tuo output (risparmia output-token pari alla dimensione del brief, per ogni task):
 
@@ -16,7 +16,7 @@ Dopo aver generato `docs/tasks/T-NNN.md` come da flusso standard, materializza i
    cp "<PATH_BRIEF_CANONICO>" ".flow/briefs/<TASK>/brief.md"
    ```
 
-   `<PATH_BRIEF_CANONICO>` è il file appena generato dal flusso standard (`docs/tasks/<TASK>.md` per i progetti; `docs/features/<slug>/tasks/<TASK>.md` per le feature). Usa Write su `brief.md` SOLO come fallback se il `cp` fallisce (es. canonico non ancora su disco).
+   `<PATH_BRIEF_CANONICO>` è il file appena generato dal flusso standard, co-locato sotto la context-root (`docs/planning/tasks/<TASK>.md` per i progetti; `docs/features/<slug>/tasks/<TASK>.md` per le feature). Usa Write su `brief.md` SOLO come fallback se il `cp` fallisce (es. canonico non ancora su disco).
 
 2. **`scope.txt`** — whitelist dei path scrivibili dal DEV, **un glob per riga**, derivata dalla sezione **"File impattati"** del brief:
    - una riga per ogni file `[new]`/`[edit]` (path esatto relativo alla root del repo, senza l'annotazione `[new]`/`[edit]`);

@@ -1,6 +1,6 @@
 ---
 name: flow-sync
-description: Reconcile/repair del drift tra .flow/PROGRESS.json (stato d'esecuzione canonico) e i marker Status dei tasks-file (docs/planning/05-tasks-active.md, docs/features/*/tasks-active.md). Chiude il loop di whats-next: quella RILEVA il drift in sola lettura, flow-sync lo RIPARA. Preview di default (classifica e mostra i diff/entry proposti, NON scrive), apply su conferma esplicita. Ripara solo i casi sicuri (safe-repair PROGRESS→file) + import conservativo (file ✅ done ma ID assente in PROGRESS → entry done), segnala ambigui/orphan senza mai sovrascriverli. Scope global/plan/feature come whats-next, risoluzione context-root via scan (ID opachi). Triggera su "flow-sync", "riallinea lo stato", "ripara il drift", "sincronizza PROGRESS", "allinea PROGRESS e tasks-file", "fix dello stato dopo un expand", "riconcilia lo stato del piano".
+description: Reconcile/repair del drift tra .flow/PROGRESS.json (stato d'esecuzione canonico) e i marker Status dei tasks-file (docs/planning/05-tasks-active.md, docs/features/*/tasks-active.md). Chiude il loop di whats-next: quella RILEVA il drift in sola lettura, flow-sync lo RIPARA. Preview di default (classifica e mostra i diff/entry proposti, NON scrive), apply su conferma esplicita. Ripara solo i casi sicuri (safe-repair PROGRESS→file) + import conservativo (file ✅ done ma ID assente in PROGRESS → entry done) + riconciliazione in avanti dello `Status feature` nelle roadmap epic (backstop del mirror best-effort di flow-run), segnala ambigui/orphan senza mai sovrascriverli. Scope global/plan/feature come whats-next, risoluzione context-root via scan (ID opachi). Triggera su "flow-sync", "riallinea lo stato", "ripara il drift", "sincronizza PROGRESS", "allinea PROGRESS e tasks-file", "fix dello stato dopo un expand", "riconcilia lo stato del piano".
 ---
 
 # Flow Sync — reconcile/repair del drift di stato
@@ -47,6 +47,23 @@ Modalità di esecuzione:
 
 La matrice, i 3 casi safe-repair, la regola import, il principio `ASSENTE ≠ CONFLITTO`, l'ordine di scrittura e le guardie **non** si ridefiniscono qui: si consultano `references/reconciliation.md` e `references/apply-protocol.md`.
 
+## Riconciliazione roadmap epic (additivo)
+
+Backstop del mirror **best-effort** di `flow-run` sullo `Status feature` della `roadmap.md` (vedi
+`../flow-run/SKILL.md` § "Mirror status sulla roadmap epic"): se `flow-run` non l'ha aggiornato (crash
+tra PROGRESS e roadmap, feature avviata senza flow-run, drift volatile), `flow-sync` lo ripara. Si
+attiva **solo** se la source in scope appartiene a un epic.
+
+- **Scoperta epic**: glob `docs/epics/*/roadmap.md`, source associata via riga `Source: docs/features/<slug>/`. 0 match → source standalone, **niente riconciliazione roadmap** (salta). >1 match → anomalia, report, nessuna scrittura.
+- **Stato feature atteso** (derivato dallo stato riconciliato dei task della feature, stessa verità del rollup `whats-next`): tutti i task `done` (o `index.json` `archived=true`) → `✅ done`; almeno un task avviato/done ma non tutti → `🔵 active`; nessuno avviato → `⚪ planned`.
+- **Classificazione** (granularità **feature**, non task), riusa la semantica safe/forward del task-level:
+  - atteso **più avanti** della riga `Status feature` sul file → `safe-repair` (in avanti: `planned→active→done`). Apply riscrive **solo** quella riga.
+  - atteso **uguale** → `in-sync`.
+  - file **più avanti** dell'atteso (es. roadmap `done` ma esistono task non-done) → `ambiguous` → **report**, mai retrocedere (coerente con "Non retrocede mai un marker").
+- **Scope di scrittura**: in apply tocca **solo** la riga `- **Status feature**: …` del blocco feature in `roadmap.md`. Niente altre righe, niente altri file dell'epic. Roadmap assente / blocco feature non individuabile / riga non riconoscibile → salta e segnala (read-only su quel caso). Backup del file come per i tasks-file.
+
+La roadmap resta un riflesso **advisory**: la verità è `PROGRESS.json` + tasks-file. Questa riconciliazione allinea solo il documento umano, in avanti, sui casi sicuri.
+
 ## Output (report + comandi)
 
 Board di classificazione per-task (in scope), seguita dai comandi pronti:
@@ -75,6 +92,6 @@ Tono: senior, italiano denso, fail-closed, niente filler/cheerleading. Coerente 
 - **Non inizializza** `PROGRESS.json` da zero (è di `flow-run`).
 - **Non esegue** task né li **espande** (è di `flow-run` / `project-planner` / `feature-planner`).
 - **Non scrive codice**, non committa, non riformatta i tasks-file (tocca solo la riga `Status` dei task `safe-repair`).
-- **Non altera** `current_task`, né i brief `docs/tasks/<id>.md`, né altre righe del tasks-file.
+- **Non altera** `current_task`, né i brief co-locati `<context-root>/tasks/<id>.md`, né altre righe del tasks-file.
 - **Non decide la priorità** cross-plan e non raccomanda il "next" (è di `whats-next`).
 - **Non retrocede** mai un marker: se il file è avanti su PROGRESS → `ambiguous` → report.

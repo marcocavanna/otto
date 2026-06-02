@@ -65,6 +65,48 @@ Se l'ispezione è insufficiente (repo opaco, niente knowledge), dillo e passa a 
 3. Aggiorna in place gli artefatti interessati, preservando struttura. Marca l'assunzione vecchia come superseded, aggiungi la nuova con data.
 4. Stampa un diff summary.
 
+### Mode 4: `finalize <feature>` — consolidare la conoscenza tattica a feature conclusa
+
+> **Single-source** della procedura di consolidamento. Invocata **automaticamente da `flow-run`**
+> all'auto-archivio (vedi `../flow-run/SKILL.md` § "Auto-archivio a fine source", passo 1), eseguibile
+> anche **a mano** prima di archiviare una feature standalone.
+
+Problema che risolve: il `technical-context.md` di una feature accumula decisioni tattiche **vincolanti**
+durante il flow (librerie, VO, pattern, naming). All'archiviazione la feature — e con lei quel file —
+esce dalla vista attiva. In un **epic** le feature successive sono state *seedate* dal
+`technical-context.md` condiviso alla materializzazione: senza consolidamento **non ereditano** le
+decisioni maturate nelle feature precedenti. `finalize` chiude il loop facendo **risalire** quelle
+decisioni al seed condiviso (il seed oggi propaga solo in giù, alla materializzazione, e su `revise`).
+
+Flusso:
+1. **Risolvi l'epic** della feature: glob `docs/epics/*/roadmap.md`, cerca la riga
+   `Source: docs/features/<slug>/`. 0 match → feature **standalone**: nessun bubble-up, riporta che la
+   conoscenza resta nel `technical-context.md` co-locato (archiviato con la feature). Fine. >1 match →
+   anomalia, segnala e fermati. 1 match → prosegui.
+2. **Leggi** `docs/features/<slug>/technical-context.md`.
+3. **Guardia di idempotenza**: se `docs/epics/<epic>/technical-context.md` contiene già l'header
+   `## Consolidato da <slug>` → già consolidato, no-op (riportalo).
+4. **Append-only** in coda a `docs/epics/<epic>/technical-context.md` un blocco datato:
+
+   ```markdown
+   ## Consolidato da <slug> (YYYY-MM-DD)
+   > Decisioni tattiche maturate nella feature <slug>, risalite al seed condiviso a fine feature.
+   > Vincolanti per le feature successive dell'epic.
+
+   [le voci rilevanti del technical-context.md della feature: librerie/versioni, VO, pattern,
+    naming introdotti o modificati durante il flow — NON ri-copiare il seed iniziale già condiviso]
+   ```
+
+   Data via `date +%F`. Append-only: **non** riscrivere né deduplicare le voci esistenti dell'epic
+   (l'epic technical-context è il registro cumulativo; la curatela è di `epic-planner revise`).
+5. **Mirror roadmap → done** (solo in uso **standalone/manuale**): se eseguita a mano, setta la riga
+   `Status feature` della feature a `✅ done` in `roadmap.md`. Nel flow attended **non** farlo: lo fa
+   già `flow-run` (passo 2 dell'auto-archivio), evita doppioni.
+6. Summary: epic risolto, voci consolidate, eventuale no-op per idempotenza.
+
+> Scope: in `finalize` la skill scrive **solo** in coda a `docs/epics/<epic>/technical-context.md` (e,
+> manuale, la sola riga `Status feature` in `roadmap.md`). Non tocca il codice, i brief, né altri file.
+
 ## Vincoli di scope
 
 - Scrive **solo** sotto `docs/features/<slug>/`. Mai `docs/planning/`, mai codice, mai i file degli altri sub-progetti.

@@ -7,8 +7,8 @@ Caricamento del contesto necessario **prima** della generazione di codice. La fi
 ### 1. Brief del task (obbligatorio)
 
 Leggere il brief del task `<id>`:
-- Path canonico: `<context-root>/tasks/<id>.md`
-  (vedi `../feature-planner/feature-artifacts.md` § "Planning source contract" per risoluzione context-root e fallback legacy `docs/tasks/<id>.md`)
+- Path canonico (unico): `<context-root>/tasks/<id>.md`
+  (vedi `../feature-planner/feature-artifacts.md` § "Planning source contract" per la risoluzione della context-root)
 - In modalità attended: `.flow/briefs/<TASK>/brief.md` (copia del co-locato)
 
 Il brief è **self-sufficient**: la sezione `## Vincoli risolti` embedda già tutto il contesto necessario, distillato dal PM:

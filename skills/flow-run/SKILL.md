@@ -109,15 +109,31 @@ esclusiva dell'auto-archivio a fine source (sotto).
 
 Trigger: tutti i task nel PROGRESS per-source hanno `state="done"` (verificato **dopo** aver segnato
 `done` l'ultimo task, prima di tornare al loop). Scatta solo sul task corrente che porta il conteggio a
-"tutti done", mai su reclaim. Sequenza obbligatoria, **sotto lock** (l'ordine è vincolante per idempotenza):
+"tutti done", mai su reclaim. Sequenza **sotto lock**.
 
-1. **git mv** `docs/features/<slug>/` → `docs/archive/features/<slug>/` (`mkdir -p docs/archive/features/` prima).
+I passi 1–2 sono **best-effort, fail-soft** e si eseguono **solo se la source appartiene a un epic**
+(vedi § "Risoluzione epic della source"): mai escalation, se non producibili annotali nel summary e
+prosegui. Devono precedere il `git mv` perché leggono/aggiornano artefatti ancora vivi in
+`docs/features/<slug>/` o nell'epic. I passi 3–6 sono la **sequenza obbligatoria** (l'ordine è
+vincolante per idempotenza):
+
+1. **Consolidamento technical-context → epic** (`#8`): risali le decisioni tattiche accumulate nella
+   feature al `technical-context.md` condiviso dell'epic, secondo la procedura single-source in
+   [`../feature-planner/SKILL.md`](../feature-planner/SKILL.md) § "Mode 4: `finalize <feature>`".
+   Append-only, datato, con **guardia di idempotenza**: se l'header `## Consolidato da <slug>` esiste
+   già in `docs/epics/<epic>/technical-context.md` → già fatto, salta.
+2. **Mirror roadmap epic → done** (`#10`): in `docs/epics/<epic>/roadmap.md` setta la riga
+   `Status feature` di questa feature a `✅ done` (vedi § "Mirror status sulla roadmap epic").
+   Idempotente (set, non append).
+3. **git mv** `docs/features/<slug>/` → `docs/archive/features/<slug>/` (`mkdir -p docs/archive/features/` prima).
    Recovery crash: se DST esiste e SRC non esiste → già spostato, salta. Se entrambi esistono → scrivi
    `.flow/briefs/<task>/ESCALATION.json` `{ "level":"L2", "reason":"archivio parziale non recuperabile: SRC e DST coesistono" }`
    e interrompi la sequenza. Se `git mv` fallisce perché la source non è tracciata da git → `mv` come fallback (annotalo nel summary).
-2. **Pulizia** `.flow/sources/<slug>/` (`rm -rf`, idempotente).
-3. **Release lock** (`rm -rf .flow/locks/<slug>/`, idempotente). È l'ultimo passo prima dell'update index: il lock si tiene per tutta la sequenza.
-4. **Aggiorna** `index.json`: `archived=true`, `alive=false`, `active=null`
+4. **Pulizia** `.flow/sources/<slug>/` **e** `.flow/briefs/<task>/` di **tutti** i task della source
+   (`#11`, `rm -rf`, idempotente). I brief canonici sono ormai co-locati e archiviati con la feature
+   (passo 3): le copie effimere in `.flow/briefs/` non servono più e non vanno lasciate ad accumularsi.
+5. **Release lock** (`rm -rf .flow/locks/<slug>/`, idempotente). È l'ultimo passo prima dell'update index: il lock si tiene per tutta la sequenza.
+6. **Aggiorna** `index.json`: `archived=true`, `alive=false`, `active=null`
    (`jq '.[$slug].archived=true | .[$slug].alive=false | .[$slug].active=null'`). Se mancante/corrotto:
    ricostruisci on-demand (§ Ricostruzione index.json) poi aggiorna. Questa è la **sola** scrittura di `archived=true`.
 
@@ -135,6 +151,10 @@ Nessun commit, mai. L'orchestratore annota nel summary: "Source `<slug>` archivi
    `references/concurrency.md` § Aggiornamento heartbeat).
    Aggiorna `index.json`: `active = <task>`, `done`, `pending` aggiornati dai conteggi correnti del
    PROGRESS per-source (ordine invariante: index dopo PROGRESS e heartbeat).
+   **Mirror roadmap epic → active** (`#10`, best-effort, fail-soft): se la source appartiene a un epic
+   (§ "Risoluzione epic della source") e la sua riga `Status feature` in `docs/epics/<epic>/roadmap.md`
+   è ancora `⚪ planned`, settala a `🔵 active`. Solo questa transizione planned→active; se è già
+   `active`/`done` non toccarla. Source standalone o roadmap non risolta → salta silenziosamente.
 3. **Spawn `pm` → `brief <task>`.** Al ritorno verifica che esistano e non siano vuoti `.flow/briefs/<task>/scope.txt` e `.flow/briefs/<task>/frozen.txt`. Se mancano/vuoti o c'è `ESCALATION.json` → **vai a 7**.
 3b. **Deriva le policy del task** dalla single-source [`references/model-tiering.md`](references/model-tiering.md) (una sola volta per task). Tre output: **modello DEV**, **dry-run sì/no**, **modello del finalize PM**.
     - **Override manuale presente** (vedi § "Override manuale del modello"): usa il modello forzato per il DEV (e per il PM/finalize se l'utente ha esteso l'override). **NON** leggere né applicare `meta.json` per il modello: l'override ha precedenza massima e copre anche il caso `meta.json` assente/illeggibile (nessuna doppia logica, niente nota di degrado). Per la **dry-run policy**, un eventuale override esplicito (*"salta/forza il dry-run"*) vince; altrimenti vale la policy per complessità (sotto). Annota l'override applicato nel summary.
@@ -150,7 +170,7 @@ Nessun commit, mai. L'orchestratore annota nel summary: "Source `<slug>` archivi
 5. **Spawn `dev` → `implement`** (implement + verify) con lo **stesso** `model: <derivato>` del DEV.
 6. **Leggi `.flow/briefs/<task>/RESULT.json`.** Se `escalate==true` OPPURE `verify!="pass"` OPPURE esiste `ESCALATION.json` → **vai a 7**.
    Altrimenti **finalizza**, con due percorsi:
-   - **Finalize inline (fast-path)** — SE il task è `trivial`/`standard` (mai `critical`) E `RESULT.deviations` non contiene deviazioni *funzionali* (solo note d'ambiente tipo `"build skipped..."` → ammesso; qualunque deviazione sostanziale o dubbio → percorso PM): l'orchestratore chiude il task **senza spawnare il PM**. Risolve il path del brief on-disk da `Context-root:` nell'header di `.flow/briefs/<task>/brief.md`: path canonico `<context-root>/tasks/<id>.md`; fallback legacy `docs/tasks/<id>.md` (se il co-locato non esiste o `Context-root:` è assente). Marca `Status: ✅ finalized` nel brief risolto. **Non** tocca `technical-context.md` (deviazioni vuote ⇒ nessuna decisione cumulativa; l'eventuale append è già avvenuto al `brief`). Salta la ri-verifica semantica del PM: su un task leggero che ha passato il `verify-gate` il suo valore marginale non giustifica uno spawn a freddo (~90s). Il gate (`verify=="pass"`, no escalation) l'hai **già** applicato qui sopra.
+   - **Finalize inline (fast-path)** — SE il task è `trivial`/`standard` (mai `critical`) E `RESULT.deviations` non contiene deviazioni *funzionali* (solo note d'ambiente tipo `"build skipped..."` → ammesso; qualunque deviazione sostanziale o dubbio → percorso PM): l'orchestratore chiude il task **senza spawnare il PM**. Risolve il path del brief on-disk da `Context-root:` nell'header di `.flow/briefs/<task>/brief.md`: path canonico `<context-root>/tasks/<id>.md` (se `Context-root:` è assente → default `docs/planning/`). Marca `Status: ✅ finalized` nel brief risolto. **Non** tocca `technical-context.md` (deviazioni vuote ⇒ nessuna decisione cumulativa; l'eventuale append è già avvenuto al `brief`). Salta la ri-verifica semantica del PM: su un task leggero che ha passato il `verify-gate` il suo valore marginale non giustifica uno spawn a freddo (~90s). Il gate (`verify=="pass"`, no escalation) l'hai **già** applicato qui sopra.
    - **Finalize PM (default)** — altrimenti (task `critical`, deviazioni funzionali, o override esteso al PM): **spawn `pm` → `finalize <task>`** col `model: <finalize derivato>` (vedi 3b: `trivial`/`standard`→`haiku`, `critical`→`sonnet`; degrado/override → `sonnet`). Qui restano la ri-verifica realtà-brief e l'eventuale update di `technical-context.md`.
    In entrambi i casi: nel PROGRESS **per-source** (`.flow/sources/<slug>/PROGRESS.json`) setta il task `state="done"`, scrivi il file e aggiorna `heartbeat.ts` (ordine PROGRESS → heartbeat); poi **mirror dello status** (vedi sotto). In full-run, dopo aver segnato `done` l'ultimo task: verifica se **tutti** i task della source sono `done`; in caso → esegui § Auto-archivio a fine source (la source è chiusa, non tornare a 1). Altrimenti torna a **1**; in single-task riporta summary e fermati.
 
@@ -162,6 +182,41 @@ Vincoli del mirror:
 - È un riflesso **non-canonico**: la verità d'esecuzione resta `PROGRESS.json`. Se il tasks-file non contiene il task o ha un formato non riconoscibile, **non inventare**: salta il mirror e annotalo nel summary (non è un'escalation).
 - **Volatilità**: `project-planner expand` / `feature-planner expand` *sovrascrivono* il tasks-file. Dopo un expand il mirror va riallineato (lo stato durevole è sempre `PROGRESS.json`). Segnalalo nel summary se rilevi un disallineamento.
 - Non toccare altre righe né altri file di planning.
+
+### Risoluzione epic della source
+
+Una feature source può appartenere a un epic (vedi `../epic-planner/SKILL.md`). Per scoprirlo,
+**best-effort**:
+1. Glob `docs/epics/*/roadmap.md`. Per ciascuno cerca una riga `Source: docs/features/<slug>/` che
+   referenzi **questa** source.
+2. **0 match** → source **standalone**: nessun mirror roadmap, nessun consolidamento technical-context.
+   Salta silenziosamente (non è un'anomalia).
+3. **1 match** → l'epic è quello; usalo per il mirror roadmap e per il consolidamento.
+4. **>1 match** → anomalia (slug referenziato da più roadmap): salta entrambe le operazioni epic e
+   **annota nel summary**. Non escalare.
+
+Questa risoluzione è la sola dipendenza di `flow-run` dal layer epic: resta epic-agnostico per tutto
+il resto (gira ID opachi, una source per run). Se `docs/epics/` non esiste, l'intera logica è inerte.
+
+### Mirror status sulla roadmap epic (best-effort)
+
+Estende la filosofia del mirror sul tasks-file alla `roadmap.md` dell'epic: lo `Status feature` è un
+riflesso **non-canonico e advisory** (la verità d'esecuzione resta `PROGRESS.json` + tasks-file). Lo
+aggiorni **best-effort, fail-soft** per tenere la roadmap leggibile dall'umano allineata al lifecycle:
+
+- **planned → active**: alla prima attivazione di un task della source (step 2), se la riga era ancora `⚪ planned`.
+- **active → done**: all'auto-archivio (passo 2 della sequenza), quando tutti i task sono `done`.
+
+Vincoli:
+- Trova in `docs/epics/<epic>/roadmap.md` il blocco della feature (header `### <slug> — …`) e modifica
+  **solo** la sua riga `- **Status feature**: …`. Nessun'altra riga, nessun altro file dell'epic.
+- **Solo transizioni in avanti** (`planned → active → done`): mai retrocedere. Se lo stato sul file è
+  già pari o più avanzato della transizione richiesta, non toccarlo.
+- Roadmap assente, feature non trovata nella roadmap, o formato della riga non riconoscibile → **salta
+  e annotalo nel summary**. Non è un'escalation, non inventare.
+- Il drift residuo (es. crash tra PROGRESS e roadmap) lo ripara `flow-sync` (§ omonima nella sua skill):
+  questo mirror è best-effort, `flow-sync` è il backstop di riconciliazione.
+
 7. **ESCALAZIONE.** Leggi `level` + `reason` da `.flow/briefs/<task>/ESCALATION.json` (o, se assente, il motivo del fail da `RESULT.json` / l'anomalia rilevata). Usa **`AskUserQuestion`** riportando level+reason e proponendo opzioni d'azione (es. revise planning, riapri brief, override scope, abbandona task). **FERMATI**: non passare ad altri task senza risposta dell'utente.
 
 ## Spawn — cosa passare ai subagent

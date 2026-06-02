@@ -22,8 +22,8 @@ La **1.0.0** è un cambio **major**: cambia *dove* otto scrive gli artefatti e *
 - **Concorrenza source-level**: più flow in parallelo, **uno per source** (lock atomico). `flow-run` reclama una feature alla volta.
 - **Archivio**: le source concluse vanno in `docs/archive/` (escluse dallo scan dei task attivi).
 
-**Cosa NON si rompe subito (compatibilità transitoria):**
-- Un **back-compat fallback** fa ancora risolvere i brief flat esistenti in `docs/tasks/<id>.md` → i progetti pre-1.0.0 **continuano a funzionare** dopo l'aggiornamento. ⚠️ Il fallback è **deprecato e transitorio**: verrà rimosso in una release successiva. **Migra** per non romperti allora.
+**Brief flat `docs/tasks/` — non più supportati:**
+- Il vecchio layout flat `docs/tasks/<id>.md` **non è più né scritto né letto** (il back-compat fallback transitorio è stato **rimosso**). Un progetto pre-1.0.0 con brief flat **non funziona** finché non lo porti al layout co-locato: esegui prima la skill **`migrate`** (sotto). Senza migrazione, `code-implementer`/`flow-run` non trovano i brief.
 
 **Come migrare (skill `migrate`)** — vedi la **Ricetta I** nel §7:
 1. *"migra il progetto"* / *"migrate"* → parte in **preview** (default): mostra il piano, **non scrive nulla**.
@@ -102,8 +102,8 @@ docs/
     <nome-epic>/             SOLO coordinamento, NON contiene task
       00-context.md         contesto d'insieme + assunzioni condivise
       02-abstract.md        decisioni tecniche condivise
-      technical-context.md  seed condiviso (ereditato dalle feature figlie)
-      roadmap.md            ordine delle feature + dipendenze tra feature
+      technical-context.md  seed condiviso (giù alle figlie + su dalle feature concluse)
+      roadmap.md            ordine + dipendenze; Status feature auto-aggiornato dal flow
 
   archive/               ← feature/epic concluse (non partecipano allo scan dei task)
     features/<slug>/
@@ -114,7 +114,7 @@ docs/
   sources/<slug>/           stato per-source (PROGRESS.json per ogni source attiva)
   locks/<slug>/             lock atomici POSIX per le source in esecuzione
   index.json                roll-up cached (ricostruibile da scan)
-  briefs/<task>/            i bigliettini che PM e DEV si scambiano
+  briefs/<task>/            i bigliettini che PM e DEV si scambiano (puliti all'archivio della source)
 ```
 
 Metafora: `docs/` è **l'archivio ufficiale** (la verità a lungo termine), `.flow/` è **la lavagna in officina** (lo stato del lavoro di oggi, cancellabile).
@@ -199,6 +199,7 @@ Esempi lineari. Le frasi tra virgolette sono **esattamente quello che scrivi** a
    → parte **epic-planner**. Sbircia il codice, ti fa poche domande e soprattutto ti propone una **decomposizione**: 2–6 feature logiche, in ordine, con le dipendenze tra loro. Tu confermi.
 2. Materializza ogni feature come un bundle standard in `docs/features/<epic>-…/` (es. `payments-revamp-foundation`, `payments-revamp-api`, …) **più** una `roadmap.md` di coordinamento in `docs/epics/payments-revamp/`.
 3. Da qui le feature sono normalissime: chiedi *"whats-next"* per sapere da quale partire (rispetta l'ordine dell'epic), poi esegui con la Ricetta C/D.
+4. Mentre esegui, l'epic resta vivo da solo: lo `Status feature` nella `roadmap.md` passa da `⚪ planned` a `🔵 active` e a `✅ done` man mano (mirror best-effort di `flow-run`, riparabile con `flow-sync`); e a feature conclusa le decisioni tattiche del suo `technical-context.md` **risalgono** al `technical-context.md` condiviso dell'epic, così la feature successiva le eredita.
 
 > In una frase: feature-planner apre **un** negozio; epic-planner **pianifica un quartiere** di negozi da aprire nell'ordine giusto — ma senza fondare una città nuova (quello è project-planner). E non rompe nulla: le figlie sono feature come tutte le altre.
 

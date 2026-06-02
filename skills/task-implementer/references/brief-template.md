@@ -7,7 +7,8 @@ Template del brief tecnico generato da `task-implementer` in modalità `brief T-
 - **Canonico**: `<context-root>/tasks/<id>.md` (co-locato con la planning source).
   - `<context-root>` = `docs/planning/` (project source) | `docs/features/<slug>/` (feature source).
   - `<id>` = `T-NNN` (project) | `<slug>-NNN` (feature).
-- **Fallback legacy** (⚠ temporaneo — rimosso da `topology-migration`): `docs/tasks/<id>.md`. Usato solo in lettura/finalize per i brief storici non ancora migrati. Non scrivere nuovi brief qui.
+
+> Il vecchio path flat `docs/tasks/<id>.md` non è più né scritto né letto: i progetti pre-canonical vanno portati al layout co-locato con la skill `migrate`.
 
 → Meccanismo canonico (resolver, scan, esclusione `docs/archive/**`): `skills/feature-planner/feature-artifacts.md` § "Planning source contract". Non ridefinirlo qui.
 

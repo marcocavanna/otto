@@ -160,7 +160,7 @@ Generato: YYYY-MM-DD | Versione: 1
 Generato: YYYY-MM-DD | Versione: 1 | Epic: <epic>
 ```
 
-> `Status feature` è un riflesso **non-canonico** e advisory (come il mirror di `flow-run`): aggiornalo a mano o in `revise`, ma la verità d'esecuzione resta `PROGRESS.json` + tasks-file dei figli. `whats-next` calcola l'avanzamento reale dai task, non da qui.
+> `Status feature` è un riflesso **non-canonico** e advisory (come il mirror di `flow-run` sul tasks-file): la verità d'esecuzione resta `PROGRESS.json` + tasks-file dei figli, e `whats-next` calcola l'avanzamento reale dai task, non da qui. Chi lo aggiorna: **`flow-run`** lo mirrora best-effort lungo il lifecycle (`⚪ planned → 🔵 active` alla prima attivazione di un task della feature, `→ ✅ done` all'auto-archivio); **`flow-sync`** ripara il drift residuo; `epic-planner revise` resta la leva manuale di curatela. Solo transizioni in avanti, mai retrocessione.
 
 ---
 
@@ -176,10 +176,11 @@ Ogni feature figlia è un **bundle standard** secondo `../../feature-planner/fea
 
 `code-implementer` carica **solo** il `technical-context.md` della context-root del task (la feature figlia). Quindi le decisioni condivise **devono** comparire nel file del figlio, non solo nel seed epic.
 
-Regola:
-1. Alla materializzazione, il `technical-context.md` di ogni figlio è **seedato** dal `technical-context.md` condiviso (copia delle sezioni rilevanti per quella feature + intestazione `> Seed da docs/epics/<epic>/technical-context.md`).
-2. `task-implementer` estende il file del **figlio** in append-only durante il flow (come sempre).
-3. In `revise <epic>`, una decisione condivisa che cambia va **ri-propagata** ai `technical-context.md` dei figli impattati (append di una nota datata "superseded/aggiornato", non riscrittura silenziosa). Segnala nel diff quali figli sono stati toccati.
+Regola (il seed propaga **in giù** alla materializzazione e **in su** a feature conclusa — loop chiuso):
+1. **In giù, alla materializzazione**: il `technical-context.md` di ogni figlio è **seedato** dal `technical-context.md` condiviso (copia delle sezioni rilevanti per quella feature + intestazione `> Seed da docs/epics/<epic>/technical-context.md`).
+2. `task-implementer` estende il file del **figlio** in append-only durante il flow (come sempre); per le feature figlie legge **anche** il `technical-context.md` condiviso dell'epic (seed + blocchi `## Consolidato da <feat>` risaliti dalle feature già concluse) come vincolo ereditato.
+3. **In su, a feature conclusa**: `feature-planner finalize <feat>` (invocato da `flow-run` all'auto-archivio, vedi `../../feature-planner/SKILL.md` § "Mode 4") risale le decisioni tattiche della feature al `technical-context.md` condiviso, in append datato (`## Consolidato da <feat> (YYYY-MM-DD)`). Così le feature successive — già materializzate — le ereditano via il punto 2, senza ri-seed.
+4. In `revise <epic>`, una decisione condivisa che cambia va **ri-propagata** ai `technical-context.md` dei figli impattati (append di una nota datata "superseded/aggiornato", non riscrittura silenziosa). Segnala nel diff quali figli sono stati toccati.
 
 > Trade-off accettato: il seed è una **copia**, non un link risolto a runtime. È il prezzo per non toccare il contratto downstream (che legge un solo context-root). La coerenza cross-feature è responsabilità di `epic-planner` (seed + propagazione), non dei downstream.
 

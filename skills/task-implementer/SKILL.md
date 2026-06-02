@@ -34,17 +34,14 @@ Tre regole non negoziabili:
   technical-context.md      # tattico — gestito da QUESTA skill
   tasks/                    # CANONICO — brief co-locati, gestiti da QUESTA skill
     <id>.md                 # T-NNN (project) | <slug>-NNN (feature)
+    archive/                # (solo project) brief delle milestone concluse — vedi Mode 4
+      M1/
+        T-001.md
     ...
-
-docs/tasks/                 # ⚠ LEGACY (fallback in lettura/finalize) — temporaneo, rimosso da topology-migration
-  T-001.md                  # brief storici non ancora migrati al layout co-locato
-  ...
-  archive/
-    M1/
-      T-001.md
-    M2/
-      ...
 ```
+> I brief sono **sempre** co-locati sotto la loro context-root. Il vecchio layout flat `docs/tasks/`
+> non è più né scritto né letto: i progetti pre-canonical vanno portati al layout co-locato con la
+> skill `migrate` prima di operare.
 
 Regola di non-contraddizione: `technical-context.md` **non può** contenere decisioni che contraddicono `02-abstract.md`. Se durante l'analisi di un task emerge che una scelta strategica dell'abstract è sbagliata, la skill **ferma** il flusso e dice all'utente di usare `revise` di project-planner su `02-abstract.md` prima di proseguire.
 
@@ -67,11 +64,15 @@ Flusso:
    - `02-abstract.md` (decisioni strategiche, **vincolanti**)
    - `technical-context.md` se esiste (decisioni tattiche già prese)
    - il tasks-file (il task + i task vicini per dipendenze)
+   - **Se la feature appartiene a un epic** (il suo `00-context.md` ha `**Epic**: <epic>`, o
+     `docs/epics/<epic>/roadmap.md` la referenzia in `Source:`): leggi **anche**
+     `docs/epics/<epic>/technical-context.md` (il seed condiviso + i blocchi `## Consolidato da <feat>`
+     risaliti dalle feature già concluse). Sono decisioni **vincolanti** ereditate: il brief non può
+     contraddirle. Read-only; non lo modifichi mai da qui (il bubble-up è di `feature-planner finalize`).
 3. Run elicitation per task (vedi `references/brief-elicitation.md`).
 4. Validare coerenza: il brief proposto contraddice qualcosa in `technical-context.md`? Se sì, sollevare e risolvere PRIMA di scrivere.
 5. Generare il brief nel path **canonico** co-locato `<context-root>/tasks/<id>.md` (vedi `../feature-planner/feature-artifacts.md` § "Planning source contract" e `references/brief-template.md`).
    - Creare la cartella `tasks/` sotto la context-root se non esiste (scrivendo il file la si crea implicitamente).
-   - Path legacy `docs/tasks/<id>.md`: usato **solo come fallback** in lettura/finalize per i brief storici non ancora migrati (⚠ temporaneo — rimosso dalla feature `topology-migration`). Non scrivere nuovi brief in `docs/tasks/`.
    - **Scrivere nell'header** `Origin:` e `Context-root:` (e `Feature:` al posto di `Milestone:` per task feature). Gli ID feature non hanno milestone: non inventarla.
    - Il brief **deve** includere la sezione obbligatoria `## Vincoli risolti` (vedi `references/brief-template.md` § "Vincoli risolti"): rende il brief self-sufficient per il DEV.
 6. Se il brief introduce nuove decisioni cumulative (VO nuovo, pattern nuovo, libreria nuova), aggiornare il `technical-context.md` **della context-root risolta** in append-only.
@@ -84,7 +85,7 @@ Flusso:
 ### Mode 2: `deviation T-NNN` — annotare deviazione durante implementazione
 
 Flusso leggero:
-1. Verificare che `docs/tasks/T-NNN.md` esista e non sia archiviato.
+1. Risolvere la context-root del task (scan, come Mode 1) e verificare che il brief co-locato `<context-root>/tasks/<id>.md` esista e non sia archiviato.
 2. Chiedere all'utente: cosa è cambiato rispetto al brief originale?
 3. Aggiungere entry nella sezione `## Deviazioni durante l'implementazione` del brief (creandola se non esiste).
 4. **Non** modificare `technical-context.md` qui — quello avviene al `finalize`.
@@ -94,7 +95,7 @@ Flusso leggero:
 > **Modalità attended** (solo se invocata da `flow-run`): prima dello step 1, applicare il gate di `references/attended-flow.md` — finalize consentito solo se `RESULT.verify=="pass"` e nessun `ESCALATION.json` aperto.
 
 Flusso obbligatorio a fine task:
-1. Verificare che `docs/tasks/T-NNN.md` esista.
+1. Risolvere la context-root (scan, come Mode 1) e verificare che il brief co-locato `<context-root>/tasks/<id>.md` esista.
 2. Mostrare all'utente:
    - Decisioni del brief originale
    - Deviazioni registrate (se presenti)
@@ -108,14 +109,14 @@ Flusso obbligatorio a fine task:
 Flusso:
 1. Verificare che la milestone M[N] sia marcata done in `03-milestones.md`. Se no, chiedere conferma esplicita.
 2. Verificare che tutti i task di M[N] in `05-tasks-active.md` siano marcati done. Se no, elencare quelli aperti e chiedere conferma.
-3. Spostare i brief di M[N] da `docs/tasks/` a `docs/tasks/archive/M[N]/`.
+3. Spostare i brief di M[N] (`git mv`) da `docs/planning/tasks/` a `docs/planning/tasks/archive/M[N]/` — restano co-locati sotto la context-root del progetto. (Le **feature** invece si archiviano a directory intera in `docs/archive/features/<slug>/`: lo fa `flow-run`/`feature-planner`, non questa modalità, che è solo per le milestone di project-planner.)
 4. `technical-context.md` **non viene archiviato né modificato**.
 5. Print summary: quanti brief archiviati, quali decisioni sono ora "storiche" ma vincolanti.
 
 ### Mode 5: `check-coherence` — diagnostica
 
 Flusso (utility, non modifica file):
-1. Leggere tutti i brief in `docs/tasks/` (non gli archiviati).
+1. Leggere tutti i brief co-locati sotto le context-root in scope (`<context-root>/tasks/*.md`, esclusi quelli sotto `archive/`).
 2. Verificare:
    - Ogni brief referenzia versioni di librerie coerenti con `technical-context.md`?
    - Ogni VO citato nei brief è definito in `technical-context.md`?

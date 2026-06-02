@@ -5,20 +5,20 @@ Controlli da eseguire **prima** di iniziare qualsiasi operazione di implementazi
 ## Check 1 — Esistenza e integrità del brief
 
 File richiesto:
-- `<context-root>/tasks/<id>.md` (canonico) oppure `docs/tasks/<id>.md` (fallback legacy)
+- `<context-root>/tasks/<id>.md` (co-locato, unico path supportato)
 
 Risoluzione context-root: header `Context-root:` del brief; default `docs/planning/`.
 Contratto canonico: `../feature-planner/feature-artifacts.md` § "Planning source contract".
 
-Se il brief non esiste in nessuno dei due path:
+Se il brief non esiste al path co-locato:
 ```
 ⛔ Setup incompleto
 
 Brief non trovato:
-- <context-root>/tasks/<id>.md (canonico)
-- docs/tasks/<id>.md (fallback legacy)
+- <context-root>/tasks/<id>.md
 
 La skill richiede che task-implementer abbia generato il brief prima.
+(Progetto pre-canonical con brief flat in docs/tasks/? Esegui prima la skill `migrate`.)
 
 Suggerimento: esegui prima:
 - task-implementer brief <id> (se manca il brief)

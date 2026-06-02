@@ -35,7 +35,7 @@ Se durante un brief emerge che una scelta tattica necessaria contraddice l'abstr
 > Vincolante per tutti i task futuri.
 > 
 > Vincoli strategici (non duplicare): vedi `02-abstract.md`.
-> Per assunzioni locali a un singolo task: vedi `docs/tasks/T-NNN.md`.
+> Per assunzioni locali a un singolo task: vedi il brief co-locato `<context-root>/tasks/<id>.md`.
 
 ## Librerie e versioni
 

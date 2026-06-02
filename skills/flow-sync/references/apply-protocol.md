@@ -71,7 +71,7 @@ Le derivazioni `PROGRESS.state → emoji/label` (`active → 🔵 in progress`, 
 
 - **`current_task`** in `PROGRESS.json`: mai alterato, nemmeno durante l'import (RISK-flow-sync-002).
 - **Righe del tasks-file diverse dalla riga `Status`** del task in scope: mai toccate. Nessun refactoring del file, nessuna riformattazione.
-- **`docs/tasks/<id>.md`** (namespace dei brief): mai toccato (`02-abstract.md` § Contratti da preservare).
+- **I brief co-locati `<context-root>/tasks/<id>.md`** (namespace dei brief): mai toccati (`02-abstract.md` § Contratti da preservare).
 - **Retrocessione di un marker**: vietata per costruzione — il protocollo scrive solo dove `./reconciliation.md` ha classificato `apply`/`import`, ovvero solo in avanti nella progressione. Se il file è *avanti* su PROGRESS → la matrice è `ambiguous` → `report`, qui non si scrive.
 - **`.flow/PROGRESS.json` radice**: non viene creato né eliminato da flow-sync; se esiste, viene usato come back-compat. La gestione del suo ciclo di vita è fuori scope di flow-sync.
 - **`index.json`**: letto (per il pre-filtro source archiviata in `./reconciliation.md`) ma **mai scritto** da flow-sync. Scrittura di `index.json` appartiene a `flow-run`.

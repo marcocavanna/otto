@@ -29,8 +29,8 @@ Una **planning source** = una directory **context-root** che contiene:
 4. Override esplicito ammesso: l'utente/orchestratore può passare la source (`feature <slug>`), saltando lo scan.
 
 **Path del brief**:
-- **Canonico**: `<context-root>/tasks/<id>.md` — co-locato con la planning source. Scritto dal PM (`task-implementer`), consumato dal DEV via la copia effimera in `.flow/briefs/<id>/`.
-- **Fallback legacy** (⚠ temporaneo — rimosso dalla feature `topology-migration`): `docs/tasks/<id>.md`. Usato solo per i brief storici non ancora migrati al layout co-locato. Il resolver tenta prima il path canonico, poi il fallback.
+- **Canonico (unico)**: `<context-root>/tasks/<id>.md` — co-locato con la planning source. Scritto dal PM (`task-implementer`), consumato dal DEV via la copia effimera in `.flow/briefs/<id>/`.
+- Il vecchio path flat `docs/tasks/<id>.md` **non è più supportato** (né scritto né letto in risoluzione): i progetti pre-canonical vanno portati al layout co-locato con la skill `migrate` prima di operare.
 
 **Header del brief** (scritto da `task-implementer`, letto da `code-implementer`):
 ```
