@@ -11,6 +11,15 @@ Questa guida si legge dall'alto verso il basso. Se sei di fretta, salta dritto a
 
 ---
 
+## 🆕 Novità 1.1.0
+
+- **Roadmap epic viva**: durante l'esecuzione lo `Status feature` in `docs/epics/<epic>/roadmap.md` si aggiorna da solo (`⚪ planned → 🔵 active → ✅ done`) — mirror best-effort di `flow-run`, riparabile con `flow-sync`.
+- **Conoscenza che risale**: a feature conclusa le decisioni tattiche del suo `technical-context.md` vengono consolidate nel `technical-context.md` condiviso dell'epic (nuovo `feature-planner finalize`), così le feature successive le ereditano.
+- **`docs/tasks/` flat rimosso**: i brief vivono **solo** co-locati in `<context-root>/tasks/` (il back-compat fallback è eliminato — vedi sotto). I progetti pre-canonical vanno migrati con `migrate`.
+- **Pulizia `.flow/briefs/`**: le copie effimere dei brief vengono rimosse all'archivio della source.
+
+---
+
 ## ⚠️ Aggiornare a 1.0.0 — breaking changes & migrazione
 
 La **1.0.0** è un cambio **major**: cambia *dove* otto scrive gli artefatti e *come* tiene lo stato. Se vieni da una versione `0.x`, leggi qui prima di aggiornare.
