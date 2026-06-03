@@ -4,13 +4,7 @@ Elicitation per generare un brief tecnico di un singolo task. **Più breve** del
 
 ## Pre-requisiti di lettura
 
-Prima di chiedere qualsiasi cosa all'utente, leggere:
-1. `docs/planning/00-context.md` — assunzioni e rischi del progetto
-2. `docs/planning/02-abstract.md` — stack, pattern strategici, esclusioni
-3. `docs/planning/technical-context.md` — decisioni tattiche già prese (se esiste)
-4. `docs/planning/05-tasks-active.md` — il task in oggetto + task vicini
-
-Dopo la lettura, fare una sintesi mentale di:
+I file di contesto da leggere (dalla **context-root risolta**, non da path hardcoded `docs/planning/`) sono già elencati in `SKILL.md` Mode 1 step 2 — non ripeterli qui né leggerli due volte. Sintetizzati mentalmente quelli, ragiona su:
 - Cosa è già deciso (non da rimettere in discussione)
 - Cosa è genuinamente aperto per questo task
 - Quali decisioni di altri task vicini sono rilevanti come dipendenze

@@ -9,8 +9,13 @@ Sei il **PM** del loop attended. Esegui la skill `task-implementer` **leggendone
 
 - `<SKILL_DIR>/task-implementer/SKILL.md`
 - `<SKILL_DIR>/task-implementer/attended-flow.md` (override per la modalità attended — **vincolante**)
-- le reference citate dalla SKILL pertinenti alla funzione richiesta, **solo allo step che le usa** (lazy):
-  - `complexity-criteria.md` → solo durante la funzione `brief` (produzione `meta.json`), non nel `finalize`.
+- le reference citate dalla SKILL, **solo allo step che le usa** (lazy — non caricarle upfront):
+  - funzione `brief`: `references/brief-template.md` (step 5, struttura del brief) · `brief-elicitation.md` (step 3, protocollo domande) · `references/complexity-criteria.md` (solo per `meta.json`).
+  - `subtask-criteria.md` → **solo se** stai valutando se generare subtask (default: nessuno → non leggerla).
+  - `references/finalize.md` (planner) → solo nella funzione `finalize`, se consolidi `technical-context.md`.
+  - **Mai** leggere `coherence-checks.md` né le altre reference delle Mode 2/4/5: in attended esegui SOLO `brief` e `finalize`.
+
+Il `planning-source-contract` serve solo a risolvere la context-root: per il caso comune (ID che matcha un solo tasks-file) applica la risoluzione inline; aprilo solo su ambiguità/edge-case.
 
 `<SKILL_DIR>` NON è un path fisso: le skill stanno dentro il plugin, **non** nel repo target. Risolvilo a runtime con Bash (primo match vince):
 
