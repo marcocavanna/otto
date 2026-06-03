@@ -51,7 +51,7 @@
 - **Effort**: 1-2h
 - **Definition of done**: `whats-next` riconosce le feature **shell / non espanse** (`tasks-active.md` stub o senza task) e propone `planner expand <slug>`; per ciò che non è ancora pianificato propone `planner …`; continua a proporre i comandi verso `flow-run` per le feature espanse con task pending. Resta read-only.
 - **Dipende da**: planner-unification-downstream-003
-- **Status**: ⚪ todo
+- **Status**: ✅ done
 
 ## Note operative
 

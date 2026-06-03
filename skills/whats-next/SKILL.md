@@ -49,6 +49,7 @@ Formato task (identico project/feature, vedi `../planner/references/task-expansi
 2. **Riconciliazione stato** per ogni task — vedi `references/reconcile.md`. Se `index.json` è presente, carica per ogni source `{owner, alive, active, done, pending, archived}`; usa quel dato come pre-filtro prima di aprire i PROGRESS per-source. Source con `archived=true` → tutte le sue done congelate; non accedere al suo `tasks-active.md` per task attivi. Canonico per-task = PROGRESS per-source (o legacy singleton per ID non migrati); fallback = `Status` del tasks-file. Ogni **drift** va riportato, mai corretto (sei read-only).
 3. **Calcolo per-piano:**
    - parse task → {id, categoria, effort, deps, stato-riconciliato}
+   - **source shell / non espansa** = `tasks-active.md` senza task-entry reali (vuoto o solo stub "da espandere", tipico di una feature appena decomposta da un epic): **non eseguibile da `flow-run`** → la prossima azione non è un task ma **`planner expand <slug>`**. Segnalala come tale nel board.
    - **sbloccati** = stato `todo` **e** tutte le `Dipende da` risultano `done`
    - **next del piano** = tra gli sbloccati, quello con peso di critical-path maggiore (n. di task che dipendono da esso); a parità, ordine del file
    - **avanzamento** = ✅ / totale (per conteggio; nota se effort-pesato cambia il quadro)
@@ -67,7 +68,11 @@ Formato task (identico project/feature, vedi `../planner/references/task-expansi
 
 1. **Board** — tabella di tutti i piani in scope: nome, % avanzamento, next sbloccato, blockers/⚠. Stato riconciliato (segnala drift).
 2. **Raccomandazione ragionata** — 1-3 mosse con il **perché** (sblocca N task / chiude una feature ferma / sul critical path / quick win). In global applica il ranking; in scope è il next del piano.
-3. **Comandi concatenabili** — per ogni mossa proposta: `flow-run <id>` pronto da copiare.
+3. **Comandi concatenabili** — per ogni mossa proposta, il comando pronto da copiare, secondo lo stato della source:
+   - source **espansa** con task sbloccati → `flow-run <id>`;
+   - source **shell / non espansa** → **`planner expand <slug>`** (prima di poterla eseguire);
+   - lavoro **non ancora pianificato** → `planner <descrizione>` (il planner sceglie/conferma il tier).
+   whats-next resta read-only: propone i comandi, non li esegue.
 
 Tono: senior, denso, niente filler, niente cheerleading. Coerente con `flow-run`/`project-planner`.
 
