@@ -58,6 +58,14 @@ case "$REL" in
     ;;
 esac
 
+# Service area del task: l'agente materializza i propri contratti (scope.txt/frozen.txt/
+# brief) PRIMA di toccare il codice. Sempre consentita, anche se scope.txt non esiste
+# ancora → evita il deadlock di bootstrap (un agente self-sufficient deve potersi scrivere
+# il proprio scope). Il codice resta gated dallo scope.txt appena materializzato (sotto).
+case "$REL" in
+  ".flow/briefs/$TASK/"*) allow ;;
+esac
+
 SCOPE=".flow/briefs/$TASK/scope.txt"
 [ -f "$SCOPE" ] || ask "scope.txt mancante per $TASK"
 
