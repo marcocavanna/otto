@@ -29,10 +29,17 @@ if [ "$TOOL" = "Bash" ]; then
   allow
 fi
 
-TASK=$(jq -r '.current_task // empty' .flow/PROGRESS.json 2>/dev/null) || ask "PROGRESS.json illeggibile"
+# Task attivo dalla source SOTTO LOCK (PROGRESS per-source; il .flow/PROGRESS.json radice è
+# legacy e non più scritto dall'orchestratore). Vedi flow-lib.sh § flow_resolve_task.
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd) || ask "dirname fallita"
+. "$SCRIPT_DIR/flow-lib.sh" 2>/dev/null || ask "flow-lib.sh non sourceabile"
+TASK=$(flow_resolve_task); RC=$?
+case "$RC" in
+  0) ;;
+  2) ask "più source attive sotto lock: task ambiguo, revisione manuale" ;;
+  *) ask "nessun task attivo nella source sotto lock" ;;
+esac
 [ -n "$TASK" ] || ask "nessun task attivo"
-SCOPE=".flow/briefs/$TASK/scope.txt"
-[ -f "$SCOPE" ] || ask "scope.txt mancante per $TASK"
 
 FP=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 [ -n "$FP" ] || ask "tool_input senza file_path"
@@ -50,6 +57,17 @@ case "$REL" in
     ask "path '$REL' è territorio dell'orchestratore (off-limits per il DEV)"
     ;;
 esac
+
+# Service area del task: l'agente materializza i propri contratti (scope.txt/frozen.txt/
+# brief) PRIMA di toccare il codice. Sempre consentita, anche se scope.txt non esiste
+# ancora → evita il deadlock di bootstrap (un agente self-sufficient deve potersi scrivere
+# il proprio scope). Il codice resta gated dallo scope.txt appena materializzato (sotto).
+case "$REL" in
+  ".flow/briefs/$TASK/"*) allow ;;
+esac
+
+SCOPE=".flow/briefs/$TASK/scope.txt"
+[ -f "$SCOPE" ] || ask "scope.txt mancante per $TASK"
 
 while IFS= read -r g; do
   [ -z "$g" ] && continue

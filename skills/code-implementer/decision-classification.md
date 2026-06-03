@@ -78,7 +78,7 @@ Per implementare T-NNN nel modo che il brief suggerisce, dovrei [X], ma:
 - 02-abstract.md esclude esplicitamente [X] (vedi sezione "Esclusioni tecniche")
 
 Opzioni:
-a) Rivedere 02-abstract.md con project-planner (revise) — strategico
+a) Rivedere 02-abstract.md con `planner revise` — strategico
 b) Rivedere il brief T-NNN.md con task-implementer — tattico
 c) Riformulare l'implementazione per evitare [X] (la skill propone alternativa)
 
@@ -195,7 +195,7 @@ Nel dubbio → preferire silenzio. È più facile aggiungere una nota mancante c
 
 Massimo decisioni cross-task chieste per task: **3**. Se ne emergono più, è un segno che:
 - Il brief è inadeguato → suggerire all'utente di rivederlo con `task-implementer`
-- Il task è troppo grande → suggerire di splittare in project-planner
+- Il task è troppo grande → suggerire di splittare con `planner`
 - Il planning generale è incompleto → suggerire revise
 
 In quel caso:

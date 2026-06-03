@@ -5,13 +5,20 @@
 # Se compaiono qui è solo residuo dei test interni: non vanno versionati nel plugin.
 .flow/
 
+# Self-hosting: otto pianifica il proprio sviluppo con otto stesso.
+# I runtime docs/ del progetto-utente NON vanno versionati nel plugin (docs/*),
+# MA il piano di sviluppo di otto (epic + feature) SÌ → eccezioni esplicite.
+docs/*
+!docs/epics/
+!docs/features/
+!docs/archive/
+
 # Stato d'orchestrazione per-source — effimero, non versionare.
 # Ridondante rispetto a `.flow/` ma documenta l'intenzione architetturale
 # e copre il caso di rimozione della riga globale.
 .flow/sources/
 .flow/locks/
 .flow/index.json
-docs/
 
 # Eccezione: il fixture dell'eval-harness è test-infra DEL plugin → va versionato,
 # anche se contiene una sottocartella docs/ (è un mini-progetto di prova, non residue).

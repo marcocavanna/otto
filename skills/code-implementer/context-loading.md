@@ -4,11 +4,22 @@ Caricamento del contesto necessario **prima** della generazione di codice. La fi
 
 ## Cosa leggere (in quest'ordine)
 
+### 0. Regole di progetto (ambiente, una volta)
+
+**Prima** di scrivere codice, leggere le regole di codice del repository come **ambiente** (invarianti del progetto, non contesto del singolo task):
+
+- `CLAUDE.md` alla root del repo (se presente). Se contiene `@import`/riferimenti a regole, considerali.
+- `.claude/rules/**.md` (se la cartella esiste).
+
+Sono **stile, convenzioni e best-practice vincolanti**: non vanno inferite dal sample (l'inferenza sbaglia). Stabili tra i task → vanno lette una volta per spawn, costo marginale basso. Precedenza rispetto a sample/template: vedi `writing-rules.md` § "Principio base: mimic > template".
+
+Se nessuno dei due esiste → nessuna regola esplicita, procedere col mimic del sample. Non cercarle altrove (no `.editorconfig`, no CI): solo `CLAUDE.md` + `.claude/rules/`.
+
 ### 1. Brief del task (obbligatorio)
 
 Leggere il brief del task `<id>`:
 - Path canonico (unico): `<context-root>/tasks/<id>.md`
-  (vedi `../feature-planner/feature-artifacts.md` § "Planning source contract" per la risoluzione della context-root)
+  (vedi `../planner/planning-source-contract.md` § "Planning source contract" per la risoluzione della context-root)
 - In modalità attended: `.flow/briefs/<TASK>/brief.md` (copia del co-locato)
 
 Il brief è **self-sufficient**: la sezione `## Vincoli risolti` embedda già tutto il contesto necessario, distillato dal PM:
@@ -96,23 +107,24 @@ Per ogni file con flag `[edit]` in "File impattati", leggere il file esistente p
 Esplicitamente fuori scope:
 
 - `00-context.md`, `02-abstract.md`, `technical-context.md` — già distillati nel brief (sezione "Vincoli risolti"). Leggerli sarebbe ridondante e ignora la garanzia di self-sufficiency del brief.
-- Documentazione di progetto fuori dalla context-root
+- Documentazione di progetto fuori dalla context-root (eccetto `CLAUDE.md`/`.claude/rules` — vedi § 0, sono regole-ambiente)
 - File README del progetto (a meno che la categoria del task sia "documentation")
 - File CI/CD (`.github/workflows/`, `*.yml`)
 - File di configurazione build profondi (`vite.config.ts`, `tsconfig.json`) salvo se task li tocca direttamente
 - Test esistenti (a meno che task richieda di estendere test)
 - Git history
 
-Lo scope di lettura è **bounded**: brief + 1 sample + file da editare. Massimo 7-10 file letti per task. Se il task richiede di leggere di più, è probabilmente troppo grande o il brief è inadeguato.
+Lo scope di lettura è **bounded**: regole-ambiente (`CLAUDE.md` + `.claude/rules`, § 0) + brief + 1 sample + file da editare. Massimo 7-10 file letti per task. Se il task richiede di leggere di più, è probabilmente troppo grande o il brief è inadeguato.
 
 ## Output del context loading
 
 Al termine, la skill ha mentalmente:
 
-1. **Vincoli risolti** (dalla sezione "Vincoli risolti" del brief): stack, librerie+versioni, VO/pattern/interfacce consumati, naming
-2. **Specifica del task** (dal resto del brief): cosa fare, file, shape, assunzioni locali
-3. **Stile di riferimento** (dal sample): come scrivere concretamente
-4. **Stato dei file da modificare** (dai file [edit])
+1. **Regole di progetto** (da `CLAUDE.md` + `.claude/rules`): convenzioni/stile/best-practice vincolanti del repo
+2. **Vincoli risolti** (dalla sezione "Vincoli risolti" del brief): stack, librerie+versioni, VO/pattern/interfacce consumati, naming
+3. **Specifica del task** (dal resto del brief): cosa fare, file, shape, assunzioni locali
+4. **Stile di riferimento** (dal sample): come scrivere concretamente
+5. **Stato dei file da modificare** (dai file [edit])
 
 Da qui parte la fase di **decision identification** (vedi `decision-classification.md`).
 
@@ -128,7 +140,7 @@ Rilevata incoerenza:
 - Shape di implementazione / obiettivo: [Y, che contraddice X]
 
 Non posso procedere finché il brief è incoerente.
-Usa task-implementer (revise del brief) o feature-planner per risolvere.
+Usa task-implementer (revise del brief) o `planner` per risolvere.
 ```
 
 Non tentare di risolvere automaticamente.

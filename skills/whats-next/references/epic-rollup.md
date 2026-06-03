@@ -6,7 +6,7 @@ Resta valido tutto il resto: read-only, `PROGRESS.json` canonico, drift segnalat
 
 ## Cosa aggiunge la roadmap
 
-`docs/epics/<epic>/roadmap.md` (layer **non-canonico**, vedi `../../epic-planner/references/epic-artifacts.md`) dichiara per ogni feature figlia:
+`docs/epics/<epic>/roadmap.md` (layer **non-canonico**, vedi `../../planner/references/epic-artifacts.md`) dichiara per ogni feature figlia:
 - `Source: docs/features/<epic>-<feat>/` (la feature source vera, canonica);
 - `Dipende da feature: <epic>-<altra>` (dipendenze **inter-feature**);
 - ordine sequenziale + fronti paralleli.
@@ -16,7 +16,7 @@ L'avanzamento e gli sbloccati **dei task** restano calcolati come sempre (`recon
 ## Scoperta epic
 
 1. Glob `docs/epics/*/roadmap.md`. Per ciascuno: parse della lista feature (slug figlio, goal, `Dipende da feature`, `Source`).
-2. Associa ogni `docs/features/<epic>-<feat>/` al suo epic via il campo `Source` (o, in fallback, via prefisso slug `<epic>-`).
+2. Associa ogni source figlia al suo epic. Ordine dei segnali: **anchor `Parent`** in `00-context.md`/`technical-context.md` (autorevole, vale per qualsiasi tier: feature→epic, task→parent) → campo `Source`/slug della roadmap → fallback prefisso slug `<epic>-`. L'anchor vince perché è dichiarato nell'artefatto stesso; la roadmap conferma.
 3. Feature `<epic>-*` **senza** corrispondenza in nessuna roadmap → trattale piatte e **segnalalo** (orphan rispetto all'epic). Non inventare appartenenze.
 
 ## Calcolo per-epic
@@ -68,4 +68,4 @@ Coerenza con `reconcile.md`: se `index.json` riporta `archived=true` per uno slu
 - **Nessun `docs/epics/`** → niente roll-up: comportamento storico, non menzionare epic.
 - **Roadmap presente ma feature source mancante** (`Source` punta a una dir inesistente) → segnala l'incoerenza, non inventare task.
 - **Dipendenza inter-feature verso una feature inesistente** → anomalia: riportala, considera la feature bloccata.
-- **`Status feature` della roadmap in disaccordo con l'avanzamento reale dei task** → fidati dei task (verità d'esecuzione), segnala il drift della roadmap (volatile, advisory). Non correggere: `whats-next` è read-only. Il marker roadmap lo aggiorna `flow-run` (mirror best-effort lungo il lifecycle), lo ripara `flow-sync` (riconciliazione roadmap, vedi la sua skill) e lo cura `epic-planner revise`.
+- **`Status feature` della roadmap in disaccordo con l'avanzamento reale dei task** → fidati dei task (verità d'esecuzione), segnala il drift della roadmap (volatile, advisory). Non correggere: `whats-next` è read-only. Il marker roadmap lo aggiorna `flow-run` (mirror best-effort lungo il lifecycle), lo ripara `flow-sync` (riconciliazione roadmap, vedi la sua skill) e lo cura `planner revise <epic>`.

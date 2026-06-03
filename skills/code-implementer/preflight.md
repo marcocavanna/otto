@@ -8,7 +8,7 @@ File richiesto:
 - `<context-root>/tasks/<id>.md` (co-locato, unico path supportato)
 
 Risoluzione context-root: header `Context-root:` del brief; default `docs/planning/`.
-Contratto canonico: `../feature-planner/feature-artifacts.md` § "Planning source contract".
+Contratto canonico: `../planner/planning-source-contract.md` § "Planning source contract".
 
 Se il brief non esiste al path co-locato:
 ```
@@ -32,7 +32,7 @@ brief — vedi `context-loading.md`).
 
 Se il brief esiste, verificare che contenga la sezione `## Vincoli risolti`.
 
-- **Presente** → reading-set ridotto attivo: brief + 1 sample + file `[edit]`.
+- **Presente** → reading-set ridotto attivo: regole-ambiente (`CLAUDE.md` + `.claude/rules`) + brief + 1 sample + file `[edit]`.
   NON leggere i 3 file di planning.
 - **Assente** (brief legacy pre-topology-canonical) → warning non bloccante:
   procedere con lettura fallback dei 3 file di planning (modalità pre-topologia).
@@ -66,7 +66,7 @@ finalizzato è probabilmente un errore.
 Opzioni:
 a) Verificare se ti sbagli di task (controlla 05-tasks-active.md)
 b) Se serve modificare codice di un task finalizzato, è probabile che serva
-   un nuovo task (project-planner: expand o nuovo brief)
+   un nuovo task (`planner expand` o nuovo brief)
 ```
 
 ## Check 3 — Build command dichiarato

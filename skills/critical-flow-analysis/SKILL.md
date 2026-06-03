@@ -5,9 +5,9 @@ description: Use this skill to deeply analyze an EXISTING software flow/feature 
 
 # Critical Flow Analysis
 
-Sesta skill di **otto**. Serve ad analizzare in profondità un flusso/funzionalità **già esistente** partendo da un file *anchor* (entry-point), per scovare bug e debolezze reali — non per pianificare cose nuove (quello è `feature-planner`).
+Sesta skill di **otto**. Serve ad analizzare in profondità un flusso/funzionalità **già esistente** partendo da un file *anchor* (entry-point), per scovare bug e debolezze reali — non per pianificare cose nuove (quello è `planner`).
 
-È l'unico ingresso "diagnostico" della pipeline: produce un audit, e — **solo se glielo chiedi esplicitamente** — converte il piano di hardening in task operativi nello stesso formato di `feature-planner`, così `flow-run` li esegue senza modifiche.
+È l'unico ingresso "diagnostico" della pipeline: produce un audit, e — **solo se glielo chiedi esplicitamente** — converte il piano di hardening in task operativi nello stesso formato di `planner` (tier feature), così `flow-run` li esegue senza modifiche.
 
 ## Principio non negoziabile
 
@@ -83,7 +83,7 @@ Dopo l'audit, **proponi** (non eseguire): *"Vuoi che trasformi il piano di harde
 
 Trigger: l'utente conferma esplicitamente (es. *"sì, genera i task"*, *"trasforma le wave in task"*).
 
-Produci un **bundle-feature** sotto `docs/features/<slug>/` identico nel formato a `feature-planner`, così il downstream lo consuma senza modifiche. Regole dettagliate, mapping wave→task e frammentazione: vedi `references/wave-to-tasks.md`.
+Produci un **bundle-feature** sotto `docs/features/<slug>/` nel formato standard di tier `feature` (identico a quello generato da `planner`), così il downstream lo consuma senza modifiche. Regole dettagliate, mapping wave→task e frammentazione: vedi `references/wave-to-tasks.md`.
 
 In sintesi:
 - `slug` = `harden-<flow>` (es. `harden-login`), confermato con l'utente.
@@ -95,7 +95,7 @@ In sintesi:
 
 ## Quando NON usarla
 
-- Per pianificare codice nuovo → `feature-planner` / `project-planner`.
+- Per pianificare codice nuovo → `planner`.
 - Per applicare i fix → è read-only; i fix li esegue il flow (DEV).
 - Per una code review stilistica generica → questa cerca bug e debolezze **verificabili nel flow**, non opinioni.
 

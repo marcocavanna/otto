@@ -11,59 +11,57 @@ Questa guida si legge dall'alto verso il basso. Se sei di fretta, salta dritto a
 
 ---
 
-## 🆕 Novità 1.1.0
+## 🆕 Novità 2.0.0
 
-- **Roadmap epic viva**: durante l'esecuzione lo `Status feature` in `docs/epics/<epic>/roadmap.md` si aggiorna da solo (`⚪ planned → 🔵 active → ✅ done`) — mirror best-effort di `flow-run`, riparabile con `flow-sync`.
-- **Conoscenza che risale**: a feature conclusa le decisioni tattiche del suo `technical-context.md` vengono consolidate nel `technical-context.md` condiviso dell'epic (nuovo `feature-planner finalize`), così le feature successive le ereditano.
-- **`docs/tasks/` flat rimosso**: i brief vivono **solo** co-locati in `<context-root>/tasks/` (il back-compat fallback è eliminato — vedi sotto). I progetti pre-canonical vanno migrati con `migrate`.
-- **Pulizia `.flow/briefs/`**: le copie effimere dei brief vengono rimosse all'archivio della source.
+- **`planner` unificato a 4 tier**: le tre skill separate `project-planner`, `feature-planner` ed `epic-planner` sono state ritirate e sostituite da un unico entry-point `planner`. Scegli (o conferma) il tier — `project`, `epic`, `feature`, `task` — e lui si comporta di conseguenza.
+- **Anchor system**: ogni artefatto di planning porta ora una riga `<!-- Anchor -->` con Tier, Parent e Bubble-up target — rende la gerarchia esplicita e machine-parsabile.
+- **Bubble-up single-hop selettivo**: a task/feature conclusa, `planner finalize` promuove le decisioni tattiche durevoli al livello padre (feature → epic, epic → project), un solo salto alla volta, idempotente. Le feature successive le ereditano senza ri-elicitare.
+- **`migrate anchor-retrofit`**: retrofitta gli anchor sugli artefatti esistenti (pre-2.0.0) in modalità preview → apply → post-verify, non distruttivo e idempotente.
 
 ---
 
-## ⚠️ Aggiornare a 1.0.0 — breaking changes & migrazione
+## ⚠️ Aggiornare a 2.0.0 — breaking changes & migrazione
 
-La **1.0.0** è un cambio **major**: cambia *dove* otto scrive gli artefatti e *come* tiene lo stato. Se vieni da una versione `0.x`, leggi qui prima di aggiornare.
+La **2.0.0** ritira le tre skill di planning separate. Se hai chiamato direttamente `project-planner`, `feature-planner` o `epic-planner` nei tuoi flussi o script, **sostituiscili con `planner`**.
 
-**Cosa cambia (topologia canonica):**
-- **Brief co-locati**: prima i brief stavano tutti insieme in `docs/tasks/<id>.md`; ora vivono **sotto la loro source** in `<context-root>/tasks/<id>.md` (es. `docs/features/<slug>/tasks/<id>.md`).
-- **Brief self-sufficient**: il brief contiene una sezione **"Vincoli risolti"** (stack, librerie, pattern) → il DEV non rilegge più i file di planning.
-- **Stato per-source**: prima un solo `.flow/PROGRESS.json`; ora `.flow/sources/<slug>/PROGRESS.json` + roll-up `.flow/index.json` + lock `.flow/locks/`.
-- **Concorrenza source-level**: più flow in parallelo, **uno per source** (lock atomico). `flow-run` reclama una feature alla volta.
-- **Archivio**: le source concluse vanno in `docs/archive/` (escluse dallo scan dei task attivi).
+**Cosa cambia:**
+- `project-planner`, `feature-planner`, `epic-planner` **non esistono più**. Il loro trigger è assorbito da `planner` (anche le vecchie frasi di attivazione come *"feature-planner"* o *"epic-planner"* triggerano ancora `planner`).
+- Il campo `Origin` nei brief ora è semplicemente `planner` (era `project-planner | feature-planner`).
+- Il campo `Complessità (ipotesi)` nei task è **obbligatorio** nel tasks-file (era opzionale).
 
-**Brief flat `docs/tasks/` — non più supportati:**
-- Il vecchio layout flat `docs/tasks/<id>.md` **non è più né scritto né letto** (il back-compat fallback transitorio è stato **rimosso**). Un progetto pre-1.0.0 con brief flat **non funziona** finché non lo porti al layout co-locato: esegui prima la skill **`migrate`** (sotto). Senza migrazione, `code-implementer`/`flow-run` non trovano i brief.
+**Cosa NON cambia (back-compat):**
+- I progetti pre-2.0.0 **continuano a funzionare**: anchor assente = artefatto standalone, nessun bubble-up. Nessuna rottura silenziosa.
+- Il layout dei file (`docs/planning/`, `docs/features/`, `docs/epics/`) è invariato.
+- I downstream (`task-implementer`, `code-implementer`, `flow-run`, `whats-next`) leggono gli stessi path di prima.
 
-**Come migrare (skill `migrate`)** — vedi la **Ricetta I** nel §7:
-1. *"migra il progetto"* / *"migrate"* → parte in **preview** (default): mostra il piano, **non scrive nulla**.
-2. Confermi → **apply**: backup con timestamp (`docs/.bak-<...>/`), `git mv` **idempotente** dei brief sotto la source, archivio dei conclusi, manifest dell'operazione.
-3. **post-verify** automatico: verifica che ogni task risolva al path canonico e che non restino brief orfani; report pass/fail.
-- È **reversibile** (dal backup), **idempotente** (rilanciarla è no-op) e **non committa** mai da sola.
+**Migrazione opt-in (anchor retrofit):**
+Se vuoi aggiungere gli anchor ai tuoi artefatti pre-2.0.0:
+1. *"anchor-retrofit preview"* → mostra cosa verrebbe iniettato, senza scrivere.
+2. Confermi → *"anchor-retrofit apply"*: backup automatico, inject non distruttivo.
+3. *"anchor-retrofit post-verify"*: verifica che ogni file abbia l'anchor corretto.
 
-> In una frase: aggiorni → tutto continua a girare grazie al fallback → quando puoi, lanci *"migra il progetto"* e converti il repo al layout nuovo, in sicurezza.
+**Aggiornare da < 1.0.0** — prima fai la migrazione layout (vedi Ricetta I), poi l'anchor retrofit.
 
 ---
 
 ## 1. Chi c'è nella squadra
 
-Immagina un piccolo studio di sviluppo. Nove ruoli, ognuno con un compito preciso:
+Immagina un piccolo studio di sviluppo. Otto ruoli, ognuno con un compito preciso:
 
 | Ruolo (skill/agente) | Metafora | Cosa fa | Quando lo chiami |
 |---|---|---|---|
-| **project-planner** | L'architetto che progetta una casa da zero | Trasforma un'idea grezza in un piano completo: pitch, milestone, fasi, task | Stai partendo con un **progetto nuovo** |
-| **feature-planner** | Il geometra che progetta **una stanza in più** in una casa già costruita | Pianifica **una singola feature** su un progetto **esistente** → uno o più task, niente milestone | Vuoi aggiungere **una cosa specifica** a qualcosa che c'è già |
-| **epic-planner** | Il **direttore lavori** che divide una ristrutturazione grande in cantieri ordinati | Scompone un **lavoro grande** (più di una feature, ma non un progetto nuovo) in **più feature logiche e sequenziali**; crea i bundle feature standard + una **roadmap** di coordinamento | Hai un'implementazione **grossa** da spezzare in **più feature** con un ordine sensato |
+| **planner** | L'architetto/geometra/direttore lavori in un unico cappello | Pianifica a qualsiasi livello: progetto intero, epic multi-feature, singola feature, singolo task atomico. Sceglie (e conferma con te) il tier giusto | Vuoi **pianificare qualcosa** — a qualsiasi scala |
 | **task-implementer** (agente **PM**) | Il tech lead che scrive la scheda di lavoro | Prende un task e produce un **brief tecnico**: cosa toccare, come, con quali vincoli | Quasi sempre lo chiama il capo-officina per te |
 | **code-implementer** (agente **DEV**) | Lo sviluppatore con le mani sulla tastiera | Legge il brief e **scrive il codice**, poi controlla che compili | Idem: di solito lo chiama il capo-officina |
 | **flow-run** | Il **capo-officina / direttore d'orchestra** | Fa lavorare PM e DEV in sequenza, da solo, fermandosi solo quando serve te | Quando vuoi **andare in automatico** su un piano di task |
 | **critical-flow-analysis** | L'**ispettore** che entra nel codice esistente con la torcia | Analizza a fondo un flusso già scritto, stila un referto di bug/debolezze e — se glielo chiedi — trasforma il piano di riparazione in task | Vuoi **scovare bug** in qualcosa che già esiste (e poi sistemarli col flow) |
 | **whats-next** | Il **caposquadra** che guarda la lavagna e ti dice da dove ripartire | Legge tutti i piani attivi (progetto + feature), riconcilia lo stato reale e ti dice **cosa fare adesso** e perché — senza toccare niente | Hai tanti task aperti e non sai **qual è il prossimo passo** |
-| **flow-sync** | Il **tecnico riparatore** che rimette in pari lavagna e schede | Riconcilia lo stato reale (`PROGRESS.json`) con i marker dei tasks-file: ripara i casi sicuri, importa i `done` mancanti, segnala gli ambigui — senza decidere al posto tuo | Lo stato "non torna" (tipico dopo un **expand**) e vuoi **riallinearlo** |
-| **migrate** | Il tecnico del trasloco | Porta un progetto otto dal vecchio layout al nuovo: preview obbligatoria → apply idempotente + backup → post-verify | Hai un progetto otto **pre-canonico** e vuoi portarlo al nuovo layout |
+| **flow-sync** | Il **tecnico riparatore** che rimette in pari lavagna e schede | Riconcilia lo stato reale (`PROGRESS.json`) con i marker dei tasks-file: ripara i casi sicuri, importa i `done` mancanti, segnala gli ambigui | Lo stato "non torna" (tipico dopo un **expand**) e vuoi **riallinearlo** |
+| **migrate** | Il tecnico del trasloco (e dell'etichettatura) | Porta un progetto dal vecchio layout al nuovo; e — da 2.0.0 — retrofitta gli anchor sugli artefatti pre-anchor | Hai un progetto pre-canonico o pre-2.0.0 da aggiornare |
 
 Due cose da sapere subito:
 
-- **PM e DEV non si parlano a voce.** Si lasciano bigliettini su disco (dei file). È una scelta voluta: così non ci sono fraintendimenti "ah ma io pensavo che…". Tutto è scritto.
+- **PM e DEV non si parlano a voce.** Si lasciano bigliettini su disco (dei file). Nessun fraintendimento "ah ma io pensavo che…". Tutto è scritto.
 - **Nessuno chiama altri collaboratori di nascosto.** Il capo-officina coordina PM e DEV, e basta. Niente catene infinite di assistenti che spawnano altri assistenti come gremlins bagnati.
 
 ---
@@ -88,16 +86,16 @@ Ogni cosa ha il suo cassetto. Non devi toccarli a mano, ma sapere dove stanno ai
 
 ```
 docs/
-  planning/              ← il piano di un PROGETTO INTERO (lo crea project-planner)
+  planning/              ← il piano di un PROGETTO INTERO (tier project di planner)
     00-context.md           contesto, assunzioni, rischi
     02-abstract.md          scelte tecniche di fondo
-    05-tasks-active.md      i task, chiamati T-001, T-002, …
+    05-tasks-active.md      i task della milestone attiva, chiamati T-001, T-002, …
     tasks/                  brief tecnici dei task di progetto
       T-001.md
       T-002.md
     (+ pitch, milestone, fasi)
 
-  features/              ← una cartella per ogni FEATURE (la crea feature-planner;
+  features/              ← una cartella per ogni FEATURE (tier feature di planner;
     <nome-feature>/          le figlie di un epic stanno QUI, col prefisso <epic>-…)
       00-context.md         contesto della feature
       02-abstract.md        approccio tecnico della feature
@@ -107,30 +105,35 @@ docs/
         <nome-feature>-001.md
         <nome-feature>-002.md
 
-  epics/                 ← una cartella per ogni EPIC (la crea epic-planner)
+  epics/                 ← una cartella per ogni EPIC (tier epic di planner)
     <nome-epic>/             SOLO coordinamento, NON contiene task
       00-context.md         contesto d'insieme + assunzioni condivise
       02-abstract.md        decisioni tecniche condivise
-      technical-context.md  seed condiviso (giù alle figlie + su dalle feature concluse)
+      technical-context.md  seed condiviso (giù alle figlie + su dalle feature concluse via finalize)
       roadmap.md            ordine + dipendenze; Status feature auto-aggiornato dal flow
+
+  tasks/                 ← un bundle per ogni TASK ATOMICO STANDALONE (tier task di planner)
+    <nome-task>/
+      00-context.md
+      technical-context.md
+      tasks-active.md       un solo task-entry
 
   archive/               ← feature/epic concluse (non partecipano allo scan dei task)
     features/<slug>/
     epics/<slug>/
 
 .flow/                   ← la lavagna del capo-officina (stato del lavoro)
-  PROGRESS.json             a che punto siamo
   sources/<slug>/           stato per-source (PROGRESS.json per ogni source attiva)
   locks/<slug>/             lock atomici POSIX per le source in esecuzione
   index.json                roll-up cached (ricostruibile da scan)
-  briefs/<task>/            i bigliettini che PM e DEV si scambiano (puliti all'archivio della source)
+  briefs/<task>/            i bigliettini che PM e DEV si scambiano (puliti all'archivio)
 ```
 
 Metafora: `docs/` è **l'archivio ufficiale** (la verità a lungo termine), `.flow/` è **la lavagna in officina** (lo stato del lavoro di oggi, cancellabile).
 
-**Nota per i contributor**: tutti i path sotto `.flow/` (eccetto `briefs/`) sono stato effimero d'orchestrazione — non vanno versionati. Il `.gitignore` del plugin copre sia la riga globale `.flow/` sia le voci esplicite per `sources/`, `locks/`, `index.json`.
+**Nota per i contributor**: tutti i path sotto `.flow/` sono stato effimero d'orchestrazione — non vanno versionati. Il `.gitignore` del plugin copre le voci `.flow/**`.
 
-Il brief in `tasks/` è **self-sufficient**: il PM ha già distillato lì stack, librerie e convenzioni — il DEV non deve cercare altrove. I dettagli tecnici del meccanismo di risoluzione stanno in [`skills/feature-planner/feature-artifacts.md`](skills/feature-planner/feature-artifacts.md) § "Planning source contract".
+Il brief in `tasks/` è **self-sufficient**: il PM ha già distillato lì stack, librerie e convenzioni — il DEV non deve cercare altrove. I dettagli del meccanismo di risoluzione stanno in [`skills/planner/planning-source-contract.md`](skills/planner/planning-source-contract.md) § "Planning source contract".
 
 ---
 
@@ -138,8 +141,9 @@ Il brief in `tasks/` è **self-sufficient**: il PM ha già distillato lì stack,
 
 - Task di un **progetto** → si chiamano `T-001`, `T-002`, …
 - Task di una **feature** → si chiamano `nomefeature-001` (es. `export-csv-001`)
+- Task di un **task bundle** (tier task) → si chiamano `<slug>-001` (un solo task-entry per bundle)
 
-Perché due stili? Perché i nomi devono essere **unici come un codice fiscale**: è così che il sistema capisce, dato un task, **a quale piano appartiene** e dove andare a leggere il contesto. Niente nomi gemelli, niente confusione.
+Perché questi stili? Perché i nomi devono essere **unici come un codice fiscale**: è così che il sistema capisce, dato un task, **a quale piano appartiene** e dove andare a leggere il contesto. Niente nomi gemelli, niente confusione.
 
 ---
 
@@ -147,7 +151,7 @@ Perché due stili? Perché i nomi devono essere **unici come un codice fiscale**
 
 Il bello del modo flow è che **non ti chiama per ogni sciocchezza**. È come un bravo collaboratore: risolve da solo il 90% delle cose e ti scrive solo per le 3 situazioni che richiedono te:
 
-1. **"Devo uscire dal seminato"** — il task richiede di toccare un file che non era previsto, o di cambiare qualcosa di delicato (sicurezza, multi-tenant). → *Ti chiedo prima di farlo.*
+1. **"Devo uscire dal seminato"** — il task richiede di toccare un file non previsto, o di cambiare qualcosa di delicato (sicurezza, multi-tenant). → *Ti chiedo prima di farlo.*
 2. **"Non compila e ci ho già riprovato"** — ha tentato di sistemare da solo un paio di volte, niente. → *Ti chiamo invece di accanirmi.*
 3. **"Qui cambia un contratto"** — servirebbe una nuova libreria, un nuovo pattern, o si scontra con una scelta strategica già presa. → *Decidi tu, non improvviso.*
 
@@ -164,25 +168,25 @@ Mentre il DEV lavora, due controlli automatici vegliano (si chiamano *hook*, ma 
 - 🚪 **Il buttafuori dello scope** (`scope-check`): controlla la lista degli invitati. Se il DEV prova a scrivere su un file **non previsto dal brief**, lo ferma e chiede il tuo permesso. Nessuno modifica file a caso.
 - ✅ **Il controllo qualità all'uscita** (`verify-gate`): prima di considerare un task "finito", verifica che il lavoro sia davvero a posto (build verde). Se non lo è, **rimanda il DEV al banco** un paio di volte; se proprio non se ne esce, scala a te.
 
-Regola di sicurezza di entrambi: **nel dubbio, chiedono.** Meglio una domanda in più che un disastro silenzioso. (Il principio in gergo si chiama *fail-closed*; tu chiamalo pure "prudenza".)
+Regola di sicurezza di entrambi: **nel dubbio, chiedono.** Meglio una domanda in più che un disastro silenzioso.
 
 ---
 
 ## 6-bis. Lo sviluppatore "cambia marcia" da solo 🚗
 
-Non tutti i lavori meritano lo stesso impegno: cambiare una virgola in un file di configurazione non è come riprogettare il cuore del dominio. Per questo il DEV **non gira sempre sullo stesso modello**.
+Non tutti i lavori meritano lo stesso impegno. Per questo il DEV **non gira sempre sullo stesso modello**.
 
 Funziona così, senza che tu debba pensarci:
 
 - Quando il PM scrive la scheda di un task, **valuta anche quanto è impegnativo** (banale, normale, delicato) e lo annota in un bigliettino.
-- Il capo-officina legge quel bigliettino e, **prima di mettere al lavoro il DEV**, sceglie il modello adatto: più leggero e veloce per le cose banali, più potente per quelle delicate. Risparmi tempo e risorse sulle cose semplici, tieni i muscoli per quelle che contano.
-- Nel dubbio fra due marce, **ingrana sempre la più alta** (meglio sovrastimare: un modello più forte costa poco, un task sbagliato costa di più). E se il bigliettino manca o è illeggibile, parte su un modello **affidabile di default** — mai al risparmio.
+- Il capo-officina legge quel bigliettino e, **prima di mettere al lavoro il DEV**, sceglie il modello adatto: più leggero e veloce per le cose banali, più potente per quelle delicate.
+- Nel dubbio fra due marce, **ingrana sempre la più alta**. E se il bigliettino manca, parte su un modello **affidabile di default** — mai al risparmio.
 
-Il PM, invece, gira sempre sul suo modello fisso: lavora **prima** che la complessità sia nota, quindi non avrebbe su cosa basarsi.
+Il PM, invece, gira sempre sul suo modello fisso: lavora **prima** che la complessità sia nota.
 
-> Vuoi i dettagli esatti (quale complessità → quale modello, e chi vince su chi)? Stanno scritti in un posto solo, per non avere due verità che litigano: [`skills/flow-run/references/model-tiering.md`](skills/flow-run/references/model-tiering.md).
+> Dettagli esatti (quale complessità → quale modello): [`skills/flow-run/references/model-tiering.md`](skills/flow-run/references/model-tiering.md).
 
-**E se voglio decidere io?** Puoi **forzare il modello** per un singolo run: la tua scelta batte tutto il resto. Vedi la FAQ "come forzo il modello" nel §10.
+**E se voglio decidere io?** Puoi **forzare il modello** per un singolo run. Vedi la FAQ nel §10.
 
 ---
 
@@ -191,26 +195,26 @@ Il PM, invece, gira sempre sul suo modello fisso: lavora **prima** che la comple
 Esempi lineari. Le frasi tra virgolette sono **esattamente quello che scrivi** a Claude Code.
 
 ### Ricetta A — Parto con un progetto nuovo da zero
-1. *"Ho un'idea per un progetto, aiutami a strutturarlo"* → parte **project-planner**, ti fa qualche domanda, crea `docs/planning/`.
+1. *"Ho un'idea per un progetto, aiutami a strutturarlo"* → parte **planner** (tier `project`), ti fa qualche domanda, crea `docs/planning/`.
 2. *"Espandi la milestone M1 in task"* → genera i task `T-001`, `T-002`, …
 3. Ora hai un piano. Vai alla Ricetta C per eseguirlo.
 
 ### Ricetta B — Aggiungo UNA feature a un progetto che esiste già ⭐ (il caso più comune)
 1. *"Pianifica la feature: esportazione utenti in CSV"*
-   → parte **feature-planner**. Sbircia il codice esistente per capire stack e convenzioni, ti fa **poche** domande mirate, e crea `docs/features/export-csv/` con 1–N task (`export-csv-001`, …).
+   → parte **planner** (tier `feature`, default). Sbircia il codice esistente per capire stack e convenzioni, ti fa **poche** domande mirate, e crea `docs/features/export-csv/` con 1–N task (`export-csv-001`, …).
 2. Controlli al volo i task generati (sono in `docs/features/export-csv/tasks-active.md`).
 3. Esegui con la Ricetta C o D.
 
-> Differenza con la Ricetta A in una frase: project-planner **fonda una città**, feature-planner **apre un negozio in una via che c'è già**.
+> In una frase: il tier `project` **fonda una città**, il tier `feature` **apre un negozio in una via che c'è già**.
 
 ### Ricetta B-bis — Ho un lavoro GROSSO da spezzare in più feature ordinate 🏗️
 1. *"Pianifica l'epic: rifacimento dell'area pagamenti"*
-   → parte **epic-planner**. Sbircia il codice, ti fa poche domande e soprattutto ti propone una **decomposizione**: 2–6 feature logiche, in ordine, con le dipendenze tra loro. Tu confermi.
+   → parte **planner** (tier `epic`). Sbircia il codice, ti fa poche domande e soprattutto ti propone una **decomposizione**: 2–6 feature logiche, in ordine, con le dipendenze tra loro. Tu confermi.
 2. Materializza ogni feature come un bundle standard in `docs/features/<epic>-…/` (es. `payments-revamp-foundation`, `payments-revamp-api`, …) **più** una `roadmap.md` di coordinamento in `docs/epics/payments-revamp/`.
 3. Da qui le feature sono normalissime: chiedi *"whats-next"* per sapere da quale partire (rispetta l'ordine dell'epic), poi esegui con la Ricetta C/D.
-4. Mentre esegui, l'epic resta vivo da solo: lo `Status feature` nella `roadmap.md` passa da `⚪ planned` a `🔵 active` e a `✅ done` man mano (mirror best-effort di `flow-run`, riparabile con `flow-sync`); e a feature conclusa le decisioni tattiche del suo `technical-context.md` **risalgono** al `technical-context.md` condiviso dell'epic, così la feature successiva le eredita.
+4. Mentre esegui, l'epic resta vivo: lo `Status feature` nella `roadmap.md` si aggiorna da solo (`⚪ planned → 🔵 active → ✅ done`); e a feature conclusa le decisioni tattiche **risalgono** al `technical-context.md` condiviso dell'epic via `planner finalize`.
 
-> In una frase: feature-planner apre **un** negozio; epic-planner **pianifica un quartiere** di negozi da aprire nell'ordine giusto — ma senza fondare una città nuova (quello è project-planner). E non rompe nulla: le figlie sono feature come tutte le altre.
+> In una frase: il tier `feature` apre **un** negozio; il tier `epic` **pianifica un quartiere** di negozi nell'ordine giusto — ma senza fondare una città nuova (quello è il tier `project`).
 
 ### Ricetta C — Eseguo tutto il piano in automatico
 1. *"Avvia il flow"*
@@ -231,8 +235,8 @@ Esempi lineari. Le frasi tra virgolette sono **esattamente quello che scrivi** a
 ### Ricetta F — Ho un flusso esistente che fa le bizze: trova i bug e sistemali 🔦
 1. *"Analizza il flusso di login partendo da `AuthService.cs`"*
    → parte **critical-flow-analysis**. Legge il codice (senza toccarlo!), ricostruisce il flow vero e ti dà un **referto**: bug critici, bug logici, flussi incoerenti, codice debole + un piano di riparazione a "ondate" (wave).
-2. L'ispettore ti chiede: *"Trasformo il piano in task operativi?"* — se dici **sì**, scrive un bundle in `docs/features/harden-login/` con i task (`harden-login-001`, …), uno per riparazione, già nel formato giusto.
-3. Da qui è come una feature qualsiasi: *"avvia il flow"* (Ricetta C) o *"esegui solo harden-login-001"* (Ricetta D) e la squadra mette in sicurezza il codice.
+2. L'ispettore ti chiede: *"Trasformo il piano in task operativi?"* — se dici **sì**, scrive un bundle in `docs/features/harden-login/` con i task (`harden-login-001`, …), già nel formato giusto.
+3. Da qui è come una feature qualsiasi: *"avvia il flow"* (Ricetta C) o *"esegui solo harden-login-001"* (Ricetta D).
 
 > In una frase: l'ispettore **fa la diagnosi**, e su tuo ok **scrive le ricette mediche** che poi il flow esegue. Lui non opera mai di testa sua. 🩺
 
@@ -240,7 +244,7 @@ Esempi lineari. Le frasi tra virgolette sono **esattamente quello che scrivi** a
 1. *"whats-next"* (oppure *"cosa devo fare adesso?"*)
    → parte **whats-next**. Guarda **tutti** i piani attivi (il progetto + le feature in parallelo), controlla cosa è davvero fatto e cosa no, e ti dà una **lavagna**: a che punto sei, cosa è sbloccato, cosa è quasi finito.
 2. Ti propone 1–3 mosse **motivate** (es. *"chiudi la feature X che è all'88% e ferma"*, *"poi T-012 che ne sblocca altri 3"*), ognuna con il comando pronto.
-3. Scegli tu: la scelta "spingo il progetto o chiudo una feature?" resta tua. Copi il comando suggerito (es. *"esegui solo T-012"*) e parte la Ricetta D.
+3. Scegli tu. Copi il comando suggerito (es. *"esegui solo T-012"*) e parte la Ricetta D.
 4. Puoi anche restringere: *"whats-next nella feature export-csv"* oppure *"whats-next nella milestone M1"*.
 
 > In una frase: il caposquadra **non tocca niente e non decide al posto tuo** — ti dice solo dove sei e qual è la mossa più sensata adesso. 🧭
@@ -255,7 +259,7 @@ Esempi lineari. Le frasi tra virgolette sono **esattamente quello che scrivi** a
 
 ### Ricetta I — Migro un progetto otto dal vecchio al nuovo layout 📦
 
-Utile quando: hai un progetto otto già esistente con brief in `docs/tasks/` flat e vuoi portarlo al layout canonico (`docs/features/<slug>/tasks/`).
+Utile quando hai un progetto otto già esistente con brief in `docs/tasks/` flat e vuoi portarlo al layout canonico.
 
 1. *"migra il progetto"* → parte **migrate** in modalità **preview** (default).
    Elenca ogni brief che verrebbe spostato, dove va, e i casi ambigui (non verranno toccati).
@@ -268,11 +272,22 @@ Utile quando: hai un progetto otto già esistente con brief in `docs/tasks/` fla
 
 3. Dopo l'apply, esegui il **post-verify**: *"verifica la migrazione"*
    → per ogni ID, il resolver deve trovare il brief al path canonico. Report pass/fail.
-   Se qualcosa non torna: istruzioni di ripristino dal backup nel report.
-
-Se il piano di preview ha casi ambigui o orfani: non verranno mai toccati automaticamente (fail-closed). Risolvili a mano prima di rieseguire apply.
 
 > In una frase: **migrate** ti fa vedere il piano prima di muovere un file, sposta tutto con backup automatico, e ti conferma che ogni brief è atterrato dove deve. 📦
+
+### Ricetta J — Retrofitto gli anchor a un progetto pre-2.0.0 🏷️
+
+Utile quando hai artefatti di planning pre-2.0.0 senza la riga `<!-- Anchor -->` e vuoi abilitare il bubble-up di `planner finalize`.
+
+1. *"anchor-retrofit preview"* → parte **migrate** in modalità anchor-retrofit.
+   Mostra ogni file a cui verrebbe iniettato l'anchor (Tier, Parent, Bubble-up target inferiti dalla struttura), i già-anchored (skip) e gli ambigui (non toccati). Non scrive nulla.
+
+2. Controlla il piano. Se ti convince: *"anchor-retrofit apply"*
+   → backup automatico in `docs/.bak-<timestamp>/`, inject non distruttivo in ogni file candidato.
+
+3. *"anchor-retrofit post-verify"* → verifica che ogni file abbia l'anchor corretto. Report pass/fail.
+
+> Operazione completamente opt-in: i progetti senza anchor continuano a funzionare come prima (back-compat). Il retrofit aggiunge il bubble-up, non lo impone.
 
 ---
 
@@ -283,8 +298,8 @@ Se il piano di preview ha casi ambigui o orfani: non verranno mai toccati automa
         │  "pianifica la feature X"
         ▼
   ┌─────────────┐         crea i task in
-  │ feature-    │ ──────► docs/features/X/
-  │  planner    │         (o project-planner → docs/planning/)
+  │   planner   │ ──────► docs/features/X/
+  │  (4 tier)   │         (o docs/planning/ se tier project)
   └─────────────┘
         │  "avvia il flow"
         ▼
@@ -314,45 +329,54 @@ Se il piano di preview ha casi ambigui o orfani: non verranno mai toccati automa
 
 | Parola che sentirai | Traduzione in umano |
 |---|---|
-| **Skill** | Una "competenza" che Claude può attivare (project-planner, ecc.) |
+| **Skill** | Una "competenza" che Claude può attivare (`planner`, `flow-run`, ecc.) |
+| **Tier** | Il livello di planning: `project` (progetto intero), `epic` (più feature ordinate), `feature` (singola funzionalità), `task` (deliverable atomico standalone) |
 | **Subagent / agente** | Un collaboratore con **un solo compito** (il PM, il DEV) |
 | **Brief** | La scheda di lavoro di un task: cosa fare e con quali paletti |
 | **Scope** | La lista dei file che il DEV **ha il permesso** di toccare |
 | **Hook** | Un controllo automatico che scatta da solo (i "buttafuori" del §6) |
 | **Escalation** | Quando la squadra **ferma tutto e chiede a te** |
 | **Context-root** | La cartella da cui si legge il contesto di un task (planning o feature) |
+| **Anchor** | La riga `<!-- Anchor -->` in ogni artefatto di planning: dichiara Tier, Parent e Bubble-up target. Rende la gerarchia leggibile al sistema. |
+| **Bubble-up** | A task/feature conclusa, le decisioni durevoli "risalgono" al livello padre via `planner finalize` — così le feature successive le ereditano senza ri-elicitare. |
 | **PROGRESS.json** | La lavagna che dice "a che punto siamo" |
 | **Attended / sorvegliato** | Automatico, ma pronto a chiamarti per le decisioni vere |
 | **Brief self-sufficient** | Il brief scritto dal PM embedda già stack, librerie, pattern e naming: il DEV non ri-legge i file di planning |
-| **Layout canonico** | Il modo "giusto" di organizzare i brief: ognuno sotto la sua feature, quelli delle feature concluse in `docs/archive/`. Opposto del layout vecchio (brief flat in `docs/tasks/`). |
+| **Layout canonico** | Il modo "giusto" di organizzare i brief: ognuno sotto la sua feature, quelli delle feature concluse in `docs/archive/`. |
 
 ---
 
 ## 10. Domande frequenti (e inciampi tipici)
 
-**"Ho lanciato il flow e si è fermato subito dicendo che manca qualcosa in `docs/planning/`."**
-Probabile: stai eseguendo task di progetto ma non hai ancora il piano. Usa prima project-planner (Ricetta A) o, se è una feature, feature-planner (Ricetta B).
+**"Ho lanciato il flow e si è fermato subito dicendo che manca qualcosa in `docs/planning/` o `docs/features/`."**
+Probabile: stai eseguendo task di un piano che non esiste ancora. Usa prima `planner` (Ricetta A per un progetto, Ricetta B per una feature).
+
+**"Ho scritto 'feature-planner' o 'project-planner' e non succede niente / succede una cosa strana."**
+Da 2.0.0 quelle skill non esistono più. Le frasi di attivazione (`"feature-planner"`, `"epic-planner"`, `"project-planner"`) triggerano ancora `planner` — ma se usi la sintassi vecchia in script o hook, sostituiscila.
 
 **"Il DEV ha saltato la verifica della build."**
-Manca il `build_command`. Vive nel `technical-context.md` del piano/feature. feature-planner prova a indovinarlo dal codice; se non ci riesce, scrivilo tu lì (es. `build_command: dotnet build`).
+Manca il `build_command`. Vive nel `technical-context.md` del piano/feature. `planner` prova a indovinarlo dal codice; se non ci riesce, scrivilo tu lì (es. `build_command: dotnet build`).
 
 **"Mi ha chiesto conferma per scrivere un file che secondo me era ovvio."**
 È il buttafuori dello scope che fa il suo lavoro: quel file non era nella lista del brief. O lo autorizzi al volo, o aggiorni il brief. Meglio così che ritrovarsi file modificati a sorpresa.
 
-**"Posso usare project-planner e feature-planner sullo stesso progetto?"**
+**"Posso usare il tier project e il tier feature sullo stesso progetto?"**
 Sì. Stanno in cassetti diversi (`docs/planning/` vs `docs/features/<slug>/`) e non si pestano i piedi. Unico accorgimento: i nomi dei task restano unici (vedi §4).
 
 **"Devo committare io o lo fa la squadra?"**
 **Lo fai tu.** La squadra scrive codice e file, ma **non tocca git** di sua iniziativa. Il salvataggio definitivo resta una tua decisione.
 
 **"Perché il DEV a volte usa un modello diverso?"**
-Perché il modello viene scelto **in base a quanto è impegnativo il task**: il PM stima la complessità, il capo-officina sceglie di conseguenza (leggero per le cose banali, potente per quelle delicate). Così non sprechi un modello costoso per cambiare una virgola, né lasci un lavoro critico a uno troppo leggero. Nel dubbio, ingrana la marcia più alta; se la stima manca, parte su un default affidabile. Vedi il §6-bis e i dettagli esatti in [`skills/flow-run/references/model-tiering.md`](skills/flow-run/references/model-tiering.md).
+Perché il modello viene scelto **in base a quanto è impegnativo il task**: il PM stima la complessità, il capo-officina sceglie di conseguenza. Così non sprechi un modello costoso per cambiare una virgola, né lasci un lavoro critico a uno troppo leggero. Nel dubbio, ingrana la marcia più alta; se la stima manca, parte su un default affidabile. Vedi §6-bis e [`skills/flow-run/references/model-tiering.md`](skills/flow-run/references/model-tiering.md).
 
 **"Come forzo il modello per un run?"**
-Dillo nella frase con cui lanci il task: la tua scelta **vince su tutto** (la stima del PM e il default degli agenti). Per esempio: *"esegui solo T-003 con opus"* (oppure `flow-run T-003 --model opus`). Vale per quel singolo run; il task dopo torna alla scelta automatica.
+Dillo nella frase con cui lanci il task: *"esegui solo T-003 con opus"*. La tua scelta **vince su tutto** per quel singolo run.
 
 **"Perché a volte il DEV salta il dry-run e va dritto a scrivere?"**
-Il dry-run (la "prova a vuoto" in cui il DEV dice cosa *farebbe* senza scrivere) costa come una seconda lettura del compito: ha senso solo dove c'è il rischio concreto di doversi fermare prima di toccare il codice. Per questo il capo-officina lo **salta sui task leggeri** (banali o standard) e lo **tiene sui task critici**, dove intercettare un problema prima di scrivere vale il costo. Se la stima di complessità manca, il dry-run viene fatto comunque (nel dubbio, si controlla). Puoi forzare la mano: *"salta il dry-run"* / `--no-dry-run` oppure *"forza il dry-run"* / `--dry-run`. Dettagli in [`skills/flow-run/references/model-tiering.md`](skills/flow-run/references/model-tiering.md).
+Il dry-run ha senso solo dove c'è il rischio concreto di doversi fermare prima di toccare il codice. Il capo-officina lo **salta sui task leggeri** e lo **tiene sui task critici**. Puoi forzare la mano: *"salta il dry-run"* / *"forza il dry-run"*.
+
+**"Ho aggiornato a 2.0.0 e i miei vecchi brief hanno ancora `Origin: project-planner`."**
+Funzionano ancora (back-compat). Se vuoi allinearli: apri i brief e cambia manualmente il campo in `Origin: planner`. Non è una rottura funzionale, solo una nota stilistica.
 
 **"C'è una cartella `.flow/` con dentro `T-SMOKE`. Che roba è?"**
 È un task-giocattolo usato per i test interni. Innocuo. Se ti dà fastidio: cancella `.flow/` e via.
@@ -378,13 +402,13 @@ Buon lavoro — e se la squadra fa una domanda, non è perché è confusa: è pe
 /plugin install otto                         # installa il plugin
 ```
 
-Da lì hai subito disponibili le 10 skill (`project-planner`, `epic-planner`, `feature-planner`, `task-implementer`, `code-implementer`, `flow-run`, `critical-flow-analysis`, `flow-sync`, `whats-next`, `migrate`), i 2 agenti (`pm`, `dev`) e i 2 controlli automatici. Per partire ti basta una frase: *"pianifica la feature …"* oppure *"ho un'idea per un progetto"*.
+Da lì hai subito disponibili le skill (`planner`, `task-implementer`, `code-implementer`, `flow-run`, `critical-flow-analysis`, `flow-sync`, `whats-next`, `migrate`), i 2 agenti (`pm`, `dev`) e i 2 controlli automatici. Per partire ti basta una frase: *"pianifica la feature …"* oppure *"ho un'idea per un progetto"*.
 
 > Nota tecnica (per chi pubblica): gli hook usano `${CLAUDE_PLUGIN_ROOT}`, quindi funzionano da qualunque path di installazione. Gli artefatti di lavoro (`docs/…`, `.flow/…`) vengono invece creati nella cartella del **tuo** progetto, dove devono stare.
 
 ### Permessi consigliati (meno prompt durante il flow)
 
-Durante il flow gli agenti leggono e scrivono parecchi file. Senza configurazione, Claude Code ti chiede conferma a ogni operazione — rumoroso. Puoi togliere i prompt **ridondanti** (non il controllo: le scritture fuori-scope e il verify restano gatati dagli hook) aggiungendo questo blocco al `.claude/settings.json` **del tuo progetto**:
+Durante il flow gli agenti leggono e scrivono parecchi file. Senza configurazione, Claude Code ti chiede conferma a ogni operazione — rumoroso. Puoi togliere i prompt **ridondanti** aggiungendo questo blocco al `.claude/settings.json` **del tuo progetto**:
 
 ```jsonc
 {
@@ -399,6 +423,26 @@ Durante il flow gli agenti leggono e scrivono parecchi file. Senza configurazion
 }
 ```
 
-Cosa resta a chiederti conferma (ed è giusto così): le scritture del DEV **fuori** dallo scope del brief e i fallimenti di build/verify — cioè le sole vere decisioni del modo *attended*. Adatta la riga `Bash(...)` al build command del tuo progetto, o omettila se preferisci confermare la build a mano.
+Cosa resta a chiederti conferma (ed è giusto così): le scritture del DEV **fuori** dallo scope del brief e i fallimenti di build/verify. Adatta la riga `Bash(...)` al build command del tuo progetto, o omettila se preferisci confermare la build a mano.
 
 > `.flow/` è stato effimero: aggiungilo al `.gitignore` del progetto. Versiona invece `docs/planning/` e `docs/features/`: lì vive il piano, ed è conoscenza che vuoi tenere.
+
+### Nome sessione & stato live del flow 🏷️
+
+Quando un flow è in esecuzione, otto **rinomina la sessione** di Claude Code con un nome canonico — `otto:flow · <slug-source> [· <task>]` — così, con più finestre aperte, riconosci al volo quale sta eseguendo cosa (e imposta anche il titolo della tab del terminale). È automatico, via hook del plugin: nessuna configurazione.
+
+> Come funziona: l'hook setta il nome su `SessionStart` e a ogni tuo prompt (`UserPromptSubmit`). Quindi è perfetto al **resume** di una sessione e quando interagisci, mentre durante un full-run lungo e silenzioso (un solo prompt iniziale) il nome non cambia tra un task e l'altro. Per lo **stato live continuo** usa la statusLine qui sotto.
+
+Per un footer sempre aggiornato (source · task · avanzamento), abilita la statusLine **opt-in** nel `.claude/settings.json` del progetto:
+
+```jsonc
+{
+  "statusLine": {
+    "type": "command",
+    "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/flow-statusline.sh",
+    "refreshInterval": 2
+  }
+}
+```
+
+Mostra `⚙ otto:flow · <slug> · <task> · N/M done` solo quando un flow è vivo; riga vuota altrimenti. È opt-in perché la statusLine è una preferenza globale tua, non qualcosa che un plugin debba importi.

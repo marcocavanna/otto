@@ -21,7 +21,7 @@ Se conflitto rilevato:
 [Descrizione precisa del conflitto, con riferimenti ai documenti.]
 
 Non posso procedere finché non risolvi:
-a) Rivedi 02-abstract.md (usa project-planner: revise)
+a) Rivedi 02-abstract.md (usa `planner revise`)
 b) Riformula la decisione tattica per rispettare l'abstract
 c) Marca questo come deviazione esplicita autorizzata (richiede revise dell'abstract dopo)
 ```

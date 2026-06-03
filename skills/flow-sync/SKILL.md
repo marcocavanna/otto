@@ -26,8 +26,9 @@ Scope come `whats-next` (`../whats-next/SKILL.md` § Modalità), risolto dall'in
 - **global** (default, nessuno scope): tutti i piani attivi.
 - **plan**: "…del piano / del macro-plan" → solo `docs/planning/`.
 - **feature**: "…nella feature <slug>" → solo `docs/features/<slug>/`. Slug inesistente/ambiguo → elenca le feature e chiedi.
+- **task**: "…nel task <slug>" → solo `docs/tasks/<slug>/` (tier task standalone). Stessa semantica di una feature source.
 
-Risoluzione context-root **via scan** (`docs/planning/05-tasks-active.md` + `docs/features/*/tasks-active.md`); ID globalmente unici e **opachi** (vedi `../feature-planner/feature-artifacts.md` § "Planning source contract"). Per ogni piano in scope: il suo tasks-file + `.flow/sources/<slug>/PROGRESS.json` (o `.flow/PROGRESS.json` radice come fallback se la source non ha ancora la directory per-source).
+Risoluzione context-root **via scan** (`docs/planning/05-tasks-active.md` + `docs/features/*/tasks-active.md` + `docs/tasks/*/tasks-active.md`, tier task; tabella completa dei 4 tier nel contratto); ID globalmente unici e **opachi** (vedi `../planner/planning-source-contract.md` § "Planning source contract"). Per ogni piano in scope: il suo tasks-file + `.flow/sources/<slug>/PROGRESS.json` (o `.flow/PROGRESS.json` radice come fallback se la source non ha ancora la directory per-source). Le source **tier task** si riconciliano come le feature; la riconciliazione roadmap epic (anchor-based) resta invariata.
 
 Modalità di esecuzione:
 
@@ -40,7 +41,7 @@ Modalità di esecuzione:
    - Ricava lo `<slug>` della source (da tasks-file o `context_root`).
    - Cerca `.flow/sources/<slug>/PROGRESS.json`; se assente, fallback su `.flow/PROGRESS.json` radice.
    - Controlla `index.json`: se lo slug ha `archived=true`, non proseguire con la riconciliazione per quello slug (nessun repair/import, log "source archiviata — done congelata").
-   - Nessun piano attivo trovato → dillo e suggerisci `project-planner`/`feature-planner`. Non inventare.
+   - Nessun piano attivo trovato → dillo e suggerisci `planner`. Non inventare.
 2. **Riconciliazione + classificazione.** La **lettura** (gerarchia di verità, mappatura stati, enumerazione drift) riusa `../whats-next/references/reconcile.md` — citala, non duplicarla. La **scrittura** aggiunge la dimensione classe + azione per ogni task secondo `references/reconciliation.md`: classi `in-sync` / `safe-repair` / `import` / `ambiguous` / `orphan`.
 3. **Preview.** Report di classificazione (board per-task) + diff della riga `Status` per i `safe-repair` e entry proposta per gli `import`. Ambigui/orphan elencati come "non toccati" con la ragione. **NON scrive.**
 4. **Apply** (su conferma): esegue `safe-repair` + `import` secondo la sequenza ordinata di `references/apply-protocol.md` (guardia globale su `PROGRESS.json` → backup tasks-file → riscrittura sola riga `Status` → append import → persist/rivalida). `current_task` intoccato.
@@ -85,12 +86,12 @@ Tono: senior, italiano denso, fail-closed, niente filler/cheerleading. Coerente 
 
 - **`.flow/sources/<slug>/PROGRESS.json` assente E `.flow/PROGRESS.json` radice assente/illeggibile per quello slug** → dillo, non inventare. Senza PROGRESS non c'è arbitro per quella source: **niente safe-repair, niente import su quella source**. Suggerisci `flow-run` (proprietario dell'init del loop). Le altre source proseguono normalmente. Se il PROGRESS è presente ma illeggibile/schema invalido in apply → ABORT per quella source, 0 scritture su di essa (RISK-flow-sync-002).
 - **Tasks-file in formato non riconoscibile / task (riga `Status`) non individuabile** → salta *quel* task e segnalalo, nessuna scrittura su di esso (read-only, RISK-flow-sync-003). Non blocca l'intero apply.
-- **Drift volatile post-`expand`** → contestualizza: `project-planner`/`feature-planner` `expand` sovrascrivono il tasks-file azzerando i marker mentre `PROGRESS.json` resta. È il caso tipico `done × ⚪` (safe-repair). Lo stato durevole è sempre `PROGRESS.json`.
+- **Drift volatile post-`expand`** → contestualizza: `planner expand` sovrascrive il tasks-file azzerando i marker mentre `PROGRESS.json` resta. È il caso tipico `done × ⚪` (safe-repair). Lo stato durevole è sempre `PROGRESS.json`.
 
 ## Cosa NON fa
 
 - **Non inizializza** `PROGRESS.json` da zero (è di `flow-run`).
-- **Non esegue** task né li **espande** (è di `flow-run` / `project-planner` / `feature-planner`).
+- **Non esegue** task né li **espande** (è di `flow-run` / `planner`).
 - **Non scrive codice**, non committa, non riformatta i tasks-file (tocca solo la riga `Status` dei task `safe-repair`).
 - **Non altera** `current_task`, né i brief co-locati `<context-root>/tasks/<id>.md`, né altre righe del tasks-file.
 - **Non decide la priorità** cross-plan e non raccomanda il "next" (è di `whats-next`).

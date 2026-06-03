@@ -8,7 +8,7 @@ Regole per la modalità `to-tasks`: convertire il piano di hardening (le wave de
 
 ## File da produrre (bundle conforme al contratto)
 
-Stesso formato di `../feature-planner/feature-artifacts.md` (§ "Planning source contract" è la fonte di verità della risoluzione downstream). Popolati **dall'audit**, non da elicitation:
+Stesso formato di `../planner/planning-source-contract.md` (§ "Planning source contract" è la fonte di verità della risoluzione downstream). Popolati **dall'audit**, non da elicitation:
 
 1. **`audit.md`** — il report completo delle 5 sezioni (provenienza permanente: da qui sono nati i task).
 2. **`00-context.md`** — Teoria del flusso (sez. 1) + sintesi delle issue + boundary del flusso analizzato. Le issue diventano `RISK-<slug>-NNN`.
@@ -19,13 +19,13 @@ Stesso formato di `../feature-planner/feature-artifacts.md` (§ "Planning source
 ## Mapping wave → task
 
 - Ogni riga `Fix` delle tabelle di hardening → **almeno un task**.
-- **Frammentazione** (regole di `../project-planner/task-expansion.md`): se un fix è >4h o tocca molti file/aree, spezzalo in più task atomici (1-4h ciascuno, DoD binaria). Meglio 3 task netti che 1 task-mostro.
+- **Frammentazione** (regole di `../planner/references/task-expansion.md`): se un fix è >4h o tocca molti file/aree, spezzalo in più task atomici (1-4h ciascuno, DoD binaria). Meglio 3 task netti che 1 task-mostro.
 - **Categoria**: 🔧 fix (bug) · 💻 impl (rework) · 🧪 test (copertura del fix). Un bug critico tipicamente genera una coppia 🔧 fix + 🧪 test.
 - **Tracciabilità**: ogni task riporta `**Issue**: BC-01` (le issue che chiude). Niente task senza issue di origine.
 - **Dipendenze / ordine**: Wave 1 → Wave 2 → Wave 3. I task della Wave 2 dipendono dal completamento dei critici della Wave 1; la Wave 3 (refactor/perf) viene per ultima. Esplicita le dipendenze nel campo `Dipende da`.
 - **DoD**: concreta e verificabile — "issue BC-01 non più riproducibile + test che lo dimostra + build verde".
 
-### Formato task (identico a feature-planner)
+### Formato task (identico al tier feature di `planner`)
 
 ```markdown
 ### harden-login-001 — 🔧 [fix] Correggere null-deref in TokenValidator.Validate
@@ -42,7 +42,7 @@ ID = `<slug>-NNN`, **globalmente unici** (è la chiave con cui il downstream ris
 
 ## Provenienza / Origin
 
-I task vivono in `docs/features/<slug>/`: `task-implementer` li tratterà come task **feature** (`Origin: feature-planner`, niente milestone) — corretto e voluto, nessuna modifica ai downstream. La provenienza "da audit" resta tracciata in `audit.md` e nel campo `**Issue**:` di ogni task.
+I task vivono in `docs/features/<slug>/`: `task-implementer` li tratterà come task **feature** (`Origin: planner`, niente milestone) — corretto e voluto, nessuna modifica ai downstream. La provenienza "da audit" resta tracciata in `audit.md` e nel campo `**Issue**:` di ogni task.
 
 ## Dopo la generazione
 

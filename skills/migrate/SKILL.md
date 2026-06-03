@@ -2,25 +2,32 @@
 name: migrate
 description: >
   Porta un progetto otto dal vecchio layout (docs/tasks/ flat, nessun archivio)
-  al layout canonico. Trigger: "migra il progetto", "migrate otto",
-  "porta otto al nuovo layout", "migrate", "migrazione layout".
+  al layout canonico; e retrofitta gli anchor (Tier/Parent/Bubble-up target) sugli
+  artefatti esistenti. Trigger: "migra il progetto", "migrate otto",
+  "porta otto al nuovo layout", "migrate", "migrazione layout",
+  "retrofit anchor", "aggiungi anchor agli artefatti".
 ---
 
-# Migrate — migrazione old→new layout
+# Migrate — migrazione old→new layout + retrofit anchor
 
-Skill che porta un progetto otto qualsiasi dal **vecchio layout** (`docs/tasks/` flat, nessun archivio, `.flow/PROGRESS.json` unico) al **layout canonico** definito da `topology-canonical`. Opera sempre con cognizione: preview obbligatoria prima dell'apply, idempotente, reversibile, con post-verify.
+Skill con due operazioni distinte:
+
+1. **Layout migration** (modalità `preview` / `apply` / `post-verify`): porta un progetto otto dal **vecchio layout** (`docs/tasks/` flat, nessun archivio, `.flow/PROGRESS.json` unico) al **layout canonico** definito da `topology-canonical`.
+2. **Anchor retrofit** (modalità `anchor-retrofit preview` / `anchor-retrofit apply` / `anchor-retrofit post-verify`): inietta l'header anchor (`<!-- Anchor --> **Tier** · **Parent** · **Bubble-up target**`) negli artefatti esistenti che ne sono privi, derivando i valori dalla struttura del repo e dalle roadmap.
+
+Entrambe le operazioni condividono gli stessi principi fondamentali. Opera sempre con cognizione: preview obbligatoria prima dell'apply, idempotente, reversibile, con post-verify.
 
 ## Principi non negoziabili
 
-Questi principi non si possono derogare in nessuna modalità:
+Questi principi non si possono derogare in nessuna modalità (layout migration **e** anchor retrofit):
 
-1. **Fail-closed**: se l'ID di un brief non risolve a nessuna source nota, non muovere quel brief — segnalarlo come caso ambiguo nel report. Nel dubbio: niente move.
-2. **Idempotente**: rieseguire apply su un repo già migrato è un no-op. Nessun errore, nessun danno, nessun file duplicato.
+1. **Fail-closed**: nel dubbio non si tocca nulla — si segnala come caso ambiguo nel report.
+2. **Idempotente**: rieseguire apply su un repo già migrato/già retrofittato è un no-op. Nessun errore, nessun danno.
 3. **Reversibile**: backup pre-apply dell'albero `docs/` in `docs/.bak-<timestamp>/` (copia integrale, timestamp distinto per ogni apply). La procedura di restore dal backup è documentata nel report di apply.
-4. **Niente commit automatici**: la skill non esegue mai `git commit`. Usa `git mv` per ogni spostamento quando il repo è git (preserva la history). Fallback: `mv` normale + nota esplicita se il repo non è git.
-5. **Post-verify obbligatorio**: dopo ogni apply, verificare che ogni ID risolva ancora al path canonico atteso. Report esplicito pass/fail per ogni ID. Apply senza post-verify è incompleto.
+4. **Niente commit automatici**: la skill non esegue mai `git commit`. Per i move usa `git mv` quando il repo è git. Fallback: operazione normale + nota esplicita se il repo non è git.
+5. **Post-verify obbligatorio**: dopo ogni apply, verificare l'esito per ogni artefatto/ID coinvolto. Report esplicito pass/fail. Apply senza post-verify è incompleto.
 
-## Modalità
+## Modalità — Layout migration
 
 ### preview (default)
 
@@ -82,20 +89,63 @@ Output: report pass/fail per ogni ID. Se anche un solo ID è fail, il report lo 
 
 Dettaglio dell'algoritmo, edge case e forma canonica del report: `references/post-verify.md`.
 
+---
+
+## Modalità — Anchor retrofit
+
+Retrofit dell'header anchor sugli artefatti di planning esistenti che ne sono privi. Logica completa (detection, inferenza tier/parent/bubble-up, preview plan, apply idempotente, post-verify): `references/anchor-retrofit.md`.
+
+### anchor-retrofit preview (default per questa operazione)
+
+Scansiona `docs/planning/`, `docs/epics/*/`, `docs/features/*/`, `docs/tasks/*/` (esclude `docs/archive/`) cercando i file `00-context.md` e `technical-context.md` privi della riga `<!-- Anchor -->`. Per ognuno inferisce i valori anchor (Tier, Parent, Bubble-up target) dalla struttura del repo e dalle roadmap. Non scrive nulla.
+
+Output: `AnchorRetrofitPlan` con sezioni `injects` (da iniettare), `already_anchored` (skip), `ambiguous` (non toccati — inferenza multipla o impossibile). Termina con riepilogo + CTA `"anchor-retrofit apply"` se ci sono inject pianificati.
+
+Gate dell'apply: la preview deve essere prodotta nella stessa sessione.
+
+### anchor-retrofit apply
+
+Esegue il retrofit secondo il piano prodotto dalla preview. Rifiuta di partire se nessuna preview è stata prodotta nella sessione corrente.
+
+Sequenza operativa:
+
+1. Verifica che la preview (anchor-retrofit) sia in sessione — abort se assente.
+2. Backup: copia integrale di `docs/` in `docs/.bak-<timestamp>/` (bloccante, non skippabile).
+3. Per ogni `injects[]`: inserisce la riga anchor dopo il titolo H1, con riga vuota prima e dopo. Idempotente: se l'anchor è già presente, skip.
+4. Scrive il manifest `docs/.bak-<timestamp>/anchor-retrofit-manifest.json` + report terminale.
+5. Post-verify: **delegato** (`anchor-retrofit post-verify`). L'apply non lo esegue inline.
+
+### anchor-retrofit post-verify
+
+Dopo l'apply, per ogni artefatto che era in `injects`:
+- Verifica che la riga `<!-- Anchor -->` sia presente nel file, nella posizione corretta (dopo H1, prima della prima sezione H2/contenuto).
+- Verifica che i campi Tier/Parent/Bubble-up target corrispondano ai valori pianificati.
+
+Report pass/fail per ogni file. Se anche un solo file è fail, segnala in evidenza con suggerimento di recovery.
+
+---
+
 ## Scope di scrittura
 
-La skill scrive **solo** durante apply, mai durante preview.
+La skill scrive **solo** durante apply (layout migration o anchor retrofit), mai durante preview.
 
-**Scrive:**
+**Layout migration — scrive:**
 - `<context-root>/tasks/<id>.md` — destinazione dei brief migrati
 - `docs/archive/features/<slug>/tasks/<id>.md` — destinazione dei brief di source concluse
-- `docs/.bak-<timestamp>/` — backup pre-apply (copia dell'albero `docs/` originale; timestamp distinto per ogni apply) + manifest `apply-manifest.json`
+- `docs/.bak-<timestamp>/` — backup pre-apply + manifest `apply-manifest.json`
 
-**Non tocca mai:**
+**Anchor retrofit — scrive:**
+- `docs/planning/00-context.md`, `docs/planning/technical-context.md` — inietta riga anchor (tier `project`)
+- `docs/epics/<slug>/00-context.md`, `docs/epics/<slug>/technical-context.md` — inietta riga anchor (tier `epic`)
+- `docs/features/<slug>/00-context.md`, `docs/features/<slug>/technical-context.md` — inietta riga anchor (tier `feature`)
+- `docs/tasks/<slug>/00-context.md`, `docs/tasks/<slug>/technical-context.md` — inietta riga anchor (tier `task`)
+- `docs/.bak-<timestamp>/` — backup pre-apply + manifest `anchor-retrofit-manifest.json`
+
+**Non tocca mai (entrambe le modalità):**
 - `.flow/` — effimero, rigenerato da `flow-run`
-- `docs/features/*/tasks-active.md` — source of truth del planning, non alterata
-- `feature-artifacts.md` — rimozione del back-compat fallback è scope del task dedicato (topology-migration-006)
-- Agent file (`agents/*.md`) e altre skill (`skills/*/`)
+- `docs/features/*/tasks-active.md` e altri file piano — source of truth del planning, non alterata
+- `docs/archive/**` — gli artefatti archiviati non vengono retrofittati
+- Skill (`skills/*/`), agent file (`agents/*.md`), epics roadmap (`docs/epics/*/roadmap.md`) — read-only
 
 ## Cosa NON fa questa skill
 
@@ -105,3 +155,5 @@ La skill scrive **solo** durante apply, mai durante preview.
 - Non committa nel repo git.
 - Non rimuove il back-compat fallback da `feature-artifacts.md` (task 006).
 - Non opera su repo con layout già canonico senza un piano di migrazione valido.
+- Non retrofitta artefatti in `docs/archive/`.
+- Non modifica i valori anchor già presenti (idempotenza pura: se `<!-- Anchor -->` c'è, skip senza toccare).

@@ -31,7 +31,7 @@ Mappatura per uniformare il ragionamento:
 
 Segnala quando le fonti **non concordano** sullo stesso ID:
 
-- `PROGRESS per-source: done` ma tasks-file `⚪ todo` / `🔵` → tipico **dopo un `expand`**: `project-planner expand` / `feature-planner expand` **sovrascrivono** il tasks-file e azzerano i marker, mentre il PROGRESS per-source resta. Verità = PROGRESS per-source. Nota: "mirror disallineato post-expand".
+- `PROGRESS per-source: done` ma tasks-file `⚪ todo` / `🔵` → tipico **dopo un `expand`**: `planner expand` **sovrascrive** il tasks-file e azzera i marker, mentre il PROGRESS per-source resta. Verità = PROGRESS per-source. Nota: "mirror disallineato post-expand".
 - tasks-file `✅ done` ma PROGRESS per-source `pending` / assente → completamento segnato a mano fuori dal flow. Verità incerta: riportalo come **da confermare**, non darlo per fatto.
 - PROGRESS per-source `active` ma nessun `RESULT.json` → task lasciato a metà. Candidato forte per "riprendi prima di aprirne altri" (vedi `ranking.md`).
 - `index.json` discorda da PROGRESS per-source sullo stesso ID → index è cache; verità = PROGRESS per-source. Segnala il disallineamento.

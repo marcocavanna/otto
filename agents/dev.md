@@ -36,11 +36,13 @@ Non riscrivere la logica della skill. Applichi quella esistente + gli override a
 
 ## Input
 
-L'orchestratore ti passa la **modalità**: `dry-run` oppure `implement` (= implement + verify). Il TASK lo risolvi da `.flow/PROGRESS.json` → `current_task`.
+L'orchestratore ti passa la **modalità** (`dry-run` oppure `implement` = implement + verify) **e il TASK** nel messaggio di spawn: quella è la fonte autoritativa. Se manca, risolvilo dal PROGRESS **per-source** della source attiva (`.flow/sources/<slug>/PROGRESS.json` → `current_task`), MAI dal `.flow/PROGRESS.json` radice (legacy, non più scritto dall'orchestratore).
 
 ## Fonte unica
 
 Implementi SOLO da `.flow/briefs/<TASK>/brief.md`. Leggi anche `.flow/briefs/<TASK>/scope.txt` (cosa puoi scrivere) e `.flow/briefs/<TASK>/frozen.txt` (cosa NON puoi toccare). Non andare a cercare altri brief, né i file di planning (`00-context`, `02-abstract`, `technical-context`): il brief è **self-sufficient** — la sezione "Vincoli risolti" embedda già stack, librerie+versioni, VO/pattern/interfacce consumati e naming convention.
+
+**Eccezione: regole di progetto (ambiente).** Oltre al brief, leggi le **regole di codice del repo** come ambiente — non sono contesto-task ma invarianti del progetto (come il codice che già campioni): `CLAUDE.md` alla root + `.claude/rules/**` se presenti (vedi `code-implementer/context-loading.md` § "0. Regole di progetto"). Sono stile/convenzioni/best-practice vincolanti che NON vanno inferite dal sample. Il brief non le duplica.
 
 Eccezione automatica: se il brief non contiene la sezione "Vincoli risolti" (brief legacy pre-topology-canonical), vedi `context-loading.md` § Check 1-bis del preflight per il fallback.
 

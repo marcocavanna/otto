@@ -11,18 +11,18 @@ Skill che traduce ogni task atomico pianificato in un brief di analisi tecnica e
 
 Il progetto su cui si sta lavorando deve essere esplicitato in maniera diretta dall'utente.
 
-Questa skill lavora **a valle** di project-planner. Presuppone che esistano già:
+Questa skill lavora **a valle** di `planner`. Presuppone che esistano già:
 - `docs/<project-name>/02-abstract.md` (strategia tecnica)
 - `docs/<project-name>/05-tasks-active.md` (task atomici della milestone attiva)
 - `docs/<project-name>/00-context.md` (assunzioni e rischi)
 
-Se questi file non esistono, la skill rifiuta di operare e indirizza l'utente a project-planner.
+Se questi file non esistono, la skill rifiuta di operare e indirizza l'utente a `planner`.
 
 Tre regole non negoziabili:
 
 1. **Coerenza > completezza.** Ogni brief deve essere coerente con `technical-context.md` esistente. Se l'analisi del task introduce una decisione che contraddice il contesto tecnico accumulato, la skill **non** procede silenziosamente: solleva il conflitto e chiede se aggiornare il contesto o adattare il task.
 
-2. **Niente codice di produzione, solo shape.** Gli stralci di codice nei brief sono **shape**, non implementazione. Limite: ~20-30 righe per costrutto, sempre marcati come "shape, non implementazione finale". L'obiettivo è dare struttura e direzione, non scrivere il codice al posto dell'utente.
+2. **Solo contratti e innesti, MAI corpi.** Gli stralci nei brief sono **shape**: firme, tipi, contratti, punti d'innesto — **mai corpi di metodo né logica completa**. Il corpo è competenza esclusiva del DEV (`code-implementer`): scriverlo nel brief è spreco triplo (output del PM + input del DEV che lo rilegge + il DEV lo riscrive comunque, divergendo). Limite duro: ~10-15 righe per costrutto, **solo segnatura/struttura**. Se uno stralcio contiene un corpo non banale, è già implementazione: va rimosso. L'obiettivo è dare struttura e direzione, non scrivere il codice al posto del DEV.
 
 3. **Subtask sono eccezioni, non regola.** Default: nessun subtask. Generare subtask solo se rispettano i criteri operativi (vedi `references/subtask-criteria.md`). Se non rispettano, output esplicito: "Subtask: nessuno necessario, esecuzione lineare."
 
@@ -43,7 +43,7 @@ Tre regole non negoziabili:
 > non è più né scritto né letto: i progetti pre-canonical vanno portati al layout co-locato con la
 > skill `migrate` prima di operare.
 
-Regola di non-contraddizione: `technical-context.md` **non può** contenere decisioni che contraddicono `02-abstract.md`. Se durante l'analisi di un task emerge che una scelta strategica dell'abstract è sbagliata, la skill **ferma** il flusso e dice all'utente di usare `revise` di project-planner su `02-abstract.md` prima di proseguire.
+Regola di non-contraddizione: `technical-context.md` **non può** contenere decisioni che contraddicono `02-abstract.md`. Se durante l'analisi di un task emerge che una scelta strategica dell'abstract è sbagliata, la skill **ferma** il flusso e dice all'utente di usare `planner revise` su `02-abstract.md` prima di proseguire.
 
 ## Operating modes
 
@@ -54,8 +54,8 @@ Regola di non-contraddizione: `technical-context.md` **non può** contenere deci
 > `complexity-criteria.md`: solo se produzione `meta.json` (funzione brief), mai nel finalize.
 
 Flusso:
-1. **Risolvere la context-root** del task (supporta sia `project-planner` sia `feature-planner`). L'ID task è trattato in modo opaco (`T-NNN` per project, `<slug>-NNN` per feature). Vedi il contratto canonico in `../feature-planner/feature-artifacts.md` § "Planning source contract":
-   - scan di `docs/planning/05-tasks-active.md` + `docs/features/*/tasks-active.md`; il file che contiene l'ID definisce la source e la **context-root** (la sua directory) + il tasks-file;
+1. **Risolvere la context-root** del task. L'ID task è trattato in modo opaco (`T-NNN` per project, `<slug>-NNN` per feature). Vedi il contratto canonico in `../planner/planning-source-contract.md` § "Planning source contract":
+   - scan dei tasks-file di **tutti i tier** — `docs/planning/05-tasks-active.md`, `docs/features/*/tasks-active.md`, `docs/tasks/*/tasks-active.md` (tier `task`) — escluso `docs/archive/**`; la tabella completa dei 4 tier è nel contratto. Solo le directory che contengono un `tasks-active.md` sono source (una dir sotto `docs/tasks/` senza tasks-file non viene intercettata). Il file che contiene l'ID definisce la source e la **context-root** (la sua directory) + il tasks-file;
    - 0 match → errore "task sconosciuto"; >1 match → errore "ID ambiguo";
    - override esplicito: se l'utente/orchestratore passa `feature <slug>`, usare quella source senza scan.
    (Retro-compatibile: progetto classico → context-root `docs/planning/`, tasks-file `05-tasks-active.md`.)
@@ -68,10 +68,10 @@ Flusso:
      `docs/epics/<epic>/roadmap.md` la referenzia in `Source:`): leggi **anche**
      `docs/epics/<epic>/technical-context.md` (il seed condiviso + i blocchi `## Consolidato da <feat>`
      risaliti dalle feature già concluse). Sono decisioni **vincolanti** ereditate: il brief non può
-     contraddirle. Read-only; non lo modifichi mai da qui (il bubble-up è di `feature-planner finalize`).
+     contraddirle. Read-only; non lo modifichi mai da qui (il bubble-up è di `planner finalize`).
 3. Run elicitation per task (vedi `references/brief-elicitation.md`).
 4. Validare coerenza: il brief proposto contraddice qualcosa in `technical-context.md`? Se sì, sollevare e risolvere PRIMA di scrivere.
-5. Generare il brief nel path **canonico** co-locato `<context-root>/tasks/<id>.md` (vedi `../feature-planner/feature-artifacts.md` § "Planning source contract" e `references/brief-template.md`).
+5. Generare il brief nel path **canonico** co-locato `<context-root>/tasks/<id>.md` (vedi `../planner/planning-source-contract.md` § "Planning source contract" e `references/brief-template.md`).
    - Creare la cartella `tasks/` sotto la context-root se non esiste (scrivendo il file la si crea implicitamente).
    - **Scrivere nell'header** `Origin:` e `Context-root:` (e `Feature:` al posto di `Milestone:` per task feature). Gli ID feature non hanno milestone: non inventarla.
    - Il brief **deve** includere la sezione obbligatoria `## Vincoli risolti` (vedi `references/brief-template.md` § "Vincoli risolti"): rende il brief self-sufficient per il DEV.
@@ -102,14 +102,14 @@ Flusso obbligatorio a fine task:
 3. **Domanda obbligatoria**: "Qualcosa in `technical-context.md` è cambiato per effetto di questo task? (es. libreria diversa da quella prevista, pattern modificato, naming convention introdotta)"
 4. Se sì → guidare l'aggiornamento puntuale di `technical-context.md`.
 5. Marcare il task come finalized nel brief (header con `Status: ✅ finalized`).
-6. Lo status nel file di project-planner (`05-tasks-active.md`) **non viene toccato da questa skill** — è responsabilità dell'utente o di project-planner.
+6. Lo status nel tasks-file (`05-tasks-active.md`) **non viene toccato da questa skill** — è responsabilità dell'utente o di `planner`.
 
 ### Mode 4: `archive-milestone M[N]` — archiviazione
 
 Flusso:
 1. Verificare che la milestone M[N] sia marcata done in `03-milestones.md`. Se no, chiedere conferma esplicita.
 2. Verificare che tutti i task di M[N] in `05-tasks-active.md` siano marcati done. Se no, elencare quelli aperti e chiedere conferma.
-3. Spostare i brief di M[N] (`git mv`) da `docs/planning/tasks/` a `docs/planning/tasks/archive/M[N]/` — restano co-locati sotto la context-root del progetto. (Le **feature** invece si archiviano a directory intera in `docs/archive/features/<slug>/`: lo fa `flow-run`/`feature-planner`, non questa modalità, che è solo per le milestone di project-planner.)
+3. Spostare i brief di M[N] (`git mv`) da `docs/planning/tasks/` a `docs/planning/tasks/archive/M[N]/` — restano co-locati sotto la context-root del progetto. (Le **feature** invece si archiviano a directory intera in `docs/archive/features/<slug>/`: lo fa `flow-run`, non questa modalità, che è solo per le milestone di project tier.)
 4. `technical-context.md` **non viene archiviato né modificato**.
 5. Print summary: quanti brief archiviati, quali decisioni sono ora "storiche" ma vincolanti.
 
@@ -125,13 +125,13 @@ Flusso (utility, non modifica file):
 
 ## Tone
 
-Stessa direttiva di project-planner: senior tech lead in 1:1 con uno sviluppatore competente. Niente didattica. Niente "ottima scelta". Direttivo, denso, professionale.
+Senior tech lead in 1:1 con uno sviluppatore competente. Niente didattica. Niente "ottima scelta". Direttivo, denso, professionale.
 
 Output in lingua dell'elicitation (italiano se l'utente scrive in italiano).
 
 ## When NOT to use this skill
 
-- Per task non gestiti da project-planner (la skill richiede la struttura `docs/planning/`).
+- Per task senza piano di `planner` (la skill richiede la struttura `docs/planning/` o `docs/features/<slug>/`).
 - Per task review post-implementazione (non è uno strumento di code review).
 - Per generare codice completo di un task (questo è scope di un'altra skill / esecuzione diretta).
-- Per task >4h di effort: probabilmente il task va spezzato in project-planner prima di analizzarlo qui.
+- Per task >4h di effort: probabilmente il task va spezzato con `planner` prima di analizzarlo qui.

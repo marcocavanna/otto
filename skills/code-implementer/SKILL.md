@@ -9,9 +9,9 @@ Skill che traduce un brief tecnico (il brief co-locato `<context-root>/tasks/<id
 
 ## Operating principles
 
-Questa skill lavora **a valle** di `task-implementer`. Presuppone che esista il brief co-locato `<context-root>/tasks/<id>.md`, **self-sufficient** con la sezione "Vincoli risolti" (stack · librerie+versioni · VO/pattern/interfacce consumati · naming). Il brief embedda già tutto il contesto: la skill **non** legge `00-context`, `02-abstract`, `technical-context`.
+Questa skill lavora **a valle** di `task-implementer`. Presuppone che esista il brief co-locato `<context-root>/tasks/<id>.md`, **self-sufficient** con la sezione "Vincoli risolti" (stack · librerie+versioni · VO/pattern/interfacce consumati · naming). Il brief embedda già tutto il contesto di **task**: la skill **non** legge `00-context`, `02-abstract`, `technical-context`. Legge invece le **regole-ambiente** del repo (`CLAUDE.md` + `.claude/rules`, vedi `references/context-loading.md` § 0): convenzioni/stile vincolanti, da non inferire dal sample.
 
-**Risoluzione della context-root**: leggere l'header del brief. `Context-root: docs/planning/` (project-planner) oppure `docs/features/<slug>/` (feature-planner). Se l'header manca → default `docs/planning/` (retro-compatibilità). Contratto canonico: `../feature-planner/feature-artifacts.md` § "Planning source contract". La context-root serve a risolvere il **path del brief**, non a caricare file di contesto separati.
+**Risoluzione della context-root**: leggere l'header del brief. `Context-root:` può essere uno qualsiasi dei 4 tier — `docs/planning/` (project), `docs/epics/<slug>/` (epic), `docs/features/<slug>/` (feature), `docs/tasks/<slug>/` (task). La skill è **tier-agnostica**: usa il valore dell'header così com'è per risolvere il path del brief. Se l'header manca → default `docs/planning/` (retro-compatibilità). Contratto canonico: `../planner/planning-source-contract.md` § "Planning source contract". La context-root serve a risolvere il **path del brief**, non a caricare file di contesto separati.
 
 Se il brief non esiste, la skill rifiuta di operare e indirizza alle skill upstream.
 
@@ -29,7 +29,7 @@ La skill opera su due file system:
 - **Read-only**: il brief co-locato (`<context-root>/tasks/<id>.md`), codice esistente del progetto
 - **Write**: codice sorgente del progetto, sezioni specifiche del brief, `technical-context.md` (solo per decisioni cross-task confermate)
 
-Regola di scope: la skill **non** modifica `02-abstract.md`, `00-context.md`, `03-milestones.md`, `04-phases.md`, `05-tasks-active.md` (né li legge in flusso ordinario). Se qualcuno di questi va modificato, indirizza a `project-planner` (revise).
+Regola di scope: la skill **non** modifica `02-abstract.md`, `00-context.md`, `03-milestones.md`, `04-phases.md`, `05-tasks-active.md` (né li legge in flusso ordinario). Se qualcuno di questi va modificato, indirizza a `planner revise`.
 
 ## Operating modes
 
@@ -48,6 +48,7 @@ Flusso obbligatorio:
    - Build command dichiarato nel brief (se no: warning)
 
 2. **Context loading** (vedi `references/context-loading.md`):
+   - Legge le **regole-ambiente** del repo (`CLAUDE.md` + `.claude/rules`, se presenti): convenzioni/stile vincolanti
    - Legge il brief (self-sufficient: sezione "Vincoli risolti" embedda stack/lib/VO/naming)
    - Identifica la categoria di costrutto dal brief (controller, repository, command, ecc.)
    - Cerca **1 sample** esistente della stessa categoria
@@ -107,7 +108,7 @@ Output: report di coerenza, niente modifiche automatiche. Suggerimenti puntuali 
 
 ## Tone
 
-Stesso registro di `project-planner` e `task-implementer`: senior dev in 1:1, denso, niente didattica.
+Senior dev in 1:1 con `task-implementer`: denso, niente didattica.
 
 Output in lingua dell'elicitation (italiano se l'utente scrive in italiano).
 

@@ -51,6 +51,17 @@ Precedenza: vedi [`references/model-tiering.md`](references/model-tiering.md) §
 
 Estrai dall'input anche una eventuale **direttiva dry-run**: *"salta il dry-run"* / `--no-dry-run` → skip; *"forza il dry-run"* / `--dry-run` → run. Vince sulla policy per complessità (step 3b / 4). Anch'essa effimera.
 
+### Pre-check: flow concorrente (advisory, non bloccante)
+
+**All'avvio dell'invocazione** (una volta, PRIMA del claim e della selezione task), verifica se esiste già **un altro flow vivo**. In otto 2.0.0 i flow paralleli **non sono supportati**: gli hook del DEV risolvono il task dalla source sotto lock e, con più source vive contemporaneamente, `flow_resolve_task` diventa ambiguo (vedi `hooks/flow-lib.sh`) → ogni scrittura del DEV finisce in `ask`, lo stato può corrompersi.
+
+Rilevamento (best-effort, fail-soft): scorri `.flow/locks/*/heartbeat.ts`; un lock è **vivo** se il suo heartbeat è fresco (`now - mtime < 300s`, stessa soglia di `references/concurrency.md`). Poiché a questo punto non hai ancora claimato nulla, **qualsiasi** lock vivo appartiene a un altro flow.
+
+- **Nessun lock vivo** → procedi normalmente al claim.
+- **Almeno un lock vivo** → **`AskUserQuestion`**: avvisa che risulta un flow già in esecuzione (riporta lo/gli `<slug>` e l'`owner` dal PROGRESS/index), che i flow paralleli non sono supportati in questa versione e che procedere può corrompere lo stato. Opzioni: **Annulla (consigliato)** / **Procedi comunque** (l'utente si assume il rischio). Su "Annulla" → termina con successo senza claimare. Su "Procedi" → prosegui al claim e annota l'override nel summary.
+
+> Limite noto (best-effort): su un **resume** dello stesso flow dopo una pausa breve l'heartbeat può essere ancora fresco e l'advisory scattare come falso positivo — in quel caso "Procedi" è la scelta corretta. È un avviso, non un lock: non impone vincoli strutturali (il parallelismo vero arriverà come feature dedicata).
+
 ### Claim source (pre-condizione al loop task)
 
 Prima di eseguire il protocollo per-task, il flow **acquisisce la source** via lock advisory.
@@ -117,11 +128,14 @@ prosegui. Devono precedere il `git mv` perché leggono/aggiornano artefatti anco
 `docs/features/<slug>/` o nell'epic. I passi 3–6 sono la **sequenza obbligatoria** (l'ordine è
 vincolante per idempotenza):
 
-1. **Consolidamento technical-context → epic** (`#8`): risali le decisioni tattiche accumulate nella
-   feature al `technical-context.md` condiviso dell'epic, secondo la procedura single-source in
-   [`../feature-planner/SKILL.md`](../feature-planner/SKILL.md) § "Mode 4: `finalize <feature>`".
-   Append-only, datato, con **guardia di idempotenza**: se l'header `## Consolidato da <slug>` esiste
-   già in `docs/epics/<epic>/technical-context.md` → già fatto, salta.
+1. **Consolidamento technical-context → padre** (`#8`): esegui la procedura di **`planner finalize <slug>`**
+   (single-source: [`../planner/references/finalize.md`](../planner/references/finalize.md) § "Bubble-up
+   single-hop selettivo") in **modalità attended** — selezione **automatica** di tutte le sezioni
+   `## Decisioni tattiche …` coerenti (nel flow non c'è utente da interpellare; in uso **manuale**
+   `planner finalize` resta a **selezione guidata**). Risale al `Bubble-up target` dichiarato nell'anchor
+   della source (padre = epic o project; assente/`—` → no-op). Append-only, datato, con **guardia di
+   idempotenza** (`## Consolidato da <slug>` già presente nel target → salta). **Sostituisce** l'append
+   grezzo a copia integrale della 1.1.0.
 2. **Mirror roadmap epic → done** (`#10`): in `docs/epics/<epic>/roadmap.md` setta la riga
    `Status feature` di questa feature a `✅ done` (vedi § "Mirror status sulla roadmap epic").
    Idempotente (set, non append).
@@ -176,16 +190,16 @@ Nessun commit, mai. L'orchestratore annota nel summary: "Source `<slug>` archivi
 
 ### Mirror status sul tasks-file della source (a finalize OK)
 
-Dopo aver marcato `done` in `PROGRESS.json`, riflettilo nel **tasks-file della source** del task (vedi il contratto in `../feature-planner/feature-artifacts.md` § "Planning source contract"): `docs/planning/05-tasks-active.md` (project) oppure `docs/features/<slug>/tasks-active.md` (feature). Risolvilo come fa `task-implementer` (l'ID è opaco: `T-NNN` o `<slug>-NNN`); trova la riga `Status` del task e marcane il completamento secondo la convenzione del file. Modifica **solo** quella riga.
+Dopo aver marcato `done` in `PROGRESS.json`, riflettilo nel **tasks-file della source** del task (vedi il contratto in `../planner/planning-source-contract.md` § "Planning source contract"): `docs/planning/05-tasks-active.md` (project) oppure `docs/features/<slug>/tasks-active.md` (feature). Risolvilo come fa `task-implementer` (l'ID è opaco: `T-NNN` o `<slug>-NNN`); trova la riga `Status` del task e marcane il completamento secondo la convenzione del file. Modifica **solo** quella riga.
 
 Vincoli del mirror:
 - È un riflesso **non-canonico**: la verità d'esecuzione resta `PROGRESS.json`. Se il tasks-file non contiene il task o ha un formato non riconoscibile, **non inventare**: salta il mirror e annotalo nel summary (non è un'escalation).
-- **Volatilità**: `project-planner expand` / `feature-planner expand` *sovrascrivono* il tasks-file. Dopo un expand il mirror va riallineato (lo stato durevole è sempre `PROGRESS.json`). Segnalalo nel summary se rilevi un disallineamento.
+- **Volatilità**: `planner expand` *sovrascrive* il tasks-file. Dopo un expand il mirror va riallineato (lo stato durevole è sempre `PROGRESS.json`). Segnalalo nel summary se rilevi un disallineamento.
 - Non toccare altre righe né altri file di planning.
 
 ### Risoluzione epic della source
 
-Una feature source può appartenere a un epic (vedi `../epic-planner/SKILL.md`). Per scoprirlo,
+Una feature source può appartenere a un epic (pianificato dal tier epic di `planner`, vedi `../planner/references/tier-epic.md`). Per scoprirlo,
 **best-effort**:
 1. Glob `docs/epics/*/roadmap.md`. Per ciascuno cerca una riga `Source: docs/features/<slug>/` che
    referenzi **questa** source.
@@ -239,9 +253,9 @@ Feature e epic concluse vengono archiviate in:
 - `docs/archive/epics/<slug>/` — epic archiviate
 
 **Regola di esclusione**: `docs/archive/**` non partecipa allo scan di risoluzione (context-root e tasks-file): i task archiviati non sono mai `pending`.
-Fonte: `skills/feature-planner/feature-artifacts.md` § "Planning source contract".
+Fonte: `skills/planner/planning-source-contract.md` § "Planning source contract".
 
-Lo spostamento fisico in archive è responsabilità di `feature-planner`/`project-planner`.
+Lo spostamento fisico in archive è responsabilità di `planner`.
 Il mirror status è inerte su task già `done` in feature archiviate.
 Nessun lock/concorrenza per l'archive (fuori scope — feature `topology-concurrency-core`).
 
@@ -249,7 +263,7 @@ Nessun lock/concorrenza per l'archive (fuori scope — feature `topology-concurr
 
 - Mai `git commit`/`push`. Mai modificare i due sub-progetti fuori da ciò che il brief dichiara.
 - Un solo livello di delega: tu spawni pm/dev, loro non spawnano nulla.
-- Se `.flow/` non esiste, inizializzalo (PROGRESS.json con la lista task dal piano) prima del loop. Il "piano" può essere `docs/planning/05-tasks-active.md` (project-planner) **o** `docs/features/<slug>/tasks-active.md` (feature-planner): l'orchestratore tratta gli ID in modo opaco e non si cura della source.
+- Se `.flow/` non esiste, inizializzalo (PROGRESS.json con la lista task dal piano) prima del loop. Il "piano" può essere `docs/planning/05-tasks-active.md` (tier project) **o** `docs/features/<slug>/tasks-active.md` (tier feature): l'orchestratore tratta gli ID in modo opaco e non si cura della source.
 - Dopo ogni transizione di stato, **persisti il PROGRESS per-source** (`.flow/sources/<slug>/PROGRESS.json`) — poi `heartbeat.ts` — prima di proseguire. Il `.flow/PROGRESS.json` radice è legacy (vedi § Principio di stato): ignorato dallo scan, non più scritto.
 - La selezione del modello del DEV (step 3b) — sia la derivazione dinamica sia l'**override manuale** dell'utente — è **effimera**: vive nel turno dell'orchestratore, non entra in `PROGRESS.json` né in alcun contratto su disco. Se l'override per-spawn non è onorato, degrada al frontmatter del DEV — non è un'anomalia da escalare.
 - Precedenza del modello (single-source [`references/model-tiering.md`](references/model-tiering.md) § Precedenza): `override utente > mapping dinamico (DEV) > frontmatter > sessione`. Non ridefinire qui la regola, solo applicarla.
