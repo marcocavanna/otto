@@ -24,7 +24,8 @@
 - Effort: 1-2h
 - Definition of done: preview mostra gli inserimenti senza scrivere; apply idempotente e reversibile (backup); post-verify "ogni artefatto ha anchor coerente"; testato su un progetto esistente (es. fixture o copia dell'epic tenancy)
 - Dipende da: planner-unification-release-002
-- Status: ⚪ todo
+- Status: ✅ done
+> Fixture a 4 tier creato in `docs/fixtures/` (10 file, tutti i casi: project/epic/feature-con-epic/feature-standalone/task, più 1 file già anchored). Ciclo completo eseguito: preview (9 inject pianificati, 1 already_anchored, 0 ambigui) → apply (9/9 DONE, backup in `docs/.bak-2026-06-03T10-47-21Z/`) → post-verify (9/9 PASS). Test aggiuntivi: idempotenza ✅, proto-anchor edge case 7.8 ✅, reversibilità backup ✅, feature standalone ✅. Fix in release-002: detection proto-anchor estesa al prefisso `<!-- Anchor` (non solo exact match `<!-- Anchor -->`). Report completo: `docs/fixtures/anchor-retrofit-test-report.md`.
 
 ### planner-unification-release-004 — 🚀 [release] Bump 2.0.0 + README/changelog + breaking notice
 - Effort: 1-2h

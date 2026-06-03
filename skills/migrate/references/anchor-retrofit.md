@@ -45,12 +45,23 @@ indipendentemente.
 Per ogni file trovato:
 
 ```
-se grep '<!-- Anchor -->' nel file (riga qualsiasi entro le prime 10 righe):
-  → already_anchored { path, reason: "anchor già presente" }
+se una riga qualsiasi entro le prime 10 righe inizia con "<!-- Anchor":
+  → already_anchored { path, reason: "anchor già presente" | "proto-anchor rilevato" }
   → skip (idempotenza)
 altrimenti:
   → candidato all'inferenza (§2)
 ```
+
+Il pattern di riconoscimento è il **prefisso** `<!-- Anchor` (non l'exact match
+`<!-- Anchor -->`): cattura sia la forma canonica sia forme proto/legacy che
+hanno testo aggiuntivo nel commento (es. `<!-- Anchor (modello introdotto...) -->`
+prodotte da dogfooding pre-2.0.0). L'obiettivo è **non iniettare mai** quando
+è già presente una qualsiasi dichiarazione anchor, indipendentemente dal formato.
+
+Quando il prefisso `<!-- Anchor` è presente ma il formato non corrisponde alla
+forma canonica (`<!-- Anchor --> **Tier**: ...`), il file va in `already_anchored`
+con `reason: "proto-anchor rilevato (formato non canonico)"`. Il post-verify lo
+segnalerà come `WARN` anziché `FAIL` (anchor presente ma non canonico).
 
 La ricerca si limita alle prime 10 righe: l'anchor deve stare subito dopo il
 titolo H1 (`anchor-schema.md` §"Posizione"). Un anchor fuori posizione (righe
@@ -431,11 +442,29 @@ Impossibile per design (il timestamp è generato al momento dell'apply). Vedi
 
 ### 7.7 Anchor già presente con valori diversi
 
-L'idempotenza è **pura**: se `<!-- Anchor -->` è già presente (nelle prime 10
-righe), il file va in `already_anchored` a prescindere dai valori. La skill non
-corregge anchor esistenti — quello è fuori scope. Il post-verify può segnalare
-discrepanze rispetto al valore atteso, ma l'apply non tocca mai un anchor già
-presente.
+L'idempotenza è **pura**: se il prefisso `<!-- Anchor` è già presente (nelle
+prime 10 righe), il file va in `already_anchored` a prescindere dai valori. La
+skill non corregge anchor esistenti — quello è fuori scope. Il post-verify può
+segnalare discrepanze rispetto al valore atteso, ma l'apply non tocca mai un
+anchor già presente.
+
+### 7.8 Proto-anchor non canonico (pre-2.0.0)
+
+Alcuni artefatti creati durante il dogfooding pre-2.0.0 possono avere un anchor
+in formato esteso o multi-riga — es.:
+
+```markdown
+<!-- Anchor (modello introdotto da questo stesso epic — dogfooding) -->
+**Tier**: epic
+**Parent**: —
+**Bubble-up target**: —
+```
+
+La detection riconosce il prefisso `<!-- Anchor` e classifica il file come
+`already_anchored { reason: "proto-anchor rilevato (formato non canonico)" }`.
+Nessun inject. Il post-verify emette `WARN: proto-anchor non canonico` per
+questi file. La normalizzazione al formato canonico è un'operazione manuale fuori
+scope di `migrate`.
 
 ---
 
@@ -445,8 +474,9 @@ presente.
 |---|---|
 | Scope scan | `00-context.md` e `technical-context.md` in `docs/planning/`, `docs/epics/*/`, `docs/features/*/`, `docs/tasks/*/` |
 | Esclusione | `docs/archive/**` |
-| Detection anchor | `grep '<!-- Anchor -->'` nelle prime 10 righe |
-| Anchor presente | `already_anchored` — skip idempotente |
+| Detection anchor | prefisso `<!-- Anchor` nelle prime 10 righe (cattura canonico + proto-anchor) |
+| Anchor canonico presente | `already_anchored { reason: "anchor già presente" }` — skip |
+| Proto-anchor (non canonico) | `already_anchored { reason: "proto-anchor rilevato" }` — skip; WARN in post-verify |
 | Inferenza project | `Tier: project · Parent: — · Bubble-up target: —` (fisso) |
 | Inferenza epic | bubble-up = `docs/planning/technical-context.md` se esiste; parent = slug da H1 di planning/00-context o `—` |
 | Inferenza feature | scan roadmap; 0 match → standalone `—/—`; >1 match → `ambiguous` |
