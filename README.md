@@ -426,3 +426,23 @@ Durante il flow gli agenti leggono e scrivono parecchi file. Senza configurazion
 Cosa resta a chiederti conferma (ed è giusto così): le scritture del DEV **fuori** dallo scope del brief e i fallimenti di build/verify. Adatta la riga `Bash(...)` al build command del tuo progetto, o omettila se preferisci confermare la build a mano.
 
 > `.flow/` è stato effimero: aggiungilo al `.gitignore` del progetto. Versiona invece `docs/planning/` e `docs/features/`: lì vive il piano, ed è conoscenza che vuoi tenere.
+
+### Nome sessione & stato live del flow 🏷️
+
+Quando un flow è in esecuzione, otto **rinomina la sessione** di Claude Code con un nome canonico — `otto:flow · <slug-source> [· <task>]` — così, con più finestre aperte, riconosci al volo quale sta eseguendo cosa (e imposta anche il titolo della tab del terminale). È automatico, via hook del plugin: nessuna configurazione.
+
+> Come funziona: l'hook setta il nome su `SessionStart` e a ogni tuo prompt (`UserPromptSubmit`). Quindi è perfetto al **resume** di una sessione e quando interagisci, mentre durante un full-run lungo e silenzioso (un solo prompt iniziale) il nome non cambia tra un task e l'altro. Per lo **stato live continuo** usa la statusLine qui sotto.
+
+Per un footer sempre aggiornato (source · task · avanzamento), abilita la statusLine **opt-in** nel `.claude/settings.json` del progetto:
+
+```jsonc
+{
+  "statusLine": {
+    "type": "command",
+    "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/flow-statusline.sh",
+    "refreshInterval": 2
+  }
+}
+```
+
+Mostra `⚙ otto:flow · <slug> · <task> · N/M done` solo quando un flow è vivo; riga vuota altrimenti. È opt-in perché la statusLine è una preferenza globale tua, non qualcosa che un plugin debba importi.
