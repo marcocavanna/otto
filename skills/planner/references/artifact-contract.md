@@ -302,7 +302,7 @@ Generato: YYYY-MM-DD | Versione: 1
 
 ## Tier `epic`
 
-Layer di **coordinamento** in `docs/epics/<epic>/`: `00-context`, `02-abstract`, `technical-context` (seed condiviso), `roadmap`. Non è una planning source eseguibile direttamente: niente `tasks-active.md` proprio — l'epic genera **N feature figlie** (bundle standard di tier `feature`). Il contratto di coordinamento (limiti onesti su sequencing advisory, deps cross-source, one-source-per-run) è descritto in `skills/epic-planner/references/epic-artifacts.md` § "Epic coordination contract".
+Layer di **coordinamento** in `docs/epics/<epic>/`: `00-context`, `02-abstract`, `technical-context` (seed condiviso), `roadmap`. Non è una planning source eseguibile direttamente: niente `tasks-active.md` proprio — l'epic genera **N feature figlie** (bundle standard di tier `feature`). Il contratto di coordinamento (limiti onesti su sequencing advisory, deps cross-source, one-source-per-run) è descritto in `skills/planner/references/epic-artifacts.md` § "Epic coordination contract".
 
 ### 00-context.md (epic)
 
@@ -381,7 +381,7 @@ Generato: YYYY-MM-DD | Versione: 1
 
 ### technical-context.md (epic — seed condiviso)
 
-> Seed che **tutte** le feature figlie ereditano. La propagazione del seed (in giù alla materializzazione, in su a feature conclusa) è descritta in `skills/epic-planner/references/epic-artifacts.md` § "Propagazione del seed".
+> Seed che **tutte** le feature figlie ereditano. La propagazione del seed (in giù alla materializzazione, in su a feature conclusa) è descritta in `skills/planner/references/epic-artifacts.md` § "Propagazione del seed".
 
 ```markdown
 # Technical context (shared) — Epic: [titolo] (`<epic>`)
@@ -408,7 +408,7 @@ Generato: YYYY-MM-DD | Versione: 1
 
 ### roadmap.md (epic — coordinamento)
 
-> Analogo non-canonico di `03-milestones.md`: ordine, dipendenze inter-feature, sequencing, DoD epic. Letto da `whats-next` (epic-aware). Status a granularità **feature** (advisory). Dettagli e semantica dello `Status feature` in `skills/epic-planner/references/epic-artifacts.md`.
+> Analogo non-canonico di `03-milestones.md`: ordine, dipendenze inter-feature, sequencing, DoD epic. Letto da `whats-next` (epic-aware). Status a granularità **feature** (advisory). Dettagli e semantica dello `Status feature` in `skills/planner/references/epic-artifacts.md`.
 
 ```markdown
 # Roadmap — Epic: [titolo] (`<epic>`)
@@ -438,7 +438,7 @@ Generato: YYYY-MM-DD | Versione: 1
 Generato: YYYY-MM-DD | Versione: 1 | Epic: <epic>
 ```
 
-> **Feature figlie**: ogni figlia è un **bundle standard** di tier `feature` (vedi sotto), con `00-context.md` che linka all'epic (`**Epic**: <epic>`), `02-abstract.md` che referenzia le decisioni condivise senza ripeterle, e `technical-context.md` seedato dal seed condiviso. Regole complete in `skills/epic-planner/references/epic-artifacts.md` § "Feature figlie — generazione".
+> **Feature figlie**: ogni figlia è un **bundle standard** di tier `feature` (vedi sotto), con `00-context.md` che linka all'epic (`**Epic**: <epic>`), `02-abstract.md` che referenzia le decisioni condivise senza ripeterle, e `technical-context.md` seedato dal seed condiviso. Regole complete in `skills/planner/references/epic-artifacts.md` § "Feature figlie — generazione".
 
 ---
 
@@ -547,7 +547,7 @@ Generato: YYYY-MM-DD | Versione: 1
 Generato: YYYY-MM-DD | Versione: 1
 ```
 
-> Per le feature figlie di un epic: il seed copia le sezioni rilevanti del `technical-context.md` condiviso dell'epic con intestazione `> Seed da docs/epics/<epic>/technical-context.md`. Vedi `skills/epic-planner/references/epic-artifacts.md` § "Propagazione del seed".
+> Per le feature figlie di un epic: il seed copia le sezioni rilevanti del `technical-context.md` condiviso dell'epic con intestazione `> Seed da docs/epics/<epic>/technical-context.md`. Vedi `skills/planner/references/epic-artifacts.md` § "Propagazione del seed".
 
 ### tasks-active.md (feature)
 

@@ -1,12 +1,12 @@
 # Epic artifacts — template + contratto di coordinamento
 
-Template dei file generati da `epic-planner` e definizione del **layer di coordinamento non-canonico**. Markdown denso, niente filler, gestione gap come `../../project-planner/artifact-templates.md`.
+Template dei file generati da `epic-planner` e definizione del **layer di coordinamento non-canonico**. Markdown denso, niente filler, gestione gap come `artifact-contract.md`.
 
 ---
 
 ## Epic coordination contract (NON-CANONICO)
 
-> Questa sezione descrive il layer epic. La **fonte di verità della risoluzione** resta il *Planning source contract* in `../../feature-planner/feature-artifacts.md` § "Planning source contract" — **linkala, non duplicarla**.
+> Questa sezione descrive il layer epic. La **fonte di verità della risoluzione** resta il *Planning source contract* in `../planning-source-contract.md` § "Planning source contract" — **linkala, non duplicarla**.
 
 L'epic produce:
 
@@ -166,7 +166,7 @@ Generato: YYYY-MM-DD | Versione: 1 | Epic: <epic>
 
 ## Feature figlie — generazione
 
-Ogni feature figlia è un **bundle standard** secondo `../../feature-planner/feature-artifacts.md`: i 4 file (`00-context.md`, `02-abstract.md`, `technical-context.md`, `tasks-active.md`), campo `Feature: <epic>-<feat>`, ID task `<epic>-<feat>-NNN`. Differenze rispetto a una feature standalone:
+Ogni feature figlia è un **bundle standard** secondo `../planning-source-contract.md`: i 4 file (`00-context.md`, `02-abstract.md`, `technical-context.md`, `tasks-active.md`), campo `Feature: <epic>-<feat>`, ID task `<epic>-<feat>-NNN`. Differenze rispetto a una feature standalone:
 
 - **`00-context.md` del figlio** linka all'epic: `**Epic**: <epic>` + `**Dipende da feature**: [...]` (coerente con roadmap).
 - **`02-abstract.md` del figlio** non ripete le decisioni condivise: le **referenzia** (`vedi docs/epics/<epic>/02-abstract.md`) e aggiunge solo lo specifico della feature.
@@ -179,7 +179,7 @@ Ogni feature figlia è un **bundle standard** secondo `../../feature-planner/fea
 Regola (il seed propaga **in giù** alla materializzazione e **in su** a feature conclusa — loop chiuso):
 1. **In giù, alla materializzazione**: il `technical-context.md` di ogni figlio è **seedato** dal `technical-context.md` condiviso (copia delle sezioni rilevanti per quella feature + intestazione `> Seed da docs/epics/<epic>/technical-context.md`).
 2. `task-implementer` estende il file del **figlio** in append-only durante il flow (come sempre); per le feature figlie legge **anche** il `technical-context.md` condiviso dell'epic (seed + blocchi `## Consolidato da <feat>` risaliti dalle feature già concluse) come vincolo ereditato.
-3. **In su, a feature conclusa**: `feature-planner finalize <feat>` (invocato da `flow-run` all'auto-archivio, vedi `../../feature-planner/SKILL.md` § "Mode 4") risale le decisioni tattiche della feature al `technical-context.md` condiviso, in append datato (`## Consolidato da <feat> (YYYY-MM-DD)`). Così le feature successive — già materializzate — le ereditano via il punto 2, senza ri-seed.
+3. **In su, a feature conclusa**: `planner finalize <feat>` (invocato da `flow-run` all'auto-archivio, vedi `finalize.md` § "Mode 4") risale le decisioni tattiche della feature al `technical-context.md` condiviso, in append datato (`## Consolidato da <feat> (YYYY-MM-DD)`). Così le feature successive — già materializzate — le ereditano via il punto 2, senza ri-seed.
 4. In `revise <epic>`, una decisione condivisa che cambia va **ri-propagata** ai `technical-context.md` dei figli impattati (append di una nota datata "superseded/aggiornato", non riscrittura silenziosa). Segnala nel diff quali figli sono stati toccati.
 
 > Trade-off accettato: il seed è una **copia**, non un link risolto a runtime. È il prezzo per non toccare il contratto downstream (che legge un solo context-root). La coerenza cross-feature è responsabilità di `epic-planner` (seed + propagazione), non dei downstream.

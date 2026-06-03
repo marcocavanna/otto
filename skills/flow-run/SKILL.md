@@ -188,7 +188,7 @@ Vincoli del mirror:
 
 ### Risoluzione epic della source
 
-Una feature source può appartenere a un epic (vedi `../epic-planner/SKILL.md`). Per scoprirlo,
+Una feature source può appartenere a un epic (pianificato dal tier epic di `planner`, vedi `../planner/references/tier-epic.md`). Per scoprirlo,
 **best-effort**:
 1. Glob `docs/epics/*/roadmap.md`. Per ciascuno cerca una riga `Source: docs/features/<slug>/` che
    referenzi **questa** source.

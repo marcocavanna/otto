@@ -7,7 +7,7 @@ La dimensione che epic-planner aggiunge rispetto a feature/project-planner: **sp
 Una feature figlia è un'unità che:
 
 - ha un **outcome osservabile** e una **DoD binaria** propria (non "metà di una cosa");
-- sta in **1–8 task atomici** (regola di `../../feature-planner/feature-artifacts.md`); se >10 → non è una feature, ri-decomponi;
+- sta in **1–8 task atomici** (regola di `../planning-source-contract.md`); se >10 → non è una feature, ri-decomponi;
 - è **deployabile/verificabile** il più possibile in isolamento (anche se dietro feature flag);
 - tocca un **insieme coerente** di moduli (evita feature che spalmano mezzo codebase).
 

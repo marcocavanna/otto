@@ -10,7 +10,8 @@
 - Effort: 1-2h
 - Definition of done: le 3 dir skill rimosse; description di `planner` assorbe i trigger ("pianifica la feature/epic/progetto"); nessun link orfano residuo nei runtime
 - Dipende da: planner-unification-downstream-006
-- Status: ⚪ todo
+- Status: ✅ done
+> Untangle reale (core aveva portato i planner per LINK non per copia): migrati decomposition.md + epic-artifacts.md in planner/references/ con fix dei loro link interni; ripuntati ~17 hard-link in entrata; rimosse le 3 dir; 0 link orfani verificati. Follow-up: ~80 menzioni in PROSA dei vecchi nomi skill (non-breaking) da ripulire contestualmente.
 
 ### planner-unification-release-002 — 💻 [impl] Estendere migrate per il retrofit degli anchor
 - Effort: 2-3h

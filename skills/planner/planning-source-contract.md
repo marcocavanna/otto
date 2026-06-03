@@ -1,7 +1,7 @@
 # Planning source contract v2
 
 > Versione: 2.0.0 — sostituisce la sezione "Planning source contract (CANONICO)"
-> di `skills/feature-planner/feature-artifacts.md` (v1, mantenuta come legacy con redirect).
+> della v1 (ex skill `feature-planner`, rimossa in 2.0.0).
 > Consumato da: `task-implementer`, `code-implementer`, `flow-run`, `planner`.
 
 Documento **canonico** del meccanismo con cui i downstream risolvono il contesto (context-root) di un task a partire dal suo ID. Estende la semantica v1 (per-tier `project`/`feature`) alla taxonomy completa dei **4 tier** (`project`/`epic`/`feature`/`task`) definita in `docs/epics/planner-unification/technical-context.md` § Taxonomy.

@@ -6,7 +6,7 @@ Resta valido tutto il resto: read-only, `PROGRESS.json` canonico, drift segnalat
 
 ## Cosa aggiunge la roadmap
 
-`docs/epics/<epic>/roadmap.md` (layer **non-canonico**, vedi `../../epic-planner/references/epic-artifacts.md`) dichiara per ogni feature figlia:
+`docs/epics/<epic>/roadmap.md` (layer **non-canonico**, vedi `../../planner/references/epic-artifacts.md`) dichiara per ogni feature figlia:
 - `Source: docs/features/<epic>-<feat>/` (la feature source vera, canonica);
 - `Dipende da feature: <epic>-<altra>` (dipendenze **inter-feature**);
 - ordine sequenziale + fronti paralleli.

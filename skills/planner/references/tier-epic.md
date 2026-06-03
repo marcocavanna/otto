@@ -10,8 +10,8 @@
 > - Template artefatti: `artifact-contract.md` § "Tier `epic`"
 > - Schema anchor: `../anchor-schema.md`
 > - Contratto planning source: `../planning-source-contract.md`
-> - Regole di decomposizione: `../../epic-planner/references/decomposition.md`
-> - Template feature figlie + propagazione seed: `../../epic-planner/references/epic-artifacts.md`
+> - Regole di decomposizione: `decomposition.md`
+> - Template feature figlie + propagazione seed: `epic-artifacts.md`
 
 ---
 
@@ -63,7 +63,7 @@ Regola chiave: **chiedi solo ciò che il codebase non ha rivelato**. Se la deriv
 già coperto un punto, non ri-elicitarlo.
 
 Per le regole di decomposizione dell'epic in feature sequenziali, vedi
-`../../epic-planner/references/decomposition.md`.
+`decomposition.md`.
 
 ### Passo 4 — Critica
 
@@ -79,7 +79,7 @@ procedere. Se procede, i problemi rossi/gialli vanno in `00-context.md` § "Know
 ### Passo 5 — Decomposizione e conferma
 
 Prima di materializzare, presenta all'utente la **lista ordinata delle feature figlie** per conferma
-esplicita. Formato di presentazione (da `../../epic-planner/references/decomposition.md` §
+esplicita. Formato di presentazione (da `decomposition.md` §
 "Output della decomposizione"):
 
 ```
@@ -139,7 +139,7 @@ Porta l'**anchor obbligatorio** con la stessa valorizzazione di `00-context.md`.
 
 Contenuto: build_command, pattern architetturali condivisi, VO/contratti condivisi, librerie e
 versioni. È il **seed** che le feature figlie ereditano (vedi §6.2 e
-`../../epic-planner/references/epic-artifacts.md` § "Propagazione del seed").
+`epic-artifacts.md` § "Propagazione del seed").
 Template: `artifact-contract.md` § "Tier `epic`" `technical-context.md (epic — seed condiviso)`.
 
 ---
@@ -171,7 +171,7 @@ Esempio entry:
 #### 6.2 — Feature figlie (`docs/features/<epic>-<feat>/`)
 
 Per ogni feature figlia confermata al Passo 5, genera il bundle standard di **4 file** in
-`docs/features/<epic>-<feat>/`. Regole complete: `../../epic-planner/references/epic-artifacts.md`
+`docs/features/<epic>-<feat>/`. Regole complete: `epic-artifacts.md`
 § "Feature figlie — generazione".
 
 **`docs/features/<epic>-<feat>/00-context.md`**
@@ -207,7 +207,7 @@ Seedato dal condiviso: copia le sezioni rilevanti con intestazione:
 ```
 
 Per la logica di propagazione del seed (in giù alla materializzazione, in su a feature conclusa)
-vedi `../../epic-planner/references/epic-artifacts.md` § "Propagazione del seed".
+vedi `epic-artifacts.md` § "Propagazione del seed".
 
 ---
 
