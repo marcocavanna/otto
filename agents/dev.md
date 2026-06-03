@@ -13,6 +13,8 @@ hooks:
     - hooks: [{ type: command, command: "${CLAUDE_PLUGIN_ROOT}/hooks/verify-gate.sh" }]
 ---
 
+Come prima riga di output esegui via Bash `echo "model=$ANTHROPIC_MODEL"` e riporta l'output verbatim.
+
 Sei il **DEV** del loop attended. Esegui la skill `code-implementer` **leggendone le istruzioni dai file** (non hai un tool Skill): leggi e segui
 
 - `<SKILL_DIR>/code-implementer/SKILL.md`

@@ -159,7 +159,8 @@ Nessun commit, mai. L'orchestratore annota nel summary: "Source `<slug>` archivi
    - Full-run: prendi il prossimo task `pending`. Se nessuno → tutti i task sono `done`: esegui
      l'auto-archivio (vedi § Auto-archivio a fine source), poi termina la source e riporta summary.
    - Single-task: prendi il task indicato dall'utente.
-2. **Attiva il task PRIMA dello spawn DEV** (l'hook risolve il task da qui): nel PROGRESS **per-source**
+1b. **Risolvi l'`execution-mode`** (prima di qualunque spawn, una sola volta per task) dalla single-source [`references/model-tiering.md`](references/model-tiering.md) § "Mappa". Leggi la **`Complessità (ipotesi)`** del task dalla sua riga nel **tasks-file** della source (schema task-entry, `../planner/planning-source-contract.md`): `trivial`/`standard` → **`solo`**; `critical` → **`team`**. Questa è una stima **a priori** del planner, disponibile **prima** del `meta.json` (che il PM emette solo al `brief`, troppo tardi per decidere *se* spawnare il PM). **Degrado conservativo**: complessità **assente / illeggibile / fuori enum**, **oppure** riga del task non risolvibile nel tasks-file → **`team`** (MAI `solo`) + **nota nel summary**. **Override utente** esplicito (*"esegui in team"*, *"forza solo"*, `--mode <solo|team>`) → vince sulla mappa, **effimero**, annotato nel summary. L'`execution-mode` **non** entra in `PROGRESS.json` né in alcun contratto su disco (effimero, come modello/dry-run).
+2. **Attiva il task PRIMA dello spawn** (DEV o `solo`; l'hook risolve il task da qui): nel PROGRESS **per-source**
    (`.flow/sources/<slug>/PROGRESS.json`) setta `current_task = <task>` e quel task `state = "active"`.
    Scrivi il file; poi aggiorna `heartbeat.ts` (ordine: PROGRESS → heartbeat; vedi
    `references/concurrency.md` § Aggiornamento heartbeat).
@@ -169,6 +170,11 @@ Nessun commit, mai. L'orchestratore annota nel summary: "Source `<slug>` archivi
    (§ "Risoluzione epic della source") e la sua riga `Status feature` in `docs/epics/<epic>/roadmap.md`
    è ancora `⚪ planned`, settala a `🔵 active`. Solo questa transizione planned→active; se è già
    `active`/`done` non toccarla. Source standalone o roadmap non risolta → salta silenziosamente.
+
+> **Biforcazione per `execution-mode`** (risolto in 1b): se **`team`** → esegui i passi **3–6** sotto (flusso PM→DEV invariato). Se **`solo`** → **salta a § "Ramo `solo`"** (un solo spawn, niente PM brief, niente dry-run separato).
+
+**Ramo `team`** (`execution-mode == team`) — flusso invariato:
+
 3. **Spawn `pm` → `brief <task>`.** Al ritorno verifica che esistano e non siano vuoti `.flow/briefs/<task>/scope.txt` e `.flow/briefs/<task>/frozen.txt`. Se mancano/vuoti o c'è `ESCALATION.json` → **vai a 7**.
 3b. **Deriva le policy del task** dalla single-source [`references/model-tiering.md`](references/model-tiering.md) (una sola volta per task). Tre output: **modello DEV**, **dry-run sì/no**, **modello del finalize PM**.
     - **Override manuale presente** (vedi § "Override manuale del modello"): usa il modello forzato per il DEV (e per il PM/finalize se l'utente ha esteso l'override). **NON** leggere né applicare `meta.json` per il modello: l'override ha precedenza massima e copre anche il caso `meta.json` assente/illeggibile (nessuna doppia logica, niente nota di degrado). Per la **dry-run policy**, un eventuale override esplicito (*"salta/forza il dry-run"*) vince; altrimenti vale la policy per complessità (sotto). Annota l'override applicato nel summary.
@@ -187,6 +193,17 @@ Nessun commit, mai. L'orchestratore annota nel summary: "Source `<slug>` archivi
    - **Finalize inline (fast-path)** — SE il task è `trivial`/`standard` (mai `critical`) E `RESULT.deviations` non contiene deviazioni *funzionali* (solo note d'ambiente tipo `"build skipped..."` → ammesso; qualunque deviazione sostanziale o dubbio → percorso PM): l'orchestratore chiude il task **senza spawnare il PM**. Risolve il path del brief on-disk da `Context-root:` nell'header di `.flow/briefs/<task>/brief.md`: path canonico `<context-root>/tasks/<id>.md` (se `Context-root:` è assente → default `docs/planning/`). Marca `Status: ✅ finalized` nel brief risolto. **Non** tocca `technical-context.md` (deviazioni vuote ⇒ nessuna decisione cumulativa; l'eventuale append è già avvenuto al `brief`). Salta la ri-verifica semantica del PM: su un task leggero che ha passato il `verify-gate` il suo valore marginale non giustifica uno spawn a freddo (~90s). Il gate (`verify=="pass"`, no escalation) l'hai **già** applicato qui sopra.
    - **Finalize PM (default)** — altrimenti (task `critical`, deviazioni funzionali, o override esteso al PM): **spawn `pm` → `finalize <task>`** col `model: <finalize derivato>` (vedi 3b: `trivial`/`standard`→`haiku`, `critical`→`sonnet`; degrado/override → `sonnet`). Qui restano la ri-verifica realtà-brief e l'eventuale update di `technical-context.md`.
    In entrambi i casi: nel PROGRESS **per-source** (`.flow/sources/<slug>/PROGRESS.json`) setta il task `state="done"`, scrivi il file e aggiorna `heartbeat.ts` (ordine PROGRESS → heartbeat); poi **mirror dello status** (vedi sotto). In full-run, dopo aver segnato `done` l'ultimo task: verifica se **tutti** i task della source sono `done`; in caso → esegui § Auto-archivio a fine source (la source è chiusa, non tornare a 1). Altrimenti torna a **1**; in single-task riporta summary e fermati.
+
+### Ramo `solo` (`execution-mode == solo`)
+
+Sostituisce i passi **3–6** del ramo team con **un solo spawn**. Nessun `pm brief`, nessun dry-run separato: l'analisi vive nello stesso contesto dell'implementazione. L'agente `solo` è un subagent con gli **stessi hook** del DEV (`scope-check`/`verify-gate`), quindi le sue scritture restano gate-ate e il verify resta imposto — vedi `agents/solo.md`.
+
+- **S1. Deriva il modello** dalla `Complessità (ipotesi)` via [`references/model-tiering.md`](references/model-tiering.md) § "Mappa" (`trivial→haiku`, `standard→sonnet`; override utente / degrado come per il DEV). L'agente `solo` non gira **mai** su `critical` (quelli risolvono `team` in 1b).
+- **S2. Spawn `solo` → `implement`** (`subagent_type: solo`, `model: <derivato>`). In un solo contesto l'agente: analizza → materializza `scope.txt`/`frozen.txt` in `.flow/briefs/<task>/` (bootstrap consentito dallo `scope-check`) → implementa (gate-ato) → verifica → **produce gli artefatti versionati**: `<context-root>/tasks/<id>.md` completo (Vincoli risolti · File impattati · Shape · Deviazioni · `Status: ✅ finalized`) + append `technical-context.md` se decisioni cumulative → emette `RESULT.json`. **Struttura artefatti identica al ramo team; cambia solo l'ordine** (prima implementa, poi documenta la realtà).
+- **S3. Leggi `.flow/briefs/<task>/RESULT.json`.**
+  - **`promote==true`** → **promozione `solo → team`** (pre-write, working tree pulito: l'agente non ha toccato il codice): ri-esegui **questo stesso task** dal passo **3** in `team` (esegui la sequenza 3 → 3b → 4 → 5 → 6 del ramo team per lo stesso task, senza toccare il PROGRESS né segnare `done`); annota nel summary: `"PROMOTED <task>: <promote_reason> → re-eseguito in team"`. Valutato **prima** di `escalate`/`verify`: se `promote==true` il working tree è pulito, il re-run è sicuro.
+  - altrimenti **`escalate==true` OPPURE `verify!="pass"` OPPURE `ESCALATION.json` presente** → **vai a 7** (questi sono fail **post-write**: il codice è già stato toccato → **mai** promozione, eviterebbe un re-run su working tree sporco).
+- **S4. Gate del finalize (orchestratore).** Superato il gate (`verify=="pass"`, nessuna escalation): il brief è già `finalized` (scritto dall'agente in S2; l'orchestratore non spawna alcun finalize). Nel PROGRESS **per-source** setta `state="done"`, scrivi il file, aggiorna `heartbeat.ts` (ordine PROGRESS → heartbeat), poi **mirror dello status** (stessa procedura del ramo team, vedi sotto). In full-run, se tutti i task sono `done` → § Auto-archivio a fine source; altrimenti torna a **1**. In single-task riporta summary e fermati.
 
 ### Mirror status sul tasks-file della source (a finalize OK)
 
@@ -239,6 +256,7 @@ Vincoli:
 - `pm` (finalize): "Funzione: finalize. TASK: <task>. Applica il gate attended." — spawn `Agent` col `model: <finalize derivato>` (vedi step 3b: tier più basso del DEV perché il finalize è prevalentemente meccanico).
 - `dev` (dry-run): "Modalità: dry-run. TASK: <task>. Leggi solo .flow/briefs/<task>/brief.md." — spawn `Agent` con override `model: <derivato>` (vedi step 3b). **Eseguito solo se la dry-run policy = run** (step 4).
 - `dev` (implement): "Modalità: implement. TASK: <task>." — stesso `model: <derivato>` del dry-run.
+- `solo` (implement): "Modalità: implement. TASK: <task>." — spawn `Agent` con `subagent_type: solo`, `model: <derivato dalla complessità>` (vedi § "Ramo solo" S1). **Un solo spawn**: l'agente fa analisi + implement + verify + artefatti versionati. Solo per task `trivial`/`standard` (`execution-mode == solo`).
 
 Non passare logica di business nel prompt: la fonte è il brief su disco. Tieni i prompt sottili.
 

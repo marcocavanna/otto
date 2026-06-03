@@ -1,7 +1,8 @@
 # Model tiering — policy complessità-driven (single source)
 
 > **Single-source.** Questa è l'**unica** definizione delle policy guidate da `complexity`:
-> il **modello** dei subagent (DEV e finalize PM) e il **processo** (eseguire o saltare il dry-run).
+> il **modello** dei subagent (DEV e finalize PM), il **processo** (eseguire o saltare il dry-run)
+> e l'**execution-mode** (`solo`/`team`).
 > Consumate da `flow-run` (vedi `skills/flow-run/SKILL.md`).
 > Gli altri file (`docs/features/model-tiering/02-abstract.md`,
 > `skills/task-implementer/references/complexity-criteria.md`, la SKILL `flow-run`)
@@ -9,17 +10,29 @@
 
 ## Mappa
 
-| `complexity` | modello DEV (alias) |
-|---|---|
-| `trivial`  | `haiku`  |
-| `standard` | `sonnet` |
-| `critical` | `opus`   |
+| `complexity` | modello DEV (alias) | execution-mode |
+|---|---|---|
+| `trivial`  | `haiku`  | `solo` |
+| `standard` | `sonnet` | `solo` |
+| `critical` | `opus`   | `team` |
 
 `complexity` è l'enum stabile `{trivial, standard, critical}` (definito in
 `technical-context.md` § "Value Objects / contratti"): da consumare, non ridefinire.
 
 I valori della colonna modello sono **alias**, non ID pinned (es. non
 `claude-haiku-4-5-...`), per resilienza ai version-bump — ASSUMPTION-model-tiering-002.
+
+La colonna `execution-mode` seleziona il **processo di esecuzione del task** in `flow-run`:
+`solo` = singolo agente fast-path (vedi `agents/solo.md`); `team` = loop attended PM↔DEV.
+
+## Enum execution-mode (2.1.0)
+
+`{solo, team}` — enum chiuso.
+
+- `solo`: fast-path mono-agente, senza loop attended PM↔DEV. Per task a basso rischio cross-task.
+- `team`: percorso attended completo (PM brief → DEV → gate). Per task `critical`.
+- `inline` **non** è presente: riservato a una release futura (ASSUMPTION-fast-path-002) — non inserirlo.
+- `promote` **non** è gestito qui: appartiene alla feature `fast-path-promotion`.
 
 ## Precedenza
 
@@ -33,6 +46,18 @@ override utente > mapping dinamico (DEV) > frontmatter agente > modello di sessi
 - **mapping dinamico (DEV)**: questa mappa, applicata da `flow-run` allo spawn del DEV.
 - **frontmatter agente**: `model:` di default in `agents/dev.md` / `agents/pm.md`.
 - **modello di sessione**: fallback ultimo se nessuno dei precedenti si applica.
+
+### Precedenza — execution-mode
+
+```
+override utente > mappa `model-tiering.md` > default `team`
+```
+
+- **override utente** (effimero): es. *"esegui in team"* / *"forza solo"*; vince su tutto,
+  **non** persistito, annotato nel summary del run. Stessa meccanica degli override modello/dry-run.
+- **mappa**: risoluzione a runtime da `complexity` via la tabella `## Mappa` sopra.
+- **default `team`**: se `meta.json` assente / `complexity` fuori-enum / illeggibile → `team` (fail-safe,
+  vedi `## Degrado graceful`). MAI `solo` per degrado.
 
 ## Fail-safe verso l'alto
 
@@ -49,11 +74,14 @@ modello più potente; sottostimare costa il task **più** i retry del gate.
 con spazio, o valori ignoti come `"low"`):
 
 ```
-modello DEV = sonnet   (default; MAI degrado a haiku)
+modello DEV    = sonnet   (default; MAI degrado a haiku)
+execution-mode = team     (default; MAI degrado a solo)
 ```
 
-`flow-run` aggiunge una **nota nel summary** quando applica questo default, così la
-misclassificazione/illeggibilità resta visibile.
+`flow-run` aggiunge una **nota nel summary** quando applica questi default, così la
+misclassificazione/illeggibilità resta visibile. Il degrado di `execution-mode` è
+**conservativo** (ASSUMPTION-fast-path-005 epic): in dubbio si esegue il percorso `team`,
+mai il fast-path `solo`.
 
 ## Dry-run: eseguire o saltare (complessità-driven)
 
