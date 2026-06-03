@@ -108,7 +108,7 @@ Se il task richiede di scrivere più di 300 righe in un singolo file:
 Sto per scrivere [N] righe in [filename]. Soft limit: 300.
 
 Tipicamente significa:
-- Il task è troppo grande (rivedi splitting in project-planner)
+- Il task è troppo grande (rivedi splitting con `planner`)
 - Il costrutto andrebbe spezzato in più file (es. classe parziale, helper)
 
 Procedo comunque o suggerisci diverso?

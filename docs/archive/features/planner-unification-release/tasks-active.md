@@ -31,7 +31,21 @@
 - Effort: 1-2h
 - Definition of done: plugin.json e marketplace.json a 2.0.0; README aggiornato (planner unico, 4 tier, anchor, bubble-up via finalize); nota breaking esplicita sul ritiro delle 3 skill e sul retrofit migrate
 - Dipende da: planner-unification-release-003
-- Status: ⚪ todo
+- Status: ✅ done
+> `plugin.json` e `marketplace.json` bumped a 2.0.0. README riscritto: sezione "Novità 2.0.0", breaking notice esplicita (ritiro project/feature/epic-planner, back-compat invariato, migrazione opt-in anchor-retrofit), tabella skill aggiornata (planner unico a 4 tier), Ricette A/B/B-bis aggiornate, Ricetta J nuova (anchor-retrofit), §3 path aggiornati (tier task aggiunto), §4 naming task aggiornato, §9 dizionario con Tier/Anchor/Bubble-up, FAQ aggiornate. 7 menzioni vecchi nomi nel README sono contestualmente intenzionali (breaking notice + FAQ migrazione).
+
+## Gate pre-release-004 (chiusi)
+
+### Gate 1 — Cleanup prosa
+- **Stato**: ✅ chiuso (2026-06-03)
+- 82 menzioni di `project-planner`/`feature-planner`/`epic-planner` corrette in 27 skill file. 7 residue intenzionali (trigger legacy nel frontmatter planner + breaking notice per tier). README (19 menzioni) in scope di release-004 (rewrite completo).
+
+### Gate 2 — Dogfooding live
+- **Stato**: ✅ chiuso (2026-06-03)
+- Scenario: `planner plan → expand → finalize` su feature `fixture-cleanup` (4 tier, standalone).
+- Risultati: `planner plan` ✅ · `planner expand` ✅ · `planner finalize` anchor parsing ✅ · bubble-up no-op standalone ✅.
+- Gap trovati: (1) campo `Complessità (ipotesi)` mancante nella generazione iniziale → corretto inline; (2) Step 2 gate finalize standalone non documentato → gap non-blocking per 2.0.0.
+- Report completo: `docs/features/fixture-cleanup/dogfooding-report.md`.
 
 ## Note operative
 

@@ -68,10 +68,10 @@ Per le regole di decomposizione dell'epic in feature sequenziali, vedi
 ### Passo 4 — Critica
 
 Delega a `critical-review.md`. Per il tier `epic` sono applicabili i pattern: **1** (scope/effort
-mismatch: se emerge 1 sola feature, non è un epic → redirecta a `feature-planner`), **3** (logica di
+mismatch: se emerge 1 sola feature, non è un epic → redirecta a tier `feature`), **3** (logica di
 sequencing debole: ordine senza dipendenza tecnica reale), **4** (nessuna esclusione scope d'insieme),
 **6** (scope che sconfina nel tier `project`: se servono milestone / pitch / market → redirecta a
-`project-planner`).
+tier `project`).
 
 Sollevare i problemi rilevati **prima** di generare gli artefatti. L'utente decide se mitigare o
 procedere. Se procede, i problemi rossi/gialli vanno in `00-context.md` § "Known risks".
@@ -252,7 +252,7 @@ Dopo aver scritto tutti gli artefatti:
 
 - Scrive **solo** sotto `docs/epics/<epic>/` e `docs/features/<epic>-*/`.
 - Non tocca `docs/planning/`, altre feature/epic, né il codice sorgente.
-- Non tocca le skill `*-planner` esistenti: `epic-planner` resta attiva in parallelo.
+- Unico entry-point per il tier `epic`: le skill dedicate `epic-planner` sono state rimosse in 2.0.0.
 - **Non** crea mai `docs/epics/<epic>/tasks-active.md`: l'epic non è una planning source.
 - I 4 file del layer epic hanno nome fisso: `00-context.md`, `02-abstract.md`,
   `technical-context.md`, `roadmap.md`.

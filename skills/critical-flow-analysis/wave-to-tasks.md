@@ -25,7 +25,7 @@ Stesso formato di `../planner/planning-source-contract.md` (§ "Planning source 
 - **Dipendenze / ordine**: Wave 1 → Wave 2 → Wave 3. I task della Wave 2 dipendono dal completamento dei critici della Wave 1; la Wave 3 (refactor/perf) viene per ultima. Esplicita le dipendenze nel campo `Dipende da`.
 - **DoD**: concreta e verificabile — "issue BC-01 non più riproducibile + test che lo dimostra + build verde".
 
-### Formato task (identico a feature-planner)
+### Formato task (identico al tier feature di `planner`)
 
 ```markdown
 ### harden-login-001 — 🔧 [fix] Correggere null-deref in TokenValidator.Validate
@@ -42,7 +42,7 @@ ID = `<slug>-NNN`, **globalmente unici** (è la chiave con cui il downstream ris
 
 ## Provenienza / Origin
 
-I task vivono in `docs/features/<slug>/`: `task-implementer` li tratterà come task **feature** (`Origin: feature-planner`, niente milestone) — corretto e voluto, nessuna modifica ai downstream. La provenienza "da audit" resta tracciata in `audit.md` e nel campo `**Issue**:` di ogni task.
+I task vivono in `docs/features/<slug>/`: `task-implementer` li tratterà come task **feature** (`Origin: planner`, niente milestone) — corretto e voluto, nessuna modifica ai downstream. La provenienza "da audit" resta tracciata in `audit.md` e nel campo `**Issue**:` di ogni task.
 
 ## Dopo la generazione
 

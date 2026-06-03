@@ -6,22 +6,21 @@ description: >-
   epic-planner and feature-planner. Triggers on: "pianifica", "ho un'idea per",
   "voglio strutturare", "fammi i task per", "plan a feature", "plan an epic",
   "scomponi in feature", "plan this project", "project plan", "project pitch",
-  "fammi da PM", "feature-planner", "epic-planner", "project-planner".
+  "fammi da PM", "feature planner", "epic planner", "project planner".
   Defaults to tier `feature` if scope is ambiguous; always confirms before generating.
 ---
 
 # Planner
 
 Skill unificata di planning su 4 tier (`project` / `epic` / `feature` / `task`).
-Assorbe `project-planner`, `epic-planner` e `feature-planner`: è il punto di ingresso
-unico che seleziona il tier corretto e delega la logica `plan` al reference tier-specifico.
+Punto di ingresso unico che seleziona il tier corretto e delega la logica `plan` al reference tier-specifico.
 
 Gerarchia dei tier: `project ⊃ epic ⊃ feature ⊃ task`. Lo scaling up/down si muove lungo
 questa catena.
 
 ## Principi operativi
 
-Eredita verbatim i tre principi non negoziabili di `project-planner`:
+Tre principi non negoziabili:
 
 1. **No filler.** Mai produrre sezioni con titolo e nessun contenuto operativo. Se una
    sezione non è riempibile in modo significativo dal contesto raccolto, esplicitarla come
@@ -76,8 +75,7 @@ Logica completa: `references/finalize.md`.
 
 Scrive solo sotto `docs/<tier-home>/<slug>/` per il tier attivo. Non tocca mai il codice.
 
-Non tocca le skill `*-planner` esistenti: `project-planner`, `epic-planner` e
-`feature-planner` restano attive in parallelo finché la migrazione non è conclusa.
+Unico entry-point di planning: le skill `project-planner`, `epic-planner` e `feature-planner` sono state rimosse in 2.0.0.
 
 Lo schema anchor e il contratto di risoluzione context-root NON sono ridefiniti qui: sono
 canonici nei rispettivi file e vanno consultati lì.

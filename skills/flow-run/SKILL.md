@@ -183,7 +183,7 @@ Dopo aver marcato `done` in `PROGRESS.json`, riflettilo nel **tasks-file della s
 
 Vincoli del mirror:
 - È un riflesso **non-canonico**: la verità d'esecuzione resta `PROGRESS.json`. Se il tasks-file non contiene il task o ha un formato non riconoscibile, **non inventare**: salta il mirror e annotalo nel summary (non è un'escalation).
-- **Volatilità**: `project-planner expand` / `feature-planner expand` *sovrascrivono* il tasks-file. Dopo un expand il mirror va riallineato (lo stato durevole è sempre `PROGRESS.json`). Segnalalo nel summary se rilevi un disallineamento.
+- **Volatilità**: `planner expand` *sovrascrive* il tasks-file. Dopo un expand il mirror va riallineato (lo stato durevole è sempre `PROGRESS.json`). Segnalalo nel summary se rilevi un disallineamento.
 - Non toccare altre righe né altri file di planning.
 
 ### Risoluzione epic della source
@@ -244,7 +244,7 @@ Feature e epic concluse vengono archiviate in:
 **Regola di esclusione**: `docs/archive/**` non partecipa allo scan di risoluzione (context-root e tasks-file): i task archiviati non sono mai `pending`.
 Fonte: `skills/planner/planning-source-contract.md` § "Planning source contract".
 
-Lo spostamento fisico in archive è responsabilità di `feature-planner`/`project-planner`.
+Lo spostamento fisico in archive è responsabilità di `planner`.
 Il mirror status è inerte su task già `done` in feature archiviate.
 Nessun lock/concorrenza per l'archive (fuori scope — feature `topology-concurrency-core`).
 
@@ -252,7 +252,7 @@ Nessun lock/concorrenza per l'archive (fuori scope — feature `topology-concurr
 
 - Mai `git commit`/`push`. Mai modificare i due sub-progetti fuori da ciò che il brief dichiara.
 - Un solo livello di delega: tu spawni pm/dev, loro non spawnano nulla.
-- Se `.flow/` non esiste, inizializzalo (PROGRESS.json con la lista task dal piano) prima del loop. Il "piano" può essere `docs/planning/05-tasks-active.md` (project-planner) **o** `docs/features/<slug>/tasks-active.md` (feature-planner): l'orchestratore tratta gli ID in modo opaco e non si cura della source.
+- Se `.flow/` non esiste, inizializzalo (PROGRESS.json con la lista task dal piano) prima del loop. Il "piano" può essere `docs/planning/05-tasks-active.md` (tier project) **o** `docs/features/<slug>/tasks-active.md` (tier feature): l'orchestratore tratta gli ID in modo opaco e non si cura della source.
 - Dopo ogni transizione di stato, **persisti il PROGRESS per-source** (`.flow/sources/<slug>/PROGRESS.json`) — poi `heartbeat.ts` — prima di proseguire. Il `.flow/PROGRESS.json` radice è legacy (vedi § Principio di stato): ignorato dallo scan, non più scritto.
 - La selezione del modello del DEV (step 3b) — sia la derivazione dinamica sia l'**override manuale** dell'utente — è **effimera**: vive nel turno dell'orchestratore, non entra in `PROGRESS.json` né in alcun contratto su disco. Se l'override per-spawn non è onorato, degrada al frontmatter del DEV — non è un'anomalia da escalare.
 - Precedenza del modello (single-source [`references/model-tiering.md`](references/model-tiering.md) § Precedenza): `override utente > mapping dinamico (DEV) > frontmatter > sessione`. Non ridefinire qui la regola, solo applicarla.

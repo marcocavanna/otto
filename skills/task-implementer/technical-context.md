@@ -23,7 +23,7 @@ Gestione di `docs/planning/technical-context.md` — il registro tattico cumulat
 Se durante un brief emerge che una scelta tattica necessaria contraddice l'abstract:
 1. Fermare il flusso del brief
 2. Sollevare il conflitto all'utente
-3. Indirizzare a `revise` di project-planner per aggiornare `02-abstract.md` *prima* di proseguire
+3. Indirizzare a `planner revise` per aggiornare `02-abstract.md` *prima* di proseguire
 4. Solo dopo, riprendere il brief
 
 ## Template del file

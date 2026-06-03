@@ -1,6 +1,6 @@
 # Epic artifacts — template + contratto di coordinamento
 
-Template dei file generati da `epic-planner` e definizione del **layer di coordinamento non-canonico**. Markdown denso, niente filler, gestione gap come `artifact-contract.md`.
+Template dei file generati da `planner` (tier `epic`) e definizione del **layer di coordinamento non-canonico**. Markdown denso, niente filler, gestione gap come `artifact-contract.md`.
 
 ---
 
@@ -11,7 +11,7 @@ Template dei file generati da `epic-planner` e definizione del **layer di coordi
 L'epic produce:
 
 - **Layer epic** in `docs/epics/<epic>/` — `00-context.md`, `02-abstract.md`, `technical-context.md` (seed condiviso), `roadmap.md`. **Non è una planning source**: niente `tasks-active.md`, mai risolto dallo scan downstream, nessun marker Status canonico.
-- **N feature source** in `docs/features/<epic>-<feat>/` — **bundle standard** identici a quelli di `feature-planner` (i 4 file + ID `<epic>-<feat>-NNN`). Sono le uniche **source** dell'epic; i downstream le consumano invariate.
+- **N feature source** in `docs/features/<epic>-<feat>/` — **bundle standard** di tier `feature` (i 4 file + ID `<epic>-<feat>-NNN`). Sono le uniche **source** dell'epic; i downstream le consumano invariate.
 
 Mappatura mentale: `roadmap.md` sta alle feature figlie come `03-milestones.md` sta a `05-tasks-active.md` — **strategia macro vs esecuzione**.
 
@@ -160,7 +160,7 @@ Generato: YYYY-MM-DD | Versione: 1
 Generato: YYYY-MM-DD | Versione: 1 | Epic: <epic>
 ```
 
-> `Status feature` è un riflesso **non-canonico** e advisory (come il mirror di `flow-run` sul tasks-file): la verità d'esecuzione resta `PROGRESS.json` + tasks-file dei figli, e `whats-next` calcola l'avanzamento reale dai task, non da qui. Chi lo aggiorna: **`flow-run`** lo mirrora best-effort lungo il lifecycle (`⚪ planned → 🔵 active` alla prima attivazione di un task della feature, `→ ✅ done` all'auto-archivio); **`flow-sync`** ripara il drift residuo; `epic-planner revise` resta la leva manuale di curatela. Solo transizioni in avanti, mai retrocessione.
+> `Status feature` è un riflesso **non-canonico** e advisory (come il mirror di `flow-run` sul tasks-file): la verità d'esecuzione resta `PROGRESS.json` + tasks-file dei figli, e `whats-next` calcola l'avanzamento reale dai task, non da qui. Chi lo aggiorna: **`flow-run`** lo mirrora best-effort lungo il lifecycle (`⚪ planned → 🔵 active` alla prima attivazione di un task della feature, `→ ✅ done` all'auto-archivio); **`flow-sync`** ripara il drift residuo; `planner revise <epic>` resta la leva manuale di curatela. Solo transizioni in avanti, mai retrocessione.
 
 ---
 
@@ -182,8 +182,8 @@ Regola (il seed propaga **in giù** alla materializzazione e **in su** a feature
 3. **In su, a feature conclusa**: `planner finalize <feat>` (invocato da `flow-run` all'auto-archivio, vedi `finalize.md` § "Mode 4") risale le decisioni tattiche della feature al `technical-context.md` condiviso, in append datato (`## Consolidato da <feat> (YYYY-MM-DD)`). Così le feature successive — già materializzate — le ereditano via il punto 2, senza ri-seed.
 4. In `revise <epic>`, una decisione condivisa che cambia va **ri-propagata** ai `technical-context.md` dei figli impattati (append di una nota datata "superseded/aggiornato", non riscrittura silenziosa). Segnala nel diff quali figli sono stati toccati.
 
-> Trade-off accettato: il seed è una **copia**, non un link risolto a runtime. È il prezzo per non toccare il contratto downstream (che legge un solo context-root). La coerenza cross-feature è responsabilità di `epic-planner` (seed + propagazione), non dei downstream.
+> Trade-off accettato: il seed è una **copia**, non un link risolto a runtime. È il prezzo per non toccare il contratto downstream (che legge un solo context-root). La coerenza cross-feature è responsabilità di `planner` (seed + propagazione al tier `epic`), non dei downstream.
 
 ## Numero di feature
 
-Un epic tipico ha **2–6 feature**. 1 sola → è una feature (`feature-planner`). >~8 feature o serve roadmap di prodotto/milestone → è un progetto (`project-planner`).
+Un epic tipico ha **2–6 feature**. 1 sola → è una feature (usa `planner` tier `feature`). >~8 feature o serve roadmap di prodotto/milestone → è un progetto (usa `planner` tier `project`).

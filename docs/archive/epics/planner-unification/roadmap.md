@@ -40,7 +40,7 @@
 - **Goal**: rimozione netta di `project/feature/epic-planner` (trigger assorbiti da `planner`); estensione di `migrate` per il retrofit degli anchor negli artefatti esistenti; bump 2.0.0 + README/changelog + breaking notice.
 - **Dipende da feature**: planner-unification-downstream
 - **Sizing (indicativo)**: M
-- **Status feature**: ⚪ planned
+- **Status feature**: ✅ done
 - **Source**: docs/features/planner-unification-release/
 
 ## Fronti paralleli
@@ -57,15 +57,15 @@ Nessuno. Catena strettamente lineare 1→2→3→4→5, imposta dalle dipendenze
 
 **Branch**: `epic/planner-unification` (non pushato). **Avanzamento**: `contract ✅ · core ✅ · finalize ✅ · downstream ✅` (archiviate) · `release 🔵 in corso`.
 
-**`release` — restano** (vedi `docs/features/planner-unification-release/tasks-active.md`):
-- ✅ **001** rimozione 3 planner + planner autosufficiente (fatto)
-- ⚪ **002** estendere `migrate` per il retrofit degli anchor sui progetti esistenti
-- ⚪ **003** test migrate (preview/apply/post-verify)
-- ⚪ **004** 🚀 bump **2.0.0** + README/changelog + breaking notice
+**`release` — stato aggiornato** (vedi `docs/features/planner-unification-release/tasks-active.md`):
+- ✅ **001** rimozione 3 planner + planner autosufficiente
+- ✅ **002** estendere `migrate` per il retrofit degli anchor
+- ✅ **003** test migrate (preview/apply/post-verify)
+- ✅ **004** 🚀 bump **2.0.0** + README/changelog + breaking notice
 
-**GATE prima di tagliare 2.0.0 (release-004)** — non rilasciare la major prima di:
-1. **Cleanup prosa**: ~80 menzioni dei vecchi nomi skill (`project/feature/epic-planner`) nei testi delle skill superstiti → ricondurre a `planner` (editing **contestuale**, non sed cieco). Non-breaking ma incoerente in 2.0.0.
-2. **Dogfooding live** (in sospeso da `finalize-004` e `downstream-006`): reinstallare il plugin sul branch (runtime = `planner` nuovo) e guidare un `planner plan`/`expand`/`finalize` + `flow-run` reali su uno scenario di prova.
+**GATE prima di tagliare 2.0.0 (release-004)** — chiusi:
+1. ✅ **Cleanup prosa**: 82 menzioni corrette in 27 skill file. README deferred in 004.
+2. ✅ **Dogfooding live**: ciclo `planner plan/expand/finalize` verificato. Gap minori documentati in `docs/features/fixture-cleanup/dogfooding-report.md`.
 
 **Come riprendere**: `whats-next nell'epic planner-unification` per il board → poi `release` a mano (RISK-001: tocca migrate/versione) o `/flow-run`. La verità di ripresa è `docs/` (questo file + i tasks-active), committata; `.flow/` è effimero e non necessario (release eseguita a mano).
 

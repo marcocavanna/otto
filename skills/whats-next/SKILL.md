@@ -1,6 +1,6 @@
 ---
 name: whats-next
-description: Advisor read-only che risponde "cosa faccio adesso / dopo" su un progetto con piani di lavoro otto. Fa il join di tutti i piani attivi (macro-plan di project-planner + feature parallele di feature-planner), riconcilia lo stato reale d'esecuzione con `.flow/index.json` (veloce) o `.flow/sources/*/PROGRESS.json` (fallback per-source), e produce un board multi-piano + una raccomandazione ragionata (cosa è sbloccato ora, cosa è quasi finito, cosa è sul critical path) con comandi concatenabili verso flow-run. NON modifica nulla, NON decide la priorità tra piani: la espone e la motiva. Supporta query globali o scoped. Triggera su "whats-next", "cosa devo fare dopo/adesso", "prossimo step/task", "next", "a che punto sono", "prossimo sprint", "stato del piano", "whats-next nella milestone M[N]", "whats-next nella feature <slug>".
+description: Advisor read-only che risponde "cosa faccio adesso / dopo" su un progetto con piani di lavoro otto. Fa il join di tutti i piani attivi (piani di progetto e feature generati da `planner`), riconcilia lo stato reale d'esecuzione con `.flow/index.json` (veloce) o `.flow/sources/*/PROGRESS.json` (fallback per-source), e produce un board multi-piano + una raccomandazione ragionata (cosa è sbloccato ora, cosa è quasi finito, cosa è sul critical path) con comandi concatenabili verso flow-run. NON modifica nulla, NON decide la priorità tra piani: la espone e la motiva. Supporta query globali o scoped. Triggera su "whats-next", "cosa devo fare dopo/adesso", "prossimo step/task", "next", "a che punto sono", "prossimo sprint", "stato del piano", "whats-next nella milestone M[N]", "whats-next nella feature <slug>".
 ---
 
 # Whats Next — advisor operativo read-only
@@ -45,7 +45,7 @@ Formato task (identico project/feature, vedi `../planner/references/task-expansi
 
 ## Protocollo
 
-1. **Scoperta.** In base alla modalità, individua i piani in scope. Per ciascuno trova il tasks-file e (se c'è) `.flow/index.json` o `.flow/sources/<slug>/PROGRESS.json`. Se non esiste nessun piano → dillo e suggerisci `project-planner`/`feature-planner`. Non inventare.
+1. **Scoperta.** In base alla modalità, individua i piani in scope. Per ciascuno trova il tasks-file e (se c'è) `.flow/index.json` o `.flow/sources/<slug>/PROGRESS.json`. Se non esiste nessun piano → dillo e suggerisci `planner`. Non inventare.
 2. **Riconciliazione stato** per ogni task — vedi `references/reconcile.md`. Se `index.json` è presente, carica per ogni source `{owner, alive, active, done, pending, archived}`; usa quel dato come pre-filtro prima di aprire i PROGRESS per-source. Source con `archived=true` → tutte le sue done congelate; non accedere al suo `tasks-active.md` per task attivi. Canonico per-task = PROGRESS per-source (o legacy singleton per ID non migrati); fallback = `Status` del tasks-file. Ogni **drift** va riportato, mai corretto (sei read-only).
 3. **Calcolo per-piano:**
    - parse task → {id, categoria, effort, deps, stato-riconciliato}
@@ -62,7 +62,7 @@ Formato task (identico project/feature, vedi `../planner/references/task-expansi
 
 `05-tasks-active.md` contiene task atomici **solo della milestone attiva**. Quindi:
 - Milestone richiesta == attiva → mostra i suoi task (come modalità plan).
-- Milestone richiesta != attiva → **non esistono task atomici**: mostra solo il macro da `03-milestones.md` (outcome, DoD, effort range, status) e dillo esplicitamente: *"M[N] non è la milestone attiva: niente task atomici. Per espanderla: `project-planner expand M[N]`."* Non inventare task.
+- Milestone richiesta != attiva → **non esistono task atomici**: mostra solo il macro da `03-milestones.md` (outcome, DoD, effort range, status) e dillo esplicitamente: *"M[N] non è la milestone attiva: niente task atomici. Per espanderla: `planner expand M[N]`."* Non inventare task.
 
 ## Output — 3 livelli, dal più immediato allo strategico
 
@@ -74,7 +74,7 @@ Formato task (identico project/feature, vedi `../planner/references/task-expansi
    - lavoro **non ancora pianificato** → `planner <descrizione>` (il planner sceglie/conferma il tier).
    whats-next resta read-only: propone i comandi, non li esegue.
 
-Tono: senior, denso, niente filler, niente cheerleading. Coerente con `flow-run`/`project-planner`.
+Tono: senior, denso, niente filler, niente cheerleading. Coerente con `flow-run`/`planner`.
 
 ## Regole di onestà (gap espliciti — la skill non finge rigore)
 
@@ -88,5 +88,5 @@ Tono: senior, denso, niente filler, niente cheerleading. Coerente con `flow-run`
 
 - Non scrive nulla (no piani, no `.flow`, no codice, no commit).
 - Non decide la priorità macro-vs-feature: la motiva e lascia scegliere.
-- Non espande milestone né genera task (è compito di `project-planner`/`feature-planner`).
+- Non espande milestone né genera task (è compito di `planner`).
 - Non esegue task (è compito di `flow-run`).

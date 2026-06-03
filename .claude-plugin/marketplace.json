@@ -5,8 +5,8 @@
     {
       "name": "otto",
       "source": "./",
-      "description": "Your attended autopilot for planning → brief → code. A tiny specialized crew that plans, briefs, ships, and taps you only when a real decision is needed.",
-      "version": "1.1.0",
+      "description": "Your attended autopilot for planning → brief → code. One unified planner (4 tiers), attended flow-run, critical audit, and smart state sync.",
+      "version": "2.0.0",
       "keywords": ["planning", "orchestration", "agents", "workflow", "attended", "audit", "analysis"]
     }
   ]

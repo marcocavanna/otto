@@ -22,7 +22,7 @@ Template del brief tecnico generato da `task-implementer` in modalità `brief T-
 # <id> — [titolo conciso del task]
 
 **Status**: 🔵 active
-**Origin**: project-planner | feature-planner
+**Origin**: planner
 **Context-root**: docs/planning/ | docs/features/<slug>/
 **Feature**: `<slug>`            # solo per feature source
 **Milestone**: M[N]              # solo per project source — NON inventarla per le feature

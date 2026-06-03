@@ -186,7 +186,7 @@ Dopo aver scritto tutti e 7 gli artefatti:
 
 - Scrive **solo** sotto `docs/planning/`.
 - Non tocca `docs/epics/`, `docs/features/`, `docs/tasks/`, né il codice sorgente.
-- Non tocca le skill `*-planner` esistenti: `project-planner` resta attiva in parallelo.
+- Unico entry-point per il tier `project`: le skill dedicate `project-planner` sono state rimosse in 2.0.0.
 - I 7 file hanno nome fisso: `00-context.md`, `01-pitch.md`, `02-abstract.md`, `03-milestones.md`,
   `04-phases.md`, `05-tasks-active.md`, `README.md`.
 - Il modo `revise` (aggiornare un'assunzione) e il modo `expand` standalone (espandere una

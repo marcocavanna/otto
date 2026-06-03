@@ -128,7 +128,7 @@ Rilevata incoerenza:
 - Shape di implementazione / obiettivo: [Y, che contraddice X]
 
 Non posso procedere finché il brief è incoerente.
-Usa task-implementer (revise del brief) o feature-planner per risolvere.
+Usa task-implementer (revise del brief) o `planner` per risolvere.
 ```
 
 Non tentare di risolvere automaticamente.

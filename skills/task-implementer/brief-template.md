@@ -8,9 +8,9 @@ Template del brief co-locato `<context-root>/tasks/<id>.md`. Markdown denso, nie
 # <id> — [titolo del task dal tasks-file]
 
 **Status**: 🔵 active | ✅ finalized | ⏸ paused  
-**Origin**: project-planner | feature-planner  
+**Origin**: planner  
 **Context-root**: docs/planning/ | docs/features/<slug>/  
-**Milestone**: M[N]  *(project-planner)* — oppure **Feature**: `<slug>`  *(feature-planner; niente milestone)*  
+**Milestone**: M[N]  *(tier project)* — oppure **Feature**: `<slug>`  *(tier feature; niente milestone)*  
 **Effort stimato**: [dal tasks-file]  
 **Dipendenze**: [dal tasks-file]  
 **Generato**: YYYY-MM-DD  

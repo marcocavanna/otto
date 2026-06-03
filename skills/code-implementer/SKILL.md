@@ -29,7 +29,7 @@ La skill opera su due file system:
 - **Read-only**: il brief co-locato (`<context-root>/tasks/<id>.md`), codice esistente del progetto
 - **Write**: codice sorgente del progetto, sezioni specifiche del brief, `technical-context.md` (solo per decisioni cross-task confermate)
 
-Regola di scope: la skill **non** modifica `02-abstract.md`, `00-context.md`, `03-milestones.md`, `04-phases.md`, `05-tasks-active.md` (né li legge in flusso ordinario). Se qualcuno di questi va modificato, indirizza a `project-planner` (revise).
+Regola di scope: la skill **non** modifica `02-abstract.md`, `00-context.md`, `03-milestones.md`, `04-phases.md`, `05-tasks-active.md` (né li legge in flusso ordinario). Se qualcuno di questi va modificato, indirizza a `planner revise`.
 
 ## Operating modes
 
@@ -107,7 +107,7 @@ Output: report di coerenza, niente modifiche automatiche. Suggerimenti puntuali 
 
 ## Tone
 
-Stesso registro di `project-planner` e `task-implementer`: senior dev in 1:1, denso, niente didattica.
+Senior dev in 1:1 con `task-implementer`: denso, niente didattica.
 
 Output in lingua dell'elicitation (italiano se l'utente scrive in italiano).
 

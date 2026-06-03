@@ -1,6 +1,6 @@
 # Decomposition — da epic a feature sequenziali
 
-La dimensione che epic-planner aggiunge rispetto a feature/project-planner: **spezzare un'implementazione grande in feature coese, ordinate, con confini netti.** È il passo che precede la materializzazione dei bundle e va **confermato dall'utente** prima di scrivere.
+La dimensione che il tier `epic` aggiunge rispetto a feature/project: **spezzare un'implementazione grande in feature coese, ordinate, con confini netti.** È il passo che precede la materializzazione dei bundle e va **confermato dall'utente** prima di scrivere.
 
 ## Cos'è una "feature" dentro un epic
 
@@ -31,7 +31,7 @@ Se due "feature" condividono lo stesso file core e la stessa DoD, probabilmente 
 
 ## Anti-pattern
 
-- ❌ Feature numerate "Fase 1 / Fase 2" senza outcome proprio → sono fasi, non feature. Le fasi sono di `project-planner`.
+- ❌ Feature numerate "Fase 1 / Fase 2" senza outcome proprio → sono fasi, non feature. Le fasi appartengono al tier `project`.
 - ❌ Una feature "core" gigante da 20 task + tante feature satellite minuscole → la core è un epic dentro l'epic: ri-decomponi.
 - ❌ Ordine deciso "perché mi va di iniziare da lì" senza dipendenza tecnica → la sequenza perde valore.
 - ❌ Decomporre senza il tronco comune → ogni feature reinventa gli stessi VO/contratti → divergenza (vedi propagazione seed).
@@ -55,6 +55,6 @@ Solo dopo l'ok dell'utente generi i bundle e `roadmap.md`.
 
 ## Quando l'epic è in realtà altro
 
-- **Una sola feature emerge** dalla decomposizione → non è un epic: usa `feature-planner`.
-- **Servono milestone, pitch, market, roadmap di prodotto** → è un progetto: usa `project-planner`.
+- **Una sola feature emerge** dalla decomposizione → non è un epic: usa `planner` (tier `feature`).
+- **Servono milestone, pitch, market, roadmap di prodotto** → è un progetto: usa `planner` (tier `project`).
 - Dillo all'utente e fermati: non forzare la forma epic.

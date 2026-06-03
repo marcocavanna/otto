@@ -66,7 +66,7 @@ finalizzato è probabilmente un errore.
 Opzioni:
 a) Verificare se ti sbagli di task (controlla 05-tasks-active.md)
 b) Se serve modificare codice di un task finalizzato, è probabile che serva
-   un nuovo task (project-planner: expand o nuovo brief)
+   un nuovo task (`planner expand` o nuovo brief)
 ```
 
 ## Check 3 — Build command dichiarato

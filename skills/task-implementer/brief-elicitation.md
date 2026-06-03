@@ -1,6 +1,6 @@
 # Brief elicitation
 
-Elicitation per generare un brief tecnico di un singolo task. **Più breve** dell'elicitation di project-planner — sono già disponibili contesto strategico e tattico nei file di planning.
+Elicitation per generare un brief tecnico di un singolo task. **Più breve** dell'elicitation di `planner` — sono già disponibili contesto strategico e tattico nei file di planning.
 
 ## Pre-requisiti di lettura
 
@@ -39,7 +39,7 @@ Chiedere solo per ciò che è genuinamente non risolto dal contesto disponibile.
 ## Regole
 
 1. **Una domanda alla volta**. Mai batch.
-2. **Massimo 3-4 domande per brief**. Se ne servono di più, è segno che il task è troppo grande o il contesto strategico è incompleto. Suggerire revise di project-planner.
+2. **Massimo 3-4 domande per brief**. Se ne servono di più, è segno che il task è troppo grande o il contesto strategico è incompleto. Suggerire `planner revise`.
 3. **Proporre sempre opzioni**, non chiedere domande aperte. "Quale libreria di hashing usiamo?" è sbagliato. "Per password hashing propongo: a) BCrypt.Net-Next, b) ASP.NET Core Identity PasswordHasher, c) Argon2. Mio default: (b) perché già parte del runtime. Confermi o preferisci alternativa?" è giusto.
 4. **Probe le risposte vaghe**. Se l'utente dice "boh, scegli tu", la skill può scegliere ma deve dichiararlo esplicitamente nel brief come assunzione locale, non come decisione condivisa.
 
@@ -54,7 +54,7 @@ T-NNN richiede [X], ma 02-abstract.md ha esplicitamente escluso [X]
 (vedi sezione "Esclusioni tecniche").
 
 Due opzioni:
-a) Rivedere 02-abstract.md con project-planner (revise) prima di procedere
+a) Rivedere 02-abstract.md con `planner revise` prima di procedere
 b) Riformulare il task per evitare [X]
 
 Non procedo finché non hai deciso.

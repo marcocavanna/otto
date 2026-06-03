@@ -152,7 +152,7 @@ Status: ✅ finalized
 ```
 
 **Non toccare** `tasks-active.md`: la gestione dello stato nei tasks-file è responsabilità
-dell'utente o di `project-planner`. Questa skill aggiorna solo il brief.
+dell'utente o di `planner`. Questa skill aggiorna solo il brief.
 
 ---
 
@@ -371,7 +371,7 @@ promuovere via `revise` o quando eseguire il finalize successivo.
 ### Promozione strategica via `revise`
 
 Quando le decisioni risalite richiedono una **revisione della strategia** (non solo accumulo
-tecnico), l'utente usa `project-planner revise` su `02-abstract.md` del tier appropriato.
+tecnico), l'utente usa `planner revise` su `02-abstract.md` del tier appropriato.
 
 **Distinzione**:
 
@@ -380,7 +380,7 @@ tecnico), l'utente usa `project-planner revise` su `02-abstract.md` del tier app
   - Vincolante per i task futuri nello stesso tier.
   - Non richiede decisioni strategiche.
 
-- **Revise** (`project-planner revise`): revisione **strategica** di `02-abstract.md` (scrittura guidata, non append-only).
+- **Revise** (`planner revise`): revisione **strategica** di `02-abstract.md` (scrittura guidata, non append-only).
   - Serve a reorientare il plan se i vincoli emersi durante l'implementazione contraddicono le assunzioni di planning.
   - Es. se un task scopre che un'interfaccia deve cambiare, il revise aggiorna l'abstract della feature prima di lanciare task dipendenti.
   - Non obbligatorio se il bubble-up tecnico basta a informare i successori.

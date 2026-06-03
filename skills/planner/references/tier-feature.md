@@ -133,7 +133,7 @@ Dopo aver scritto i 4 file:
 
 - Scrive **solo** sotto `docs/features/<slug>/`.
 - Non tocca `docs/planning/`, `docs/epics/`, né il codice sorgente.
-- Non tocca le skill `*-planner` esistenti: `feature-planner` resta attiva in parallelo.
+- Unico entry-point per il tier `feature`: le skill dedicate `feature-planner` sono state rimosse in 2.0.0.
 - I 4 file hanno nome fisso: `00-context.md`, `02-abstract.md`, `technical-context.md`,
   `tasks-active.md`.
 

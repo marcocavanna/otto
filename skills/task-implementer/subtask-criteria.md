@@ -6,7 +6,7 @@ Regole operative per decidere quando un task atomico va decomposto in subtask.
 
 **Default: nessun subtask.**
 
-Generare subtask è l'eccezione, non la regola. Il task atomico (1-4h) prodotto da project-planner è già al livello di granularità giusto per la pianificazione operativa. Subtask aggiuntivi sono rumore testuale tranne nei casi sotto.
+Generare subtask è l'eccezione, non la regola. Il task atomico (1-4h) prodotto da `planner` è già al livello di granularità giusto per la pianificazione operativa. Subtask aggiuntivi sono rumore testuale tranne nei casi sotto.
 
 ## Quando generare subtask
 
@@ -91,7 +91,7 @@ Regole:
 - Effort dei subtask deve **sommare** all'effort del task originale (con tolleranza ±20%)
 - Ogni subtask ha un **output osservabile** (file, decisione, test passante), non solo "completato"
 - Dipendenze esplicitate
-- Mai più di 5-6 subtask per task. Se ne servono di più, il task è strutturalmente troppo grande — fermarsi e suggerire di splittare il task in project-planner.
+- Mai più di 5-6 subtask per task. Se ne servono di più, il task è strutturalmente troppo grande — fermarsi e suggerire di splittare il task con `planner`.
 
 ## Quando NON generare subtask anche se sembrano applicabili
 
