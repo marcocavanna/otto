@@ -10,7 +10,7 @@ Template del brief tecnico generato da `task-implementer` in modalità `brief T-
 
 > Il vecchio path flat `docs/tasks/<id>.md` non è più né scritto né letto: i progetti pre-canonical vanno portati al layout co-locato con la skill `migrate`.
 
-→ Meccanismo canonico (resolver, scan, esclusione `docs/archive/**`): `skills/feature-planner/feature-artifacts.md` § "Planning source contract". Non ridefinirlo qui.
+→ Meccanismo canonico (resolver, scan, esclusione `docs/archive/**`): `skills/planner/planning-source-contract.md` § "Planning source contract". Non ridefinirlo qui.
 
 ---
 
@@ -32,7 +32,7 @@ Template del brief tecnico generato da `task-implementer` in modalità `brief T-
 **Versione**: [n]
 ```
 
-> `Origin` + `Context-root` sono il contratto letto da `code-implementer` per caricare il contesto. Vedi `../feature-planner/feature-artifacts.md` § "Planning source contract".
+> `Origin` + `Context-root` sono il contratto letto da `code-implementer` per caricare il contesto. Vedi `../planner/planning-source-contract.md` § "Planning source contract".
 
 ### Vincoli risolti
 
@@ -51,7 +51,7 @@ Template del brief tecnico generato da `task-implementer` in modalità `brief T-
 - **Naming convention**: [convenzione applicata in questo task]
 ```
 
-→ I 4 campi sono definiti canonicamente in `../feature-planner/feature-artifacts.md` § "Sezione obbligatoria del brief — Vincoli risolti". **Non ridefinirli qui**: questo è solo il layout della sezione nel brief.
+→ I 4 campi sono definiti canonicamente in `../planner/planning-source-contract.md` § "Sezione obbligatoria del brief — Vincoli risolti". **Non ridefinirli qui**: questo è solo il layout della sezione nel brief.
 
 ### Corpo
 

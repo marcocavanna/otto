@@ -15,7 +15,7 @@
 - **Effort**: 2-3h
 - **Definition of done**: grep esaustivo; tutti i ~15-20 link aggiornati; "0 riferimenti residui a `feature-planner/` o `project-planner/`" nei runtime.
 - **Dipende da**: planner-unification-finalize-005
-- **Status**: ⚪ todo
+- **Status**: ✅ done
 
 ### planner-unification-downstream-002 — 💻 [impl] Scan tier task docs/tasks/<slug>/ in task-implementer e code-implementer
 - **Effort**: 1-2h

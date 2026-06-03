@@ -4,7 +4,7 @@ Reference consumata da `skills/migrate/SKILL.md` §"Detection". Codifica tre cap
 riconoscimento del layout (vecchio vs nuovo), scan delle source con risoluzione
 `ID → source target`, produzione di un piano strutturato (`DetectionPlan`).
 
-Il contratto canonico di risoluzione è `feature-planner/feature-artifacts.md`
+Il contratto canonico di risoluzione è `planner/planning-source-contract.md`
 §"Planning source contract" (resolver `topology-canonical`): la detection lo
 **usa**, non lo ridefinisce. Da quel contratto deriva anche la regola
 `docs/archive/**` escluso dallo scan.

@@ -16,7 +16,7 @@ Template del brief co-locato `<context-root>/tasks/<id>.md`. Markdown denso, nie
 **Generato**: YYYY-MM-DD  
 **Versione**: 1
 
-> `Origin` + `Context-root` sono il contratto letto da `code-implementer` per caricare il contesto. Vedi `../feature-planner/feature-artifacts.md` § "Planning source contract". Header assente → default `docs/planning/`.
+> `Origin` + `Context-root` sono il contratto letto da `code-implementer` per caricare il contesto. Vedi `../planner/planning-source-contract.md` § "Planning source contract". Header assente → default `docs/planning/`.
 
 ## Obiettivo
 

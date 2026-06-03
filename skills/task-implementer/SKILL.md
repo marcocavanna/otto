@@ -54,7 +54,7 @@ Regola di non-contraddizione: `technical-context.md` **non può** contenere deci
 > `complexity-criteria.md`: solo se produzione `meta.json` (funzione brief), mai nel finalize.
 
 Flusso:
-1. **Risolvere la context-root** del task (supporta sia `project-planner` sia `feature-planner`). L'ID task è trattato in modo opaco (`T-NNN` per project, `<slug>-NNN` per feature). Vedi il contratto canonico in `../feature-planner/feature-artifacts.md` § "Planning source contract":
+1. **Risolvere la context-root** del task (supporta sia `project-planner` sia `feature-planner`). L'ID task è trattato in modo opaco (`T-NNN` per project, `<slug>-NNN` per feature). Vedi il contratto canonico in `../planner/planning-source-contract.md` § "Planning source contract":
    - scan di `docs/planning/05-tasks-active.md` + `docs/features/*/tasks-active.md`; il file che contiene l'ID definisce la source e la **context-root** (la sua directory) + il tasks-file;
    - 0 match → errore "task sconosciuto"; >1 match → errore "ID ambiguo";
    - override esplicito: se l'utente/orchestratore passa `feature <slug>`, usare quella source senza scan.
@@ -71,7 +71,7 @@ Flusso:
      contraddirle. Read-only; non lo modifichi mai da qui (il bubble-up è di `feature-planner finalize`).
 3. Run elicitation per task (vedi `references/brief-elicitation.md`).
 4. Validare coerenza: il brief proposto contraddice qualcosa in `technical-context.md`? Se sì, sollevare e risolvere PRIMA di scrivere.
-5. Generare il brief nel path **canonico** co-locato `<context-root>/tasks/<id>.md` (vedi `../feature-planner/feature-artifacts.md` § "Planning source contract" e `references/brief-template.md`).
+5. Generare il brief nel path **canonico** co-locato `<context-root>/tasks/<id>.md` (vedi `../planner/planning-source-contract.md` § "Planning source contract" e `references/brief-template.md`).
    - Creare la cartella `tasks/` sotto la context-root se non esiste (scrivendo il file la si crea implicitamente).
    - **Scrivere nell'header** `Origin:` e `Context-root:` (e `Feature:` al posto di `Milestone:` per task feature). Gli ID feature non hanno milestone: non inventarla.
    - Il brief **deve** includere la sezione obbligatoria `## Vincoli risolti` (vedi `references/brief-template.md` § "Vincoli risolti"): rende il brief self-sufficient per il DEV.

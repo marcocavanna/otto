@@ -27,7 +27,7 @@ Scope come `whats-next` (`../whats-next/SKILL.md` § Modalità), risolto dall'in
 - **plan**: "…del piano / del macro-plan" → solo `docs/planning/`.
 - **feature**: "…nella feature <slug>" → solo `docs/features/<slug>/`. Slug inesistente/ambiguo → elenca le feature e chiedi.
 
-Risoluzione context-root **via scan** (`docs/planning/05-tasks-active.md` + `docs/features/*/tasks-active.md`); ID globalmente unici e **opachi** (vedi `../feature-planner/feature-artifacts.md` § "Planning source contract"). Per ogni piano in scope: il suo tasks-file + `.flow/sources/<slug>/PROGRESS.json` (o `.flow/PROGRESS.json` radice come fallback se la source non ha ancora la directory per-source).
+Risoluzione context-root **via scan** (`docs/planning/05-tasks-active.md` + `docs/features/*/tasks-active.md`); ID globalmente unici e **opachi** (vedi `../planner/planning-source-contract.md` § "Planning source contract"). Per ogni piano in scope: il suo tasks-file + `.flow/sources/<slug>/PROGRESS.json` (o `.flow/PROGRESS.json` radice come fallback se la source non ha ancora la directory per-source).
 
 Modalità di esecuzione:
 

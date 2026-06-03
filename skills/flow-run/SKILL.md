@@ -176,7 +176,7 @@ Nessun commit, mai. L'orchestratore annota nel summary: "Source `<slug>` archivi
 
 ### Mirror status sul tasks-file della source (a finalize OK)
 
-Dopo aver marcato `done` in `PROGRESS.json`, riflettilo nel **tasks-file della source** del task (vedi il contratto in `../feature-planner/feature-artifacts.md` § "Planning source contract"): `docs/planning/05-tasks-active.md` (project) oppure `docs/features/<slug>/tasks-active.md` (feature). Risolvilo come fa `task-implementer` (l'ID è opaco: `T-NNN` o `<slug>-NNN`); trova la riga `Status` del task e marcane il completamento secondo la convenzione del file. Modifica **solo** quella riga.
+Dopo aver marcato `done` in `PROGRESS.json`, riflettilo nel **tasks-file della source** del task (vedi il contratto in `../planner/planning-source-contract.md` § "Planning source contract"): `docs/planning/05-tasks-active.md` (project) oppure `docs/features/<slug>/tasks-active.md` (feature). Risolvilo come fa `task-implementer` (l'ID è opaco: `T-NNN` o `<slug>-NNN`); trova la riga `Status` del task e marcane il completamento secondo la convenzione del file. Modifica **solo** quella riga.
 
 Vincoli del mirror:
 - È un riflesso **non-canonico**: la verità d'esecuzione resta `PROGRESS.json`. Se il tasks-file non contiene il task o ha un formato non riconoscibile, **non inventare**: salta il mirror e annotalo nel summary (non è un'escalation).
@@ -239,7 +239,7 @@ Feature e epic concluse vengono archiviate in:
 - `docs/archive/epics/<slug>/` — epic archiviate
 
 **Regola di esclusione**: `docs/archive/**` non partecipa allo scan di risoluzione (context-root e tasks-file): i task archiviati non sono mai `pending`.
-Fonte: `skills/feature-planner/feature-artifacts.md` § "Planning source contract".
+Fonte: `skills/planner/planning-source-contract.md` § "Planning source contract".
 
 Lo spostamento fisico in archive è responsabilità di `feature-planner`/`project-planner`.
 Il mirror status è inerte su task già `done` in feature archiviate.

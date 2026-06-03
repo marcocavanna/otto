@@ -32,7 +32,7 @@ Con un macro-plan + feature parallele **non esiste un "next" globale determinist
 - `.flow/locks/<slug>/` — presenza della dir = source viva (lock attivo); usato nel fallback scan.
 - `.flow/PROGRESS.json` — legacy singleton; retrocompat per ID non ancora migrati a una source per-source.
 
-Formato task (identico project/feature, vedi `../project-planner/task-expansion.md` e `../feature-planner/feature-artifacts.md`): ID, categoria, `Effort` (range ore), `Dipende da`, `Status` (⚪🔵✅⏸). ID globalmente unici (`T-NNN` project, `<slug>-NNN` feature) — trattali in modo **opaco**.
+Formato task (identico project/feature, vedi `../planner/references/task-expansion.md` e `../planner/planning-source-contract.md`): ID, categoria, `Effort` (range ore), `Dipende da`, `Status` (⚪🔵✅⏸). ID globalmente unici (`T-NNN` project, `<slug>-NNN` feature) — trattali in modo **opaco**.
 
 ## Modalità — deriva dall'input utente
 

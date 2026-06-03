@@ -8,7 +8,7 @@ File richiesto:
 - `<context-root>/tasks/<id>.md` (co-locato, unico path supportato)
 
 Risoluzione context-root: header `Context-root:` del brief; default `docs/planning/`.
-Contratto canonico: `../feature-planner/feature-artifacts.md` § "Planning source contract".
+Contratto canonico: `../planner/planning-source-contract.md` § "Planning source contract".
 
 Se il brief non esiste al path co-locato:
 ```
