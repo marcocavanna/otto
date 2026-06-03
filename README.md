@@ -11,6 +11,13 @@ Questa guida si legge dall'alto verso il basso. Se sei di fretta, salta dritto a
 
 ---
 
+## 🆕 Novità 2.1.0
+
+- **Fast path — modalità `solo`**: `flow-run` legge la `Complessità (ipotesi)` del planner **prima** di ogni spawn e chiude i task `trivial`/`standard` in **1 spawn** (`solo`) anziché 2 (PM+DEV = `team`), riservando il flusso `team` ai `critical`. Artefatti versionati **identici** e stessi hook di sicurezza (`scope-check` + `verify-gate`). Mappa `complexity → execution-mode` single-source in `model-tiering.md`; degrado conservativo → `team`.
+- **Rete di sicurezza pre-write `solo → team`**: prima di toccare il codice, l'agente `solo` esegue una pre-analisi read-only su una lista chiusa e misurabile di trigger (scope oltre la complessità ipotizzata, contratto cross-task non dichiarato, contraddizione col contesto vincolante, ambiguità di contratto). Allo scatto emette `RESULT.promote=true` (+ motivo) **senza toccare il working tree** e `flow-run` ri-esegue il task in `team`. I fail post-write restano sull'escalation esistente.
+
+---
+
 ## 🆕 Novità 2.0.0
 
 - **`planner` unificato a 4 tier**: le tre skill separate `project-planner`, `feature-planner` ed `epic-planner` sono state ritirate e sostituite da un unico entry-point `planner`. Scegli (o conferma) il tier — `project`, `epic`, `feature`, `task` — e lui si comporta di conseguenza.
