@@ -21,7 +21,7 @@
 - **Effort**: 1-2h
 - **Definition of done**: la risoluzione context-root include `docs/tasks/*/`; un ID di un task-tier risolve correttamente; brief co-locato sotto `docs/tasks/<slug>/tasks/`.
 - **Dipende da**: planner-unification-downstream-001
-- **Status**: ⚪ todo
+- **Status**: ✅ done
 
 ### planner-unification-downstream-003 — 💻 [impl] whats-next: tier task nel board + lettura anchor
 - **Effort**: 1-2h

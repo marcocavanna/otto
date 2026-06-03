@@ -11,7 +11,7 @@ Skill che traduce un brief tecnico (il brief co-locato `<context-root>/tasks/<id
 
 Questa skill lavora **a valle** di `task-implementer`. Presuppone che esista il brief co-locato `<context-root>/tasks/<id>.md`, **self-sufficient** con la sezione "Vincoli risolti" (stack · librerie+versioni · VO/pattern/interfacce consumati · naming). Il brief embedda già tutto il contesto: la skill **non** legge `00-context`, `02-abstract`, `technical-context`.
 
-**Risoluzione della context-root**: leggere l'header del brief. `Context-root: docs/planning/` (project-planner) oppure `docs/features/<slug>/` (feature-planner). Se l'header manca → default `docs/planning/` (retro-compatibilità). Contratto canonico: `../planner/planning-source-contract.md` § "Planning source contract". La context-root serve a risolvere il **path del brief**, non a caricare file di contesto separati.
+**Risoluzione della context-root**: leggere l'header del brief. `Context-root:` può essere uno qualsiasi dei 4 tier — `docs/planning/` (project), `docs/epics/<slug>/` (epic), `docs/features/<slug>/` (feature), `docs/tasks/<slug>/` (task). La skill è **tier-agnostica**: usa il valore dell'header così com'è per risolvere il path del brief. Se l'header manca → default `docs/planning/` (retro-compatibilità). Contratto canonico: `../planner/planning-source-contract.md` § "Planning source contract". La context-root serve a risolvere il **path del brief**, non a caricare file di contesto separati.
 
 Se il brief non esiste, la skill rifiuta di operare e indirizza alle skill upstream.
 

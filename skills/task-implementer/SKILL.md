@@ -55,7 +55,7 @@ Regola di non-contraddizione: `technical-context.md` **non può** contenere deci
 
 Flusso:
 1. **Risolvere la context-root** del task (supporta sia `project-planner` sia `feature-planner`). L'ID task è trattato in modo opaco (`T-NNN` per project, `<slug>-NNN` per feature). Vedi il contratto canonico in `../planner/planning-source-contract.md` § "Planning source contract":
-   - scan di `docs/planning/05-tasks-active.md` + `docs/features/*/tasks-active.md`; il file che contiene l'ID definisce la source e la **context-root** (la sua directory) + il tasks-file;
+   - scan dei tasks-file di **tutti i tier** — `docs/planning/05-tasks-active.md`, `docs/features/*/tasks-active.md`, `docs/tasks/*/tasks-active.md` (tier `task`) — escluso `docs/archive/**`; la tabella completa dei 4 tier è nel contratto. Solo le directory che contengono un `tasks-active.md` sono source (una dir sotto `docs/tasks/` senza tasks-file non viene intercettata). Il file che contiene l'ID definisce la source e la **context-root** (la sua directory) + il tasks-file;
    - 0 match → errore "task sconosciuto"; >1 match → errore "ID ambiguo";
    - override esplicito: se l'utente/orchestratore passa `feature <slug>`, usare quella source senza scan.
    (Retro-compatibile: progetto classico → context-root `docs/planning/`, tasks-file `05-tasks-active.md`.)
