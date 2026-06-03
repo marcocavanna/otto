@@ -26,7 +26,15 @@
 ## Decisioni tattiche (fast-path-promotion)
 > Append-only durante il flow. Vuota alla pianificazione: schema di `promote`, posizione del reference trigger, esiti del dogfooding di taratura si registrano qui.
 
-_(nessuna decisione tattica ancora registrata)_
+### DECISION-fast-path-promotion-001 — Collocazione reference lista trigger
+- **Decisione**: il reference `promotion-triggers.md` è collocato in `skills/flow-run/references/`.
+- **Rationale**: i trigger sono valutati dall'agente `solo` **prima** del ramo `team` (step S2 in `flow-run`); la collocazione è coerente col punto di consumo. Alternativa scartata: `skills/code-implementer/` (il file non è consumato dal DEV ma dall'agente solo come pre-analisi del ramo flow-run).
+- **Impatta**: `agents/solo.md` (link da includere), `skills/flow-run/SKILL.md` (già referenzia `references/`). **Data**: 2026-06-03
+
+### DECISION-fast-path-promotion-002 — Soglie numeriche T1
+- **Decisione**: T1 misura `>3 file` su task `trivial`, `>6 file` su task `standard`. Calibrabili via dogfooding.
+- **Rationale**: soglie derivate dal segnale 3 di `complexity-criteria.md` (`>3` file = alto); su `standard` la soglia è alzata perché il task per definizione ha estensione media (2-3 file) e il bias deve essere verso la rarità (RISK-fast-path-promotion-001).
+- **Impatta**: `skills/flow-run/references/promotion-triggers.md` § T1. **Data**: 2026-06-03
 
 ## Librerie e versioni
 Nessuna libreria di terze parti. Tooling: `bash`, `jq`, `git`.

@@ -12,7 +12,7 @@
 - **Definition of done**: esiste un reference single-source (collocazione da decidere a implementazione: `skills/flow-run/references/promotion-triggers.md` candidato) che definisce la **lista chiusa e misurabile** dei trigger di promozione read-only: **T1** scope più ampio della complessità ipotizzata (es. `>3` file su `trivial`; area fuori da quella ovvia), **T2** contratto cross-task non dichiarato (VO/interfaccia/formato consumato da altri task — segnale 1 di `complexity-criteria.md`), **T3** contraddizione con `technical-context.md`/`02-abstract.md` vincolanti, **T4** ambiguità che richiede una decisione di contratto. Ogni trigger ha un criterio **misurabile e valutabile read-only**. Il reference dichiara esplicitamente che i fail **post-write** (build/verify) NON sono trigger di promozione. Linka (non duplica) i segnali di `complexity-criteria.md`. Nessuna logica attiva (è la fonte consumata da 002).
 - **Dipende da**: —
 - **Complessità (ipotesi)**: standard
-- **Status**: ⚪ todo
+- **Status**: ✅ done
 
 ### fast-path-promotion-002 — 💻 [impl] Pre-analisi read-only + emissione `RESULT.promote` in `agents/solo.md`
 
