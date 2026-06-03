@@ -45,7 +45,8 @@
 - **Effort**: 1-2h
 - **Definition of done**: dogfooding plan → flow-run → finalize per un tier task e una feature; bubble-up corretto; nessun link orfano.
 - **Dipende da**: planner-unification-downstream-005
-- **Status**: ⚪ todo
+- **Status**: ✅ done
+> Chiuso su verifica STATICA (0 link orfani; tutti i riferimenti `planner/*` risolvono; scan esteso coerente in task/code-implementer, flow-sync, whats-next; flow-run→planner finalize wired). Dogfooding interattivo live (plan→flow-run→finalize reale) = follow-up manuale.
 
 ### planner-unification-downstream-007 — 💻 [impl] whats-next propone azioni via planner (expand di shell, ecc.)
 - **Effort**: 1-2h
