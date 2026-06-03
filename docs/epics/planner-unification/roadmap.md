@@ -53,5 +53,21 @@ Nessuno. Catena strettamente lineare 1→2→3→4→5, imposta dalle dipendenze
 - **`downstream` prima di `release`**: non si rimuovono le vecchie skill finché i link non sono tutti ripuntati e i downstream non risolvono il nuovo contratto.
 - **Cautela esecuzione**: valutare di eseguire `downstream` e `release` **a mano** (non via `flow-run`), o con commit/branch per feature, perché modificano l'orchestratore stesso mentre gira.
 
+## Stato e ripresa (aggiornato 2026-06-02)
+
+**Branch**: `epic/planner-unification` (non pushato). **Avanzamento**: `contract ✅ · core ✅ · finalize ✅ · downstream ✅` (archiviate) · `release 🔵 in corso`.
+
+**`release` — restano** (vedi `docs/features/planner-unification-release/tasks-active.md`):
+- ✅ **001** rimozione 3 planner + planner autosufficiente (fatto)
+- ⚪ **002** estendere `migrate` per il retrofit degli anchor sui progetti esistenti
+- ⚪ **003** test migrate (preview/apply/post-verify)
+- ⚪ **004** 🚀 bump **2.0.0** + README/changelog + breaking notice
+
+**GATE prima di tagliare 2.0.0 (release-004)** — non rilasciare la major prima di:
+1. **Cleanup prosa**: ~80 menzioni dei vecchi nomi skill (`project/feature/epic-planner`) nei testi delle skill superstiti → ricondurre a `planner` (editing **contestuale**, non sed cieco). Non-breaking ma incoerente in 2.0.0.
+2. **Dogfooding live** (in sospeso da `finalize-004` e `downstream-006`): reinstallare il plugin sul branch (runtime = `planner` nuovo) e guidare un `planner plan`/`expand`/`finalize` + `flow-run` reali su uno scenario di prova.
+
+**Come riprendere**: `whats-next nell'epic planner-unification` per il board → poi `release` a mano (RISK-001: tocca migrate/versione) o `/flow-run`. La verità di ripresa è `docs/` (questo file + i tasks-active), committata; `.flow/` è effimero e non necessario (release eseguita a mano).
+
 ---
-Generato: 2026-06-02 | Versione: 1 | Epic: planner-unification
+Generato: 2026-06-02 | Versione: 2 | Epic: planner-unification
