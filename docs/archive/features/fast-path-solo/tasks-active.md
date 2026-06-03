@@ -44,7 +44,7 @@
 - **Definition of done**: eseguito (dogfooding) un task `trivial` e uno `standard` in modalità `solo`: ciascuno gira in **1 spawn** (nessun PM brief, nessun dry-run separato) e si chiude con `<context-root>/tasks/<id>.md` completo + `Status: ✅ finalized` + eventuale append `technical-context.md`, artefatti **indistinguibili in struttura** da quelli prodotti in `team`; verificato il degrado conservativo (task senza `Complessità (ipotesi)` → `team`); verificata l'assenza di regressioni su un task `critical` (resta `team`). Esiti e gap minori documentati (es. in un report sotto la feature). Nessun residuo anomalo in `.flow/`.
 - **Dipende da**: fast-path-solo-003
 - **Complessità (ipotesi)**: standard
-- **Status**: ⚪ todo
+- **Status**: ✅ done
 
 ## Note operative
 - **RISK-fast-path-001 (auto-modifica a runtime)**: i task 002/003 toccano l'orchestratore e gli agenti. Valutare l'esecuzione **manuale** (non via `flow-run`) di 002/003, o commit per task. Branch `epic/fast-path-solo-mode` già attivo.

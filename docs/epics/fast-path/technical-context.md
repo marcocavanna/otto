@@ -34,6 +34,14 @@
 ## Librerie e versioni
 Nessuna libreria di terze parti. Tooling: `bash`, `jq`, `git` (già assunti dagli hook esistenti). Modelli (alias, non ID pinned, per resilienza ai version-bump): `haiku`/`sonnet`/`opus` mappati da `complexity` in `model-tiering.md`.
 
+## Consolidato da fast-path-solo
+> Bubble-up single-hop a `planner finalize` (auto, flow-run). Data: 2026-06-03.
+
+### Decisioni tattiche (fast-path-solo-001)
+- **Rinomina `model-tiering.md → execution-tiering.md`**: NON eseguita. Grep runtime: 18 file `.md` referenziano il vecchio nome (la maggior parte fuori scope). Aggiornati solo titolo/scopo interni — nessun link orfano. Il nome del file resta `model-tiering.md`.
+- **Struttura tabella `## Mappa`**: 3 colonne (`complexity | modello DEV | execution-mode`); la colonna `dry-run` resta nella sua tabella dedicata `## Dry-run`. Nessun doppione.
+- **Sezioni in `model-tiering.md`**: `## Enum execution-mode (2.1.0)`, `## Precedenza` (override utente > mappa > default `team`), degrado `execution-mode = team` in `## Degrado graceful`.
+
 ## Consolidato da fast-path-promotion
 > Bubble-up single-hop a `planner finalize` (auto, flow-run). Data: 2026-06-03.
 

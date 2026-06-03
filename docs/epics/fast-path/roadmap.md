@@ -12,7 +12,7 @@
 - **Goal**: estendere `model-tiering.md` con la mappa `complexity → execution-mode`; insegnare a `flow-run` a leggere la `Complessità (ipotesi)` dal tasks-file **prima** di ogni spawn e a scegliere `solo`/`team` (degrado conservativo → `team`); introdurre l'agente `agents/solo.md` (hook identici a `dev`) che fa pre-analisi + implement + verify + produce `<context-root>/tasks/<id>.md` completo + append `technical-context.md`, post-implementazione. Già auto-sufficiente e sicura: le sottostime degradano sull'escalation **post-write** esistente.
 - **Dipende da feature**: —
 - **Sizing (indicativo)**: M
-- **Status feature**: 🔵 active
+- **Status feature**: ✅ done
 - **Source**: docs/features/fast-path-solo/
 
 ### fast-path-promotion — 🔒 Rete di sicurezza pre-write: promozione `solo → team`
