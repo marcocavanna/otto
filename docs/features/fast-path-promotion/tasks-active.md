@@ -28,7 +28,7 @@
 - **Definition of done**: nel ramo `solo` di `skills/flow-run/SKILL.md` (passo S3, già predisposto in `fast-path-solo-003`) la logica `promote==true` diventa **attiva** (rimossa la nota "predisposto ma inerte"): l'orchestratore, letto `RESULT.promote=true`, **ri-esegue lo stesso task dal passo 3 in `team`** (working tree pulito, nessun cleanup), annotando la promozione + motivo nel summary; monodirezionale (`solo → team`, mai `team → solo`); `promote` valutato **prima** di `escalate`/`verify` (caso pre-write). I fail post-write (`escalate`/`verify!=pass`/`ESCALATION.json`) restano allo step 7, mai promozione. Nessuna regressione del ramo `team` né del ramo `solo` senza promote.
 - **Dipende da**: fast-path-promotion-002
 - **Complessità (ipotesi)**: critical
-- **Status**: ⚪ todo
+- **Status**: ✅ done
 
 ## Note operative
 - **RISK-fast-path-001 (auto-modifica a runtime)**: 003 tocca l'orchestratore. Valutare esecuzione **manuale** o commit per task, come per `fast-path-solo-003`.
