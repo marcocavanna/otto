@@ -26,6 +26,7 @@ Con un macro-plan + feature parallele **non esiste un "next" globale determinist
 - `docs/planning/05-tasks-active.md` — task atomici **della sola milestone attiva** (project source).
 - `docs/planning/03-milestones.md` — stato macro delle milestone (🔵 active / ⚪ planned / ✅ done / ⏸ paused).
 - `docs/features/*/tasks-active.md` — task delle feature parallele (feature source, campo `Feature`).
+- `docs/tasks/*/tasks-active.md` — task standalone (**tier task**: una directory per task, 1 task-entry). Source canonica come le feature; compare nel board. La gerarchia col padre, se dichiarata, si legge dall'**anchor** (`Parent`/`Bubble-up target`) in `00-context.md`/`technical-context.md`.
 - `docs/epics/*/roadmap.md` — **(opzionale, additivo)** coordinamento di un epic: raggruppa più feature `<epic>-<feat>` sotto un epic e ne dichiara ordine + dipendenze inter-feature. Layer **non-canonico**: se assente, le feature restano piatte (comportamento storico). Vedi `references/epic-rollup.md`.
 - `.flow/index.json` — roll-up aggregato (`source → {owner, alive, active, done, pending, archived}`); se presente, primo punto di lettura.
 - `.flow/sources/<slug>/PROGRESS.json` — verità per-source; fallback se index assente.
@@ -52,7 +53,7 @@ Formato task (identico project/feature, vedi `../planner/references/task-expansi
    - **next del piano** = tra gli sbloccati, quello con peso di critical-path maggiore (n. di task che dipendono da esso); a parità, ordine del file
    - **avanzamento** = ✅ / totale (per conteggio; nota se effort-pesato cambia il quadro)
    - **blockers** = task `⏸` o `todo` con deps non soddisfatte (indica da cosa dipendono)
-4. **Roll-up epic** (additivo) — se esistono `docs/epics/*/roadmap.md`, raggruppa le feature `<epic>-<feat>` sotto il loro epic, calcola l'avanzamento epic dai task reali e rispetta l'ordine/dipendenze inter-feature della roadmap. Vedi `references/epic-rollup.md`. Se non ci sono epic, salta: le feature restano piani piatti.
+4. **Roll-up gerarchico** (additivo) — la gerarchia padre→figlio (feature→epic, task→parent) si ricava dall'**anchor** (`Parent`) degli artefatti, con il campo `Source` della roadmap come conferma/fallback. Se esistono `docs/epics/*/roadmap.md`, raggruppa le feature sotto il loro epic, calcola l'avanzamento dai task reali e rispetta l'ordine/dipendenze inter-feature. Vedi `references/epic-rollup.md`. Senza anchor né roadmap, le source restano piatte.
 5. **Ranking cross-plan** (solo modalità global) — vedi `references/ranking.md`: WIP-avanzato → critical-path macro-plan → quick-win. È **euristica esposta**, non verità. Con epic presenti, l'unità di ranking può essere l'epic (vedi `epic-rollup.md`).
 6. **Output a 3 livelli** (vedi sotto).
 

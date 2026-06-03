@@ -27,7 +27,7 @@
 - **Effort**: 1-2h
 - **Definition of done**: il board mostra le source tier-task; il rollup usa gli anchor per la gerarchia padre-figlio.
 - **Dipende da**: planner-unification-downstream-002
-- **Status**: ⚪ todo
+- **Status**: ✅ done
 
 ### planner-unification-downstream-004 — 💻 [impl] flow-sync: tier task + coerenza con anchor
 - **Effort**: 1-2h

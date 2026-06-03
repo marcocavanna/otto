@@ -16,7 +16,7 @@ L'avanzamento e gli sbloccati **dei task** restano calcolati come sempre (`recon
 ## Scoperta epic
 
 1. Glob `docs/epics/*/roadmap.md`. Per ciascuno: parse della lista feature (slug figlio, goal, `Dipende da feature`, `Source`).
-2. Associa ogni `docs/features/<epic>-<feat>/` al suo epic via il campo `Source` (o, in fallback, via prefisso slug `<epic>-`).
+2. Associa ogni source figlia al suo epic. Ordine dei segnali: **anchor `Parent`** in `00-context.md`/`technical-context.md` (autorevole, vale per qualsiasi tier: feature→epic, task→parent) → campo `Source`/slug della roadmap → fallback prefisso slug `<epic>-`. L'anchor vince perché è dichiarato nell'artefatto stesso; la roadmap conferma.
 3. Feature `<epic>-*` **senza** corrispondenza in nessuna roadmap → trattale piatte e **segnalalo** (orphan rispetto all'epic). Non inventare appartenenze.
 
 ## Calcolo per-epic
