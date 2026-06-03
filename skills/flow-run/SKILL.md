@@ -51,6 +51,17 @@ Precedenza: vedi [`references/model-tiering.md`](references/model-tiering.md) §
 
 Estrai dall'input anche una eventuale **direttiva dry-run**: *"salta il dry-run"* / `--no-dry-run` → skip; *"forza il dry-run"* / `--dry-run` → run. Vince sulla policy per complessità (step 3b / 4). Anch'essa effimera.
 
+### Pre-check: flow concorrente (advisory, non bloccante)
+
+**All'avvio dell'invocazione** (una volta, PRIMA del claim e della selezione task), verifica se esiste già **un altro flow vivo**. In otto 2.0.0 i flow paralleli **non sono supportati**: gli hook del DEV risolvono il task dalla source sotto lock e, con più source vive contemporaneamente, `flow_resolve_task` diventa ambiguo (vedi `hooks/flow-lib.sh`) → ogni scrittura del DEV finisce in `ask`, lo stato può corrompersi.
+
+Rilevamento (best-effort, fail-soft): scorri `.flow/locks/*/heartbeat.ts`; un lock è **vivo** se il suo heartbeat è fresco (`now - mtime < 300s`, stessa soglia di `references/concurrency.md`). Poiché a questo punto non hai ancora claimato nulla, **qualsiasi** lock vivo appartiene a un altro flow.
+
+- **Nessun lock vivo** → procedi normalmente al claim.
+- **Almeno un lock vivo** → **`AskUserQuestion`**: avvisa che risulta un flow già in esecuzione (riporta lo/gli `<slug>` e l'`owner` dal PROGRESS/index), che i flow paralleli non sono supportati in questa versione e che procedere può corrompere lo stato. Opzioni: **Annulla (consigliato)** / **Procedi comunque** (l'utente si assume il rischio). Su "Annulla" → termina con successo senza claimare. Su "Procedi" → prosegui al claim e annota l'override nel summary.
+
+> Limite noto (best-effort): su un **resume** dello stesso flow dopo una pausa breve l'heartbeat può essere ancora fresco e l'advisory scattare come falso positivo — in quel caso "Procedi" è la scelta corretta. È un avviso, non un lock: non impone vincoli strutturali (il parallelismo vero arriverà come feature dedicata).
+
 ### Claim source (pre-condizione al loop task)
 
 Prima di eseguire il protocollo per-task, il flow **acquisisce la source** via lock advisory.
