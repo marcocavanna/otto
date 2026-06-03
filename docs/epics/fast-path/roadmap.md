@@ -19,7 +19,7 @@
 - **Goal**: aggiungere alla modalità `solo` una **pre-analisi read-only** che valuta una lista **chiusa e misurabile** di trigger (scope più ampio della complessità ipotizzata, contratto cross-task non dichiarato, contraddizione con `technical-context.md`/`02-abstract.md`, ambiguità che richiede una decisione di contratto). Allo scatto emette `RESULT.promote=true` (+ motivo) **senza toccare il codice** e termina; `flow-run` ri-esegue il task in `team`. I fail **post-write** restano sull'escalation esistente e non promuovono mai (eviterebbero un re-run su working tree sporco).
 - **Dipende da feature**: fast-path-solo
 - **Sizing (indicativo)**: S
-- **Status feature**: 🔵 active
+- **Status feature**: ✅ done
 - **Source**: docs/features/fast-path-promotion/
 
 ## Fronti paralleli
