@@ -100,7 +100,7 @@ Scritto da `task-implementer`, letto da `code-implementer`:
 - **Naming convention** — convenzione applicata nel task
 
 → Template dettagliato: `skills/task-implementer/references/brief-template.md`.
-→ Conseguenza (pattern **brief self-sufficient**): il DEV legge **solo** il brief — non ri-legge `00-context.md` / `02-abstract.md` / `technical-context.md`. Reading-set del DEV: `brief.md` + `scope.txt` + `frozen.txt` + 1 sample + i file `[edit]`.
+→ Conseguenza (pattern **brief self-sufficient**): il DEV non ri-legge il contesto di **task** (`00-context.md` / `02-abstract.md` / `technical-context.md`) — è distillato in "Vincoli risolti". Legge però le **regole-ambiente** del repo (`CLAUDE.md` + `.claude/rules`), invarianti di progetto non distillabili nel brief. Reading-set del DEV: regole-ambiente + `brief.md` + `scope.txt` + `frozen.txt` + 1 sample + i file `[edit]`.
 
 ---
 Generato: 2026-06-02 | Task: planner-unification-contract-002

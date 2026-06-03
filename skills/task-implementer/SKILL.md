@@ -22,7 +22,7 @@ Tre regole non negoziabili:
 
 1. **Coerenza > completezza.** Ogni brief deve essere coerente con `technical-context.md` esistente. Se l'analisi del task introduce una decisione che contraddice il contesto tecnico accumulato, la skill **non** procede silenziosamente: solleva il conflitto e chiede se aggiornare il contesto o adattare il task.
 
-2. **Niente codice di produzione, solo shape.** Gli stralci di codice nei brief sono **shape**, non implementazione. Limite: ~20-30 righe per costrutto, sempre marcati come "shape, non implementazione finale". L'obiettivo è dare struttura e direzione, non scrivere il codice al posto dell'utente.
+2. **Solo contratti e innesti, MAI corpi.** Gli stralci nei brief sono **shape**: firme, tipi, contratti, punti d'innesto — **mai corpi di metodo né logica completa**. Il corpo è competenza esclusiva del DEV (`code-implementer`): scriverlo nel brief è spreco triplo (output del PM + input del DEV che lo rilegge + il DEV lo riscrive comunque, divergendo). Limite duro: ~10-15 righe per costrutto, **solo segnatura/struttura**. Se uno stralcio contiene un corpo non banale, è già implementazione: va rimosso. L'obiettivo è dare struttura e direzione, non scrivere il codice al posto del DEV.
 
 3. **Subtask sono eccezioni, non regola.** Default: nessun subtask. Generare subtask solo se rispettano i criteri operativi (vedi `references/subtask-criteria.md`). Se non rispettano, output esplicito: "Subtask: nessuno necessario, esecuzione lineare."
 

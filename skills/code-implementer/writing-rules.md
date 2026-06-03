@@ -7,13 +7,13 @@ Regole operative per la scrittura effettiva del codice. Cosa scrivere, come, dov
 Quando esiste un sample dell'area, **lo stile del sample vince sui template** di `technical-context.md`, eccetto per decisioni esplicitamente vincolanti (naming, pattern strategici).
 
 Ordine di precedenza:
-1. **Vincoli strategici** (02-abstract.md) — assoluti, non negoziabili
-2. **Vincoli tattici espliciti** (technical-context.md, voci dichiarate) — non negoziabili
-3. **Stile del sample** — vince su tutto il resto
+1. **Vincoli strategici** (sezione "Vincoli risolti" del brief, distillata da 02-abstract) — assoluti, non negoziabili
+2. **Regole di progetto esplicite** (`CLAUDE.md` + `.claude/rules`) e **vincoli tattici** (in "Vincoli risolti") — non negoziabili
+3. **Stile del sample** — vince sul resto (template/best-practice), ma cede a una regola di progetto esplicita
 4. **Template generici** — solo se nessun sample disponibile
 5. **Best practice del linguaggio/framework** — fallback ultimo
 
-Se in conflitto: vince il livello più alto. Se sample contraddice technical-context: technical-context vince (sample obsoleto, andrà segnalato).
+Se in conflitto: vince il livello più alto. Se il sample contraddice una regola esplicita di `CLAUDE.md`/`.claude/rules`, vince la regola (il sample è obsoleto su quel punto, segnalalo). Per le scelte stilistiche **non** coperte da regole esplicite, il mimic del sample resta sovrano.
 
 ## Scope di scrittura
 

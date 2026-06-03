@@ -82,9 +82,19 @@ path/al/file.ext [new|edit]
 ...
 \`\`\`
 
-## Shape di implementazione
+## Shape (contratti & innesti)
 
-> Shape = **direzione**, non implementazione finale. ~20-30 righe per costrutto. Marcare sempre come shape.
+> Shape = **direzione**, non implementazione. Solo firme, tipi, contratti, punti d'innesto.
+> **Mai corpi di metodo né logica completa**: il corpo è competenza esclusiva del DEV.
+> Limite duro: ~10-15 righe per costrutto, max 3-4 costrutti. Se sfora o contiene un corpo
+> non banale, è già implementazione → rimuoverlo.
+>
+> - **Sì**: firme di classi/metodi/interfacce; struttura di tipi (record/DTO/VO); schema
+>   tabelle/JSON/contratti; ordine costruttore e dipendenze DI; dove si innesta una modifica `[edit]`.
+> - **No**: corpi di metodo, boilerplate (using/namespace), try/catch/logging/config,
+>   algoritmi completi (al più pseudocodice di 2-3 righe se la logica è non ovvia).
+>
+> Task di pura configurazione o triviali: nessuno stralcio. Scrivere "Non applicabile — vedi File impattati". Mai forzare uno stralcio per completezza visiva.
 
 ## Test minimo
 
