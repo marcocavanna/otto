@@ -82,6 +82,14 @@ Flusso:
 >
 > La copia `.flow/briefs/<id>/brief.md` è una **copia** del brief co-locato in `<context-root>/tasks/<id>.md` (non una fonte separata): il DEV attended la legge, ma la fonte di verità resta il brief co-locato.
 
+> **Modalità `solo`** (quando il task gira in `solo` via `flow-run`): il brief co-locato
+> `<context-root>/tasks/<id>.md` è prodotto dall'agente `solo` **dopo** l'implementazione,
+> riflettendo la realtà (shape reale, non pre-analisi). Struttura identica a `team`:
+> sezioni obbligatorie invariate (`Vincoli risolti · File impattati · Shape · Deviazioni ·
+> Status: ✅ finalized`). Il PM non produce un brief separato; l'orchestratore fa solo il
+> gate del finalize al ritorno (ASSUMPTION-fast-path-solo-001).
+> Vedi `references/attended-flow.md` e `agents/solo.md` per la sequenza interna.
+
 ### Mode 2: `deviation T-NNN` — annotare deviazione durante implementazione
 
 Flusso leggero:

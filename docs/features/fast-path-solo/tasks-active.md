@@ -36,7 +36,7 @@
 - **Definition of done**: `skills/task-implementer/SKILL.md` documenta che in modalità `solo` gli artefatti versionati (`<context-root>/tasks/<id>.md` + append `technical-context.md`) sono prodotti **durante/dopo** l'implementazione riflettendo la realtà (ordine invertito vs `team`, ASSUMPTION-fast-path-003), con **struttura identica** (sezioni obbligatorie invariate); eventuale nota allineata in `skills/code-implementer/` se il percorso lo richiede. Nessuna modifica alla struttura/sezioni del brief. Coerenza verificata col contratto in `planning-source-contract.md` § "Vincoli risolti".
 - **Dipende da**: fast-path-solo-002
 - **Complessità (ipotesi)**: standard
-- **Status**: ⚪ todo
+- **Status**: ✅ done
 
 ### fast-path-solo-005 — 🧪 [test] Dogfooding end-to-end della modalità `solo`
 
