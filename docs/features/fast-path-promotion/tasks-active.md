@@ -20,7 +20,7 @@
 - **Definition of done**: `agents/solo.md` esegue, **prima di qualunque Write/Edit di codice**, uno step di pre-analisi read-only (solo Read/Grep/Glob) che valuta i trigger del reference di 001; allo scatto di un trigger scrive `RESULT.json` con **`promote=true`** + **`promote_reason`** (trigger + misura, es. "T1: 5 file su task trivial") e **termina senza scrivere codice né brief**; se nessun trigger scatta prosegue la sequenza solo esistente (`promote` assente/false). Lo schema `RESULT.json` è esteso coerentemente col contratto letto da `flow-run` (campi `promote`/`promote_reason` additivi, retro-compatibili). La pre-analisi precede la materializzazione di `scope.txt`/`frozen.txt` di codice (resta consentito scrivere in `.flow/briefs/<task>/`). Confine pre/post-write esplicito: i fail post-write restano su `ESCALATION.json`.
 - **Dipende da**: fast-path-promotion-001
 - **Complessità (ipotesi)**: critical
-- **Status**: ⚪ todo
+- **Status**: ✅ done
 
 ### fast-path-promotion-003 — 💻 [impl] Gestione `RESULT.promote` in `flow-run` (re-run `solo → team`)
 
