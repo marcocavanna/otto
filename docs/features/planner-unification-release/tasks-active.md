@@ -17,7 +17,8 @@
 - Effort: 2-3h
 - Definition of done: migrate inietta gli header anchor (Tier/Parent/Bubble-up target) negli artefatti esistenti, ricavando Parent/target dalla roadmap Source e dalla struttura; append non distruttivo; idempotente
 - Dipende da: planner-unification-release-001
-- Status: ⚪ todo
+- Status: ✅ done
+> Estesi SKILL.md (nuova sezione "Modalità — Anchor retrofit" con modalità anchor-retrofit preview/apply/post-verify) e creato references/anchor-retrofit.md con la logica completa: scan artefatti candidati, inferenza tier/parent/bubble-up per tutti e 4 i tier, AnchorRetrofitPlan, preview con gate di sessione, apply idempotente+reversibile (backup+manifest), post-verify pass/fail, 7 edge case coperti.
 
 ### planner-unification-release-003 — 🧪 [test] migrate anchor: preview/apply/post-verify
 - Effort: 1-2h
