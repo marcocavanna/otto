@@ -39,7 +39,7 @@
 - **Effort**: 2-3h
 - **Definition of done**: l'auto-archivio chiama `planner finalize <slug>`; rimosso l'append grezzo del bubble-up 1.1.0; mirror roadmap e cleanup `.flow/briefs` invariati.
 - **Dipende da**: planner-unification-downstream-003, planner-unification-downstream-004
-- **Status**: ⚪ todo
+- **Status**: ✅ done
 
 ### planner-unification-downstream-006 — 🧪 [test] Verifica end-to-end con i tool aggiornati
 - **Effort**: 1-2h

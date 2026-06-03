@@ -117,11 +117,14 @@ prosegui. Devono precedere il `git mv` perché leggono/aggiornano artefatti anco
 `docs/features/<slug>/` o nell'epic. I passi 3–6 sono la **sequenza obbligatoria** (l'ordine è
 vincolante per idempotenza):
 
-1. **Consolidamento technical-context → epic** (`#8`): risali le decisioni tattiche accumulate nella
-   feature al `technical-context.md` condiviso dell'epic, secondo la procedura single-source in
-   [`../feature-planner/SKILL.md`](../feature-planner/SKILL.md) § "Mode 4: `finalize <feature>`".
-   Append-only, datato, con **guardia di idempotenza**: se l'header `## Consolidato da <slug>` esiste
-   già in `docs/epics/<epic>/technical-context.md` → già fatto, salta.
+1. **Consolidamento technical-context → padre** (`#8`): esegui la procedura di **`planner finalize <slug>`**
+   (single-source: [`../planner/references/finalize.md`](../planner/references/finalize.md) § "Bubble-up
+   single-hop selettivo") in **modalità attended** — selezione **automatica** di tutte le sezioni
+   `## Decisioni tattiche …` coerenti (nel flow non c'è utente da interpellare; in uso **manuale**
+   `planner finalize` resta a **selezione guidata**). Risale al `Bubble-up target` dichiarato nell'anchor
+   della source (padre = epic o project; assente/`—` → no-op). Append-only, datato, con **guardia di
+   idempotenza** (`## Consolidato da <slug>` già presente nel target → salta). **Sostituisce** l'append
+   grezzo a copia integrale della 1.1.0.
 2. **Mirror roadmap epic → done** (`#10`): in `docs/epics/<epic>/roadmap.md` setta la riga
    `Status feature` di questa feature a `✅ done` (vedi § "Mirror status sulla roadmap epic").
    Idempotente (set, non append).

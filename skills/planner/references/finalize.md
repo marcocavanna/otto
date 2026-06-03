@@ -266,6 +266,8 @@ Principi guida da presentare all'utente come orientamento (non come filtro autom
 - **Non risalgono** i dettagli implementativi: step operativi, shape di codice marcate "non implementazione finale".
 - **Non risalgono** i no-op e i vincoli già noti al padre o già presenti nel target.
 
+> **Modalità attended (invocata da `flow-run` all'auto-archivio)**: non c'è utente da interpellare → **salta il prompt** e **auto-seleziona** tutte le sezioni coerenti applicando i principi guida qui sopra in automatico (risalgono le decisioni durevoli; si escludono dettagli implementativi, no-op e voci già presenti nel target). L'idempotenza (9a) e l'append datato (9c) sono identici. La selezione **guidata dall'utente** vale solo per l'invocazione **manuale** di `planner finalize`.
+
 ### 9c — Append-only datato
 
 Con le sezioni selezionate, appendi in fondo a `<Bubble-up target>`:
