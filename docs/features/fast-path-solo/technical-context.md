@@ -55,3 +55,10 @@ Generato: 2026-06-03 | Versione: 1
 - **Nessun dry-run separato**: ASSUMPTION-fast-path-solo-002 — analisi e implementazione nello stesso contesto.
 - **Override attended**: lista trigger identica a `dev.md` (frozen/cross-task/sicurezza → `ESCALATION.json` + termina).
 - **Contratto artefatto**: `<context-root>/tasks/<id>.md` con sezioni obbligatorie invariate (Vincoli risolti · File impattati · Shape reale · Deviazioni · `Status: ✅ finalized`).
+
+### fast-path-solo-003: ramo `solo` nel protocollo di `flow-run` (esecuzione manuale)
+- **File target**: `skills/flow-run/SKILL.md` [edit] (+19/-1), 4 innesti: passo `1b` (risoluzione `execution-mode` a monte), biforcazione + wrapper "Ramo `team`", nuova § "Ramo `solo`" (S1–S4), riga `solo` in § "Spawn".
+- **Lettura complessità a monte**: dal tasks-file (campo `Complessità (ipotesi)`), al passo di selezione/attivazione, prima di ogni spawn. Degrado → `team`. Effimero (non in `PROGRESS.json`).
+- **Non-regressione `team`**: i passi 3–6 sono **incapsulati** sotto "Ramo `team`", non riscritti — non-regressione per costruzione.
+- **Decisione: `promote` predisposto ma inerte** — il ramo S3 definisce il punto d'innesto della promozione `solo → team` (pre-write) e la distinzione dai fail post-write, ma il campo `RESULT.promote` è introdotto solo da `fast-path-promotion`. Placeholder di contratto, zero logica attiva: riduce la churn quando arriverà la feature successiva.
+- **Esecuzione manuale** (RISK-fast-path-001): editato il file direttamente dal main thread, non via `flow-run` (si modificava l'orchestratore stesso).

@@ -28,7 +28,7 @@
 - **Definition of done**: `skills/flow-run/SKILL.md` legge la `Complessità (ipotesi)` dal tasks-file della source al passo di selezione/attivazione del task (**prima** di ogni spawn) e risolve l'`execution-mode` via `model-tiering.md`; ramo `team` → protocollo per-task **invariato**; ramo `solo` → **un solo** spawn `Agent` (`subagent_type: solo`, modalità `implement`, `model` derivato dalla complessità) poi lettura `RESULT.json` + **gate del finalize** (`verify=="pass"` E nessun `ESCALATION.json` → marca `done` in PROGRESS, heartbeat/index, mirror status invariati; altrimenti step 7 escalation); degrado conservativo (complessità assente/fuori-enum → `team`) con nota nel summary; la modalità resta **effimera** (non entra in `PROGRESS.json`); § "Spawn — cosa passare ai subagent" estesa con la riga `solo`. Nessuna regressione del flusso `team` (verificata su un task `critical`).
 - **Dipende da**: fast-path-solo-002
 - **Complessità (ipotesi)**: critical
-- **Status**: ⚪ todo
+- **Status**: ✅ done
 
 ### fast-path-solo-004 — 📚 [docs] Contratto artefatti modalità `solo` in `task-implementer`
 
