@@ -33,8 +33,8 @@
 - **Goal**: ripuntare i ~15-20 link a `planner/`; insegnare agli scanner `docs/tasks/<slug>/` e la lettura degli anchor; `flow-run` invoca `planner finalize <slug>` invece dell'append diretto; `whats-next`/`flow-sync` gestiscono tier task + anchor.
 - **Dipende da feature**: planner-unification-finalize
 - **Sizing (indicativo)**: L
-- **Status feature**: ⚪ planned
-- **Source**: docs/features/planner-unification-downstream/
+- **Status feature**: ✅ done
+- **Source**: docs/archive/features/planner-unification-downstream/
 
 ### planner-unification-release — 🚀 Ritiro vecchie skill + migrazione + 2.0.0
 - **Goal**: rimozione netta di `project/feature/epic-planner` (trigger assorbiti da `planner`); estensione di `migrate` per il retrofit degli anchor negli artefatti esistenti; bump 2.0.0 + README/changelog + breaking notice.

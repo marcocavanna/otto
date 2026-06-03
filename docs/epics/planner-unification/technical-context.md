@@ -74,5 +74,13 @@
 - **`expand`**: conflitto slug → chiede (non procede); backup `<tasks-file>.bak`; ID stabili (match per ID, mai riassegnare ID rimossi, nuovi da `max+1`).
 - **`finalize` non tocca `tasks-active.md`** (responsabilità utente/orchestratore — coerente con l'attuale task-implementer).
 
+## Consolidato da planner-unification-downstream (2026-06-02)
+> Decisioni durevoli risalite dalla feature `downstream` (bubble-up single-hop, attended). Eseguita **a mano** (RISK-001), un commit per task.
+
+- **Consumer ripuntati a `skills/planner/`**: task-implementer, code-implementer, flow-run, flow-sync, whats-next, migrate (+ reference) puntano al contratto v2 e ai reference condivisi sotto `planner/`. **0 link path residui a `feature-planner/`/`project-planner/` nei consumer** → i 3 vecchi planner sono **safe da rimuovere** in `release`.
+- **Scan tier task**: la risoluzione context-root include `docs/tasks/*/tasks-active.md` (guardia: solo dir con tasks-file) in task-implementer/code-implementer/flow-sync/whats-next.
+- **flow-run auto-archivio → `planner finalize` (attended)**: rimosso l'append grezzo 1.1.0; bubble-up via planner finalize.md in modalità attended (auto-select coerente); padre via anchor `Bubble-up target`.
+- **whats-next**: propone `planner expand <slug>` per le source shell/non espanse; gerarchia via anchor `Parent`.
+
 ---
 Generato: 2026-06-02 | Versione: 1
