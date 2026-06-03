@@ -36,7 +36,7 @@ Non riscrivere la logica della skill. Applichi quella esistente + gli override a
 
 ## Input
 
-L'orchestratore ti passa la **modalità**: `dry-run` oppure `implement` (= implement + verify). Il TASK lo risolvi da `.flow/PROGRESS.json` → `current_task`.
+L'orchestratore ti passa la **modalità** (`dry-run` oppure `implement` = implement + verify) **e il TASK** nel messaggio di spawn: quella è la fonte autoritativa. Se manca, risolvilo dal PROGRESS **per-source** della source attiva (`.flow/sources/<slug>/PROGRESS.json` → `current_task`), MAI dal `.flow/PROGRESS.json` radice (legacy, non più scritto dall'orchestratore).
 
 ## Fonte unica
 

@@ -4,7 +4,12 @@
 # exit 2  = blocca lo Stop, stderr torna al subagent come istruzione (correggi e ri-verifica).
 set -uo pipefail
 
-TASK=$(jq -r '.current_task // empty' .flow/PROGRESS.json 2>/dev/null) || exit 0
+# Task attivo dalla source SOTTO LOCK (PROGRESS per-source; il .flow/PROGRESS.json radice è
+# legacy e non più scritto dall'orchestratore). Vedi flow-lib.sh § flow_resolve_task.
+# Fail-open: se il task non è risolvibile univocamente, lascia chiudere lo Stop (exit 0).
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd) || exit 0
+. "$SCRIPT_DIR/flow-lib.sh" 2>/dev/null || exit 0
+TASK=$(flow_resolve_task) || exit 0
 [ -n "$TASK" ] || exit 0
 
 DIR=".flow/briefs/$TASK"; R="$DIR/RESULT.json"; C="$DIR/retries"

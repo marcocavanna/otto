@@ -25,7 +25,7 @@ Non riscrivere la logica della skill. Applichi quella esistente + gli override a
 ## Input
 
 L'orchestratore ti passa nel messaggio: la **funzione** (`brief` | `finalize`) e il **TASK** (es. `T-001`).
-Se non ti è chiaro quale, leggi `.flow/PROGRESS.json` → `current_task`. Non chiedere mai all'utente: non puoi parlargli.
+Se non ti è chiaro quale, leggi il PROGRESS **per-source** della source attiva (`.flow/sources/<slug>/PROGRESS.json` → `current_task`), MAI il `.flow/PROGRESS.json` radice (legacy, non più scritto dall'orchestratore). Non chiedere mai all'utente: non puoi parlargli.
 
 ## Funzione `brief <TASK>`
 
