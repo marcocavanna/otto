@@ -33,7 +33,7 @@
 - **Effort**: 1-2h
 - **Definition of done**: flow-sync riconosce le source tier-task; nessuna regressione sulla riconciliazione roadmap esistente.
 - **Dipende da**: planner-unification-downstream-002
-- **Status**: ⚪ todo
+- **Status**: ✅ done
 
 ### planner-unification-downstream-005 — 🔧 [chore] flow-run invoca planner finalize invece dell'append diretto
 - **Effort**: 2-3h

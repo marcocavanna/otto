@@ -26,8 +26,9 @@ Scope come `whats-next` (`../whats-next/SKILL.md` § Modalità), risolto dall'in
 - **global** (default, nessuno scope): tutti i piani attivi.
 - **plan**: "…del piano / del macro-plan" → solo `docs/planning/`.
 - **feature**: "…nella feature <slug>" → solo `docs/features/<slug>/`. Slug inesistente/ambiguo → elenca le feature e chiedi.
+- **task**: "…nel task <slug>" → solo `docs/tasks/<slug>/` (tier task standalone). Stessa semantica di una feature source.
 
-Risoluzione context-root **via scan** (`docs/planning/05-tasks-active.md` + `docs/features/*/tasks-active.md`); ID globalmente unici e **opachi** (vedi `../planner/planning-source-contract.md` § "Planning source contract"). Per ogni piano in scope: il suo tasks-file + `.flow/sources/<slug>/PROGRESS.json` (o `.flow/PROGRESS.json` radice come fallback se la source non ha ancora la directory per-source).
+Risoluzione context-root **via scan** (`docs/planning/05-tasks-active.md` + `docs/features/*/tasks-active.md` + `docs/tasks/*/tasks-active.md`, tier task; tabella completa dei 4 tier nel contratto); ID globalmente unici e **opachi** (vedi `../planner/planning-source-contract.md` § "Planning source contract"). Per ogni piano in scope: il suo tasks-file + `.flow/sources/<slug>/PROGRESS.json` (o `.flow/PROGRESS.json` radice come fallback se la source non ha ancora la directory per-source). Le source **tier task** si riconciliano come le feature; la riconciliazione roadmap epic (anchor-based) resta invariata.
 
 Modalità di esecuzione:
 
