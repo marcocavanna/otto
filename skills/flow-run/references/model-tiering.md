@@ -36,16 +36,33 @@ La colonna `execution-mode` seleziona il **processo di esecuzione del task** in 
 
 ## Precedenza
 
-In ordine, dal più forte al più debole:
+Ordine di risoluzione **reale** di Claude Code (dal più forte al più debole):
 
 ```
-override utente > mapping dinamico (DEV) > frontmatter agente > modello di sessione
+CLAUDE_CODE_SUBAGENT_MODEL (env) > param `model` per-spawn (Agent tool) > frontmatter agente > modello di sessione
 ```
 
-- **override utente**: forzatura manuale per il run (es. `--model opus`); vince su tutto.
-- **mapping dinamico (DEV)**: questa mappa, applicata da `flow-run` allo spawn del DEV.
-- **frontmatter agente**: `model:` di default in `agents/dev.md` / `agents/pm.md`.
-- **modello di sessione**: fallback ultimo se nessuno dei precedenti si applica.
+`flow-run` agisce **solo** sul param `model` per-spawn (rank 2): è l'**unico** canale con cui il
+tiering scala sopra/sotto il frontmatter. Il valore da passare lo decide l'orchestratore con questa
+priorità interna, poi lo inietta nel param:
+
+```
+override utente (es. `--model opus`) > mapping dinamico (tabella `## Mappa`)
+```
+
+- **CLAUDE_CODE_SUBAGENT_MODEL**: se settata (env o `settings.json`), **forza ogni subagent** e
+  annulla il tiering, scavalcando anche il param per-spawn. `flow-run` la rileva allo startup e lo
+  segnala nel summary; non può rimuoverla.
+- **param `model` per-spawn**: SEMPRE passato all'`Agent` tool a ogni spawn (alias `haiku|sonnet|opus`).
+  Se **omesso** → si cade al frontmatter (`sonnet`) e il tiering NON scala (né su `opus`, né su `haiku`).
+- **frontmatter agente**: `model: sonnet` in `agents/{dev,pm,solo}.md`. È un **floor di sicurezza**, non
+  la baseline desiderata.
+- **modello di sessione**: raggiunto solo se il frontmatter è assente — qui non accade (è sempre `sonnet`).
+
+> **Non auto-rilevare il modello dal subagent.** `$ANTHROPIC_MODEL` (e ogni env var nel subagent)
+> riflette la config di sessione, NON il modello risolto per quel subagent: usarlo come prova porta a
+> falsi negativi ("gira sempre sul modello di sessione"). L'osservabilità è **orchestrator-side**:
+> `flow-run` annota nel summary il modello passato allo spawn, per task.
 
 ### Precedenza — execution-mode
 

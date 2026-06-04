@@ -44,6 +44,8 @@ Precedence: see [`references/model-tiering.md`](references/model-tiering.md) § 
 
 Extract also a **dry-run directive**: *"salta il dry-run"* / `--no-dry-run` → skip; *"forza il dry-run"* / `--dry-run` → run. Wins over complexity policy. Also ephemeral.
 
+**Env guard (startup, once):** check `CLAUDE_CODE_SUBAGENT_MODEL` (env). If set, Claude Code **forces every subagent** to that model, scavalcando il param per-spawn e annullando il tiering. Annotate in summary (`tiering disabilitato: CLAUDE_CODE_SUBAGENT_MODEL=<val>`); do not escalate. `flow-run` cannot unset it.
+
 ### Pre-check: concurrent flow (advisory, non-blocking)
 
 **Once at startup, before claim**: scan `.flow/locks/*/heartbeat.ts`; a lock is **alive** if `now - mtime < 300s` (see [`references/concurrency.md`](references/concurrency.md)).
@@ -215,7 +217,9 @@ Constraints:
 
 Keep prompts thin. Business logic source is the on-disk brief.
 
-> DEV model for spawn precedes the DEV frontmatter. Manual override wins over dynamic derivation. On meta.json absent/unreadable → `sonnet` + note. Smoke-check (RISK-model-tiering-002): if Claude Code does not honor the per-spawn model, DEV runs on frontmatter model (sonnet baseline) → graceful degradation, annotate in summary; not an escalation.
+> **Per-spawn `model` is MANDATORY on every spawn.** Each `Agent`/Task call for `pm`/`dev`/`solo` MUST pass the `model` parameter (alias `haiku|sonnet|opus`) — it is the **only** channel that tiers the model above/below the frontmatter floor (`sonnet`). **Omitting it silently degrades to `sonnet`** (frontmatter) and the tiering does not scale, né verso `opus` né verso `haiku`. Resolution order (Claude Code): `CLAUDE_CODE_SUBAGENT_MODEL` (env) > per-spawn `model` param > frontmatter > session — see [`references/model-tiering.md`](references/model-tiering.md) § Precedenza. Manual override wins over dynamic derivation; on `meta.json` absent/unreadable → `sonnet` + note.
+>
+> **Report, don't sniff.** Do NOT have the subagent echo `$ANTHROPIC_MODEL` (or any env var) to prove its model: that reflects session config, not the resolved subagent model → false "always session model". Observability is orchestrator-side: annotate per task in the summary the model passed at spawn (e.g. `T-003: DEV=opus (critical)`, `T-004: solo=haiku (trivial)`).
 
 ## Archive convention
 
@@ -231,7 +235,7 @@ Concluded features and epics are archived under:
 - One delegation level only: you spawn pm/dev; they spawn nothing.
 - If `.flow/` does not exist, initialize it (PROGRESS.json from task plan) before the loop.
 - After every state transition: **persist per-source PROGRESS** (`.flow/sources/<slug>/PROGRESS.json`) — then `heartbeat.ts` — before continuing.
-- DEV model selection (step 3b) — dynamic derivation and manual override — is **ephemeral**: never enters PROGRESS.json or any on-disk contract. If per-spawn override not honored, degrades to DEV frontmatter — not an anomaly to escalate.
+- Model selection (DEV/solo/PM) — dynamic derivation and manual override — is **ephemeral**: never enters PROGRESS.json or any on-disk contract. It is applied **only** via the per-spawn `model` param, which is **mandatory on every spawn** (omitting it degrades to the frontmatter floor `sonnet` and breaks tiering). Frontmatter `sonnet` is a safety floor, not the target baseline.
 
 ## Compression notes
 
