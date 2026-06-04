@@ -35,7 +35,11 @@ TOOL=$(echo "$INPUT" | jq -r '.tool_name')
 
 if [ "$TOOL" = "Bash" ]; then
   CMD=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
-  echo "$CMD" | grep -qE '(>>?[^&]|tee|sed -i|cp |mv |dd |git (restore|checkout)|rm )' && ask "Bash con possibile scrittura → revisione manuale"
+  # Rimuovi le redirezioni innocue PRIMA del check: scrivere su /dev/null o duplicare un fd
+  # (2>&1) non è una scrittura su file. Evita falsi positivi su comandi read-only tipo
+  # `find ... 2>/dev/null | head` (scope-check ora gira davvero per dev/solo).
+  SAFE=$(printf '%s' "$CMD" | sed -E 's#&>>?[[:space:]]*/dev/null##g; s#[0-9]*>>?[[:space:]]*/dev/null##g; s#[0-9]*>&[0-9]##g')
+  echo "$SAFE" | grep -qE '(>>?[^&]|tee|sed -i|cp |mv |dd |git (restore|checkout)|rm )' && ask "Bash con possibile scrittura → revisione manuale"
   allow
 fi
 
