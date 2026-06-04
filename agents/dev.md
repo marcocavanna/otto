@@ -3,14 +3,9 @@ name: dev
 description: code-implementer. Esegue dry-run/implement/verify leggendo SOLO il brief.
 tools: Read, Edit, Write, Bash, Grep, Glob
 model: sonnet
-hooks:
-  PreToolUse:
-    - matcher: "Write|Edit"
-      hooks: [{ type: command, command: "${CLAUDE_PLUGIN_ROOT}/hooks/scope-check.sh" }]
-    - matcher: "Bash"
-      hooks: [{ type: command, command: "${CLAUDE_PLUGIN_ROOT}/hooks/scope-check.sh" }]
-  Stop:   # CC lo converte in SubagentStop
-    - hooks: [{ type: command, command: "${CLAUDE_PLUGIN_ROOT}/hooks/verify-gate.sh" }]
+# NB: gli hook scope-check (PreToolUse) e verify-gate (SubagentStop) NON stanno qui: il
+# campo `hooks` del frontmatter è IGNORATO per i subagent dei plugin (doc CC). Sono
+# registrati a livello plugin in hooks/hooks.json e si auto-limitano a dev/solo via agent_type.
 ---
 
 **Model declaration (MANDATORY, first output line).** Your spawn prompt starts with `MODEL=<x>`. The very first line of your output MUST be exactly `🤖 model=<x>` (the model assigned to you). If `MODEL=` is absent (spawned outside flow-run), print `🤖 model=unspecified`. Do NOT infer the model from `$ANTHROPIC_MODEL` or any env var — unreliable. This is non-negotiable: emit it before anything else, every run.

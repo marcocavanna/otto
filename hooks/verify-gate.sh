@@ -4,6 +4,19 @@
 # exit 2  = blocca lo Stop, stderr torna al subagent come istruzione (correggi e ri-verifica).
 set -uo pipefail
 
+# Hook registrato a livello plugin (il frontmatter `hooks` è ignorato per i plugin):
+# SubagentStop scatta per QUALSIASI subagent. Gate POSITIVO: procede (e può bloccare con
+# exit 2) SOLO se `agent_type` è dev/solo. Per pm / altri subagent / agent_type assente →
+# exit 0 (fail-open): non blocca MAI un subagent che non scrive RESULT.json. Se agent_type
+# non è fornito dalla piattaforma il gate degrada a no-op (come lo stato storico), mai un
+# blocco errato. `agent_type` può arrivare bare (`dev`) o scoped (`otto:dev`).
+INPUT=$(cat 2>/dev/null || echo "")
+AGENT=$(printf '%s' "$INPUT" | jq -r '.agent_type // ""' 2>/dev/null || echo "")
+case "$AGENT" in
+  dev|solo|*:dev|*:solo) ;;
+  *) exit 0 ;;
+esac
+
 # Task attivo dalla source SOTTO LOCK (PROGRESS per-source; il .flow/PROGRESS.json radice è
 # legacy e non più scritto dall'orchestratore). Vedi flow-lib.sh § flow_resolve_task.
 # Fail-open: se il task non è risolvibile univocamente, lascia chiudere lo Stop (exit 0).

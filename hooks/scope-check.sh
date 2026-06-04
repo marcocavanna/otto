@@ -10,6 +10,16 @@ allow() { jq -n '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecis
 
 command -v jq >/dev/null || { echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"jq mancante"}}'; exit 0; }
 
+# Hook registrato a livello plugin (il frontmatter `hooks` è ignorato per i plugin): gira
+# sull'INTERA sessione. Il gate di scope vale SOLO per i subagent dev/solo. Per main thread /
+# orchestratore / pm / altri subagent → allow (no-op). Default permissivo: non bloccare mai
+# fuori dal contesto gated. `agent_type` può arrivare bare (`dev`) o scoped (`otto:dev`).
+AGENT=$(echo "$INPUT" | jq -r '.agent_type // ""')
+case "$AGENT" in
+  dev|solo|*:dev|*:solo) ;;
+  *) allow ;;
+esac
+
 # realpath -m portabile: BSD/macOS non supporta -m. Fallback su python3. Fail-closed.
 abspath() {
   if command -v realpath >/dev/null 2>&1 && realpath -m / >/dev/null 2>&1; then

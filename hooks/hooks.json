@@ -1,4 +1,5 @@
 {
+  "description": "otto plugin hooks. NB: i plugin IGNORANO il campo `hooks` nel frontmatter dei subagent (doc CC), quindi scope-check (gate scritture dev/solo) e verify-gate (gate SubagentStop dev/solo) DEVONO essere registrati qui a livello plugin. Entrambi gli script si auto-limitano via `agent_type`: no-op fuori dai subagent dev/solo.",
   "hooks": {
     "SessionStart": [
       {
@@ -18,6 +19,28 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/flow-session-title.sh UserPromptSubmit"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/scope-check.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/verify-gate.sh"
           }
         ]
       }
