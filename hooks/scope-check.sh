@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
-# PreToolUse (Write|Edit|Bash) — fail-closed scope guard per il subagent DEV.
+# PreToolUse (Write|Edit|Bash) — fail-closed scope guard per i subagent DEV e SOLO.
 # Ogni errore (JSON malformato, file mancante, tool assente) → "ask", MAI allow.
+#
+# DESIGN: non usa flow_resolve_task / current_task — incompatibile con esecuzione parallela
+# di più task (PROGRESS ha un solo current_task → con 002+006 in parallelo caricherebbe lo
+# scope.txt sbagliato). Gate via scansione di TUTTI i scope.txt attivi in .flow/briefs/*/
+# e di TUTTI i PROGRESS per-source (context-root whitelist del solo). Nessuna dipendenza
+# da flow-lib.sh.
 set -uo pipefail
 
 INPUT=$(cat)
@@ -37,23 +43,11 @@ if [ "$TOOL" = "Bash" ]; then
   CMD=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
   # Rimuovi le redirezioni innocue PRIMA del check: scrivere su /dev/null o duplicare un fd
   # (2>&1) non è una scrittura su file. Evita falsi positivi su comandi read-only tipo
-  # `find ... 2>/dev/null | head` (scope-check ora gira davvero per dev/solo).
+  # `find ... 2>/dev/null | head`.
   SAFE=$(printf '%s' "$CMD" | sed -E 's#&>>?[[:space:]]*/dev/null##g; s#[0-9]*>>?[[:space:]]*/dev/null##g; s#[0-9]*>&[0-9]##g')
   echo "$SAFE" | grep -qE '(>>?[^&]|tee|sed -i|cp |mv |dd |git (restore|checkout)|rm )' && ask "Bash con possibile scrittura → revisione manuale"
   allow
 fi
-
-# Task attivo dalla source SOTTO LOCK (PROGRESS per-source; il .flow/PROGRESS.json radice è
-# legacy e non più scritto dall'orchestratore). Vedi flow-lib.sh § flow_resolve_task.
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd) || ask "dirname fallita"
-. "$SCRIPT_DIR/flow-lib.sh" 2>/dev/null || ask "flow-lib.sh non sourceabile"
-TASK=$(flow_resolve_task); RC=$?
-case "$RC" in
-  0) ;;
-  2) ask "più source attive sotto lock: task ambiguo, revisione manuale" ;;
-  *) ask "nessun task attivo nella source sotto lock" ;;
-esac
-[ -n "$TASK" ] || ask "nessun task attivo"
 
 FP=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 [ -n "$FP" ] || ask "tool_input senza file_path"
@@ -62,46 +56,57 @@ ROOT=$(pwd -P) || ask "pwd fallita"
 ABS=$(abspath "$FP") || ask "impossibile normalizzare il path (realpath -m e python3 assenti)"
 case "$ABS" in "$ROOT"/*) REL=${ABS#"$ROOT"/} ;; *) ask "fuori repo: $ABS" ;; esac
 
-# Blocklist: stato orchestratore — mai scrivibile dal DEV indipendentemente da scope.txt
+# Blocklist: stato orchestratore — mai scrivibile dal DEV/SOLO indipendentemente da scope.txt
 case "$REL" in
   .flow/PROGRESS.json|\
   .flow/index.json|\
   .flow/sources/*|\
   .flow/locks/*)
-    ask "path '$REL' è territorio dell'orchestratore (off-limits per il DEV)"
+    ask "path '$REL' è territorio dell'orchestratore (off-limits per dev/solo)"
     ;;
 esac
 
-# Service area del task: l'agente materializza i propri contratti (scope.txt/frozen.txt/
-# brief) PRIMA di toccare il codice. Sempre consentita, anche se scope.txt non esiste
-# ancora → evita il deadlock di bootstrap (un agente self-sufficient deve potersi scrivere
-# il proprio scope). Il codice resta gated dallo scope.txt appena materializzato (sotto).
+# Service area: tutti i brief dir attivi sotto .flow/briefs/ sono sempre consentiti.
+# Ogni agente (dev/solo) materializza scope.txt/frozen.txt/RESULT.json nel proprio brief
+# PRIMA di toccare il codice → non c'è scope.txt ancora, non si può gateare. Consentire
+# l'intera area .flow/briefs/ è safe: l'orchestratore è bloccato dalla blocklist sopra.
 case "$REL" in
-  ".flow/briefs/$TASK/"*) allow ;;
+  .flow/briefs/*) allow ;;
 esac
 
-# Output contract nella context-root — SOLO per l'agente `solo`: scrive il proprio artefatto
-# versionato del task (<context_root>/tasks/<TASK>.md) e l'append a technical-context.md (step
-# finalize). NON è codice, quindi non passa da scope.txt (come .flow/briefs/$TASK/). Il `dev`
-# in team mode tocca solo codice (dev.md gli vieta technical-context.md) → resta gated, il
-# guard non si indebolisce.
+# Output contract nella context-root — SOLO per l'agente `solo`.
+# L'agente scrive <context_root>/tasks/<id>.md (artefatto versionato) e fa append a
+# technical-context.md (decisioni cumulative). NON sono codice → non passano da scope.txt.
+# Scansiona TUTTI i PROGRESS per-source: compatibile con esecuzione parallela di più source.
 case "$AGENT" in
   solo|*:solo)
-    CR=$(flow_context_root_for_task "$TASK" 2>/dev/null || true)
-    if [ -n "$CR" ]; then
+    for prog in .flow/sources/*/PROGRESS.json; do
+      [ -f "$prog" ] || continue
+      cr=$(jq -r '.context_root // empty' "$prog" 2>/dev/null) || continue
+      [ -n "$cr" ] || continue
+      cr="${cr%/}"
       case "$REL" in
-        "$CR"/tasks/"$TASK".md|"$CR"/technical-context.md) allow ;;
+        "$cr"/tasks/*.md|\
+        "$cr"/technical-context.md) allow ;;
       esac
-    fi
+    done
     ;;
 esac
 
-SCOPE=".flow/briefs/$TASK/scope.txt"
-[ -f "$SCOPE" ] || ask "scope.txt mancante per $TASK"
+# Gate principale: consenti se il path matcha QUALSIASI scope.txt attivo in .flow/briefs/*/.
+# Scansione di tutti i brief → compatibile con esecuzione parallela di più task (es. 002+006
+# simultane: il DEV della 006 ha i propri file in scope.txt della 006, indipendentemente da
+# quale task PROGRESS.json segni come current_task).
+# Se nessun scope.txt esiste → ask (nessun brief attivo).
+FOUND_SCOPE=0
+for scope_file in .flow/briefs/*/scope.txt; do
+  [ -f "$scope_file" ] || continue
+  FOUND_SCOPE=1
+  while IFS= read -r g; do
+    [ -z "$g" ] && continue
+    case "$REL" in $g) allow ;; esac
+  done < "$scope_file"
+done
 
-while IFS= read -r g; do
-  [ -z "$g" ] && continue
-  case "$REL" in $g) allow;; esac
-done < "$SCOPE"
-
-ask "path '$REL' fuori da scope.txt"
+[ "$FOUND_SCOPE" -eq 0 ] && ask "nessun scope.txt attivo trovato in .flow/briefs/"
+ask "path '$REL' fuori da tutti gli scope.txt attivi"
