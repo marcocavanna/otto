@@ -1,6 +1,6 @@
 {
   "name": "otto",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "description": "Your attended autopilot for planning → brief → code. One unified planner (4 tiers: project/epic/feature/task), attended flow-run, critical audit, and smart state sync. Taps you only when a real decision is needed.",
   "author": { "name": "Marco Cavanna", "email": "info@marcocavanna.com" },
   "keywords": ["planning", "orchestration", "agents", "workflow", "attended", "audit", "analysis"]
