@@ -29,11 +29,11 @@ If missing → refuse and redirect to `planner`.
 ## File layout (managed by this skill)
 
 ```
-<context-root>/             # docs/planning/ (project) | docs/features/<slug>/ (feature)
+<context-root>/             # docs/planning/ (project) | docs/features/<slug>/ (feature) | docs/tasks/<slug>/ (task-tier)
   02-abstract.md            # strategic — constrains technical-context.md
   technical-context.md      # tactical — owned by this skill
   tasks/
-    <id>.md                 # T-NNN (project) | <slug>-NNN (feature)
+    <id>.md                 # T-NNN (project) | <slug>-NNN (feature/task-tier)
     archive/                # project only — concluded milestone briefs (Mode 4)
       M1/
         T-001.md
@@ -51,7 +51,8 @@ Briefs are always co-located under their context-root. The old flat `docs/tasks/
 
 1. **Resolve context-root.** Scan tasks-files across all tiers — `docs/planning/05-tasks-active.md`, `docs/features/*/tasks-active.md`, `docs/tasks/*/tasks-active.md` — excluding `docs/archive/**`. Only directories containing a `tasks-active.md` are sources. The file containing the ID defines the source, context-root, and tasks-file.
    - 0 matches → error "task sconosciuto"; >1 match → error "ID ambiguo".
-   - Explicit override: if caller passes `feature <slug>`, use that source without scanning.
+   - **Explicit override (preferred)**: if caller passes `context_root: <path>` (e.g. from orchestrator spawn prompt), set context-root directly — **skip the scan**. More reliable than scanning when called from flow-run.
+   - **Feature override**: if caller passes `feature <slug>`, use `docs/features/<slug>/` as context-root without scanning.
    - Classic-project fallback: context-root = `docs/planning/`, tasks-file = `05-tasks-active.md`.
 2. **Read in a single parallel batch** (no read dependencies):
    - `00-context.md`

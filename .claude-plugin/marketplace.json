@@ -6,7 +6,7 @@
       "name": "otto",
       "source": "./",
       "description": "Your attended autopilot for planning → brief → code. One unified planner (4 tiers), attended flow-run, critical audit, and smart state sync.",
-      "version": "2.2.4",
+      "version": "2.2.5",
       "keywords": ["planning", "orchestration", "agents", "workflow", "attended", "audit", "analysis"]
     }
   ]

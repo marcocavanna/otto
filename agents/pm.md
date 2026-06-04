@@ -35,7 +35,8 @@ Authoritative source: **function** (`brief` | `finalize`) and **TASK** from the 
 
 ## Function `brief <TASK>`
 
-1. Execute `brief T-NNN` flow from SKILL.md.
+0. **Extract context-root from spawn message.** Read the `Context-root:` field from the spawn prompt (e.g. `"Context-root: docs/features/my-feature/"`). Use it as the explicit source override for step 1 of the SKILL.md brief flow — **skip the tasks-file scan entirely**. If absent (standalone invocation outside flow-run) → fall back to SKILL.md scan. Never infer context-root from the task ID.
+1. Execute `brief T-NNN` flow from SKILL.md (context-root resolved in step 0).
 2. **Attended override** (`attended-flow.md`): alongside the co-located brief `<context-root>/tasks/<TASK>.md`, materialize in `.flow/briefs/<TASK>/`:
    - `brief.md` — copy of the brief (the only source DEV will read). Copy via `cp` from the canonical file just written, do **not** re-emit via Write (fallback: Write if `cp` fails).
    - `scope.txt` — one glob per line, derived from the "File impattati" section (exact paths, `[new]`/`[edit]`) plus service paths DEV must write (`.flow/briefs/<TASK>/**`). No YAML, no comments.
@@ -45,8 +46,9 @@ Authoritative source: **function** (`brief` | `finalize`) and **TASK** from the 
 
 ## Function `finalize <TASK>`
 
+0. **Extract context-root from spawn message.** Same as brief step 0: read `Context-root:` from the spawn prompt and use it as explicit override in the finalize flow. If absent → fall back to SKILL.md scan.
 1. **Attended gate** (mandatory precondition): read `.flow/briefs/<TASK>/RESULT.json`, verify `verify == "pass"`, and verify no open `.flow/briefs/<TASK>/ESCALATION.json`. If gate fails, do not finalize: exit with summary `BLOCKED: finalize negato (verify=<...> / escalation aperta)`.
-2. If gate passes, execute `finalize T-NNN` flow from the skill.
+2. If gate passes, execute `finalize T-NNN` flow from the skill (context-root from step 0).
 
 ## Rules
 

@@ -211,8 +211,8 @@ Every spawn prompt **must start with `MODEL=<x>.`** (the model being assigned, a
 
 | Subagent | Prompt |
 |---|---|
-| `pm` brief | `"MODEL=sonnet. Funzione: brief. TASK: <task>. Segui pm.md."` — `model: sonnet` (brief non tierizzato: gira prima che `meta.json` esista) |
-| `pm` finalize | `"MODEL=<finalize derived>. Funzione: finalize. TASK: <task>. Applica il gate attended."` — `model: <finalize derived>` |
+| `pm` brief | `"MODEL=sonnet. Funzione: brief. TASK: <task>. Context-root: <context_root>. Segui pm.md."` — `model: sonnet` (brief non tierizzato: gira prima che `meta.json` esista). `<context_root>` dal campo `context_root` del per-source PROGRESS.json — evita la re-scan e fissa il path canonico. |
+| `pm` finalize | `"MODEL=<finalize derived>. Funzione: finalize. TASK: <task>. Context-root: <context_root>. Applica il gate attended."` — `model: <finalize derived>`. Stesso `<context_root>` del brief. |
 | `dev` dry-run | `"MODEL=<derived>. Modalità: dry-run. TASK: <task>. Leggi solo .flow/briefs/<task>/brief.md."` — `model: <derived>`. **Run only if dry-run policy = run.** |
 | `dev` implement | `"MODEL=<derived>. Modalità: implement. TASK: <task>."` — same `model: <derived>` as dry-run |
 | `solo` implement | `"MODEL=<derived>. Modalità: implement. TASK: <task>."` — `subagent_type: solo`, `model: <derived>`. Single spawn only. |
