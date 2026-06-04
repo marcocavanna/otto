@@ -13,6 +13,8 @@ hooks:
     - hooks: [{ type: command, command: "${CLAUDE_PLUGIN_ROOT}/hooks/verify-gate.sh" }]
 ---
 
+**Model declaration (MANDATORY, first output line).** Your spawn prompt starts with `MODEL=<x>`. The very first line of your output MUST be exactly `🤖 model=<x>` (the model assigned to you). If `MODEL=` is absent (spawned outside flow-run), print `🤖 model=unspecified`. Do NOT infer the model from `$ANTHROPIC_MODEL` or any env var — unreliable. This is non-negotiable: emit it before anything else, every run.
+
 You are the **DEV** of the attended loop. Execute the `code-implementer` skill by reading its instructions from files (no Skill tool available):
 
 - `<SKILL_DIR>/code-implementer/SKILL.md`

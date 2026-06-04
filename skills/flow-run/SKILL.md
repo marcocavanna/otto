@@ -207,19 +207,23 @@ Constraints:
 
 ## Spawn — what to pass to subagents
 
+Every spawn prompt **must start with `MODEL=<x>.`** (the model being assigned, alias `haiku|sonnet|opus`) so the subagent can declare it (see § Model declaration). `<x>` MUST equal the value passed to the `model` param. Also set the `Agent`/Task call **`description` to include the model**, e.g. `"dev T-003 [opus]"`, so it is visible in the agent list.
+
 | Subagent | Prompt |
 |---|---|
-| `pm` brief | `"Funzione: brief. TASK: <task>. Segui pm.md."` |
-| `pm` finalize | `"Funzione: finalize. TASK: <task>. Applica il gate attended."` — spawn with `model: <finalize derived>` |
-| `dev` dry-run | `"Modalità: dry-run. TASK: <task>. Leggi solo .flow/briefs/<task>/brief.md."` — with `model: <derived>`. **Run only if dry-run policy = run.** |
-| `dev` implement | `"Modalità: implement. TASK: <task>."` — same `model: <derived>` as dry-run |
-| `solo` implement | `"Modalità: implement. TASK: <task>."` — `subagent_type: solo`, `model: <derived>`. Single spawn only. |
+| `pm` brief | `"MODEL=sonnet. Funzione: brief. TASK: <task>. Segui pm.md."` — `model: sonnet` (brief non tierizzato: gira prima che `meta.json` esista) |
+| `pm` finalize | `"MODEL=<finalize derived>. Funzione: finalize. TASK: <task>. Applica il gate attended."` — `model: <finalize derived>` |
+| `dev` dry-run | `"MODEL=<derived>. Modalità: dry-run. TASK: <task>. Leggi solo .flow/briefs/<task>/brief.md."` — `model: <derived>`. **Run only if dry-run policy = run.** |
+| `dev` implement | `"MODEL=<derived>. Modalità: implement. TASK: <task>."` — same `model: <derived>` as dry-run |
+| `solo` implement | `"MODEL=<derived>. Modalità: implement. TASK: <task>."` — `subagent_type: solo`, `model: <derived>`. Single spawn only. |
 
 Keep prompts thin. Business logic source is the on-disk brief.
 
 > **Per-spawn `model` is MANDATORY on every spawn.** Each `Agent`/Task call for `pm`/`dev`/`solo` MUST pass the `model` parameter (alias `haiku|sonnet|opus`) — it is the **only** channel that tiers the model above/below the frontmatter floor (`sonnet`). **Omitting it silently degrades to `sonnet`** (frontmatter) and the tiering does not scale, né verso `opus` né verso `haiku`. Resolution order (Claude Code): `CLAUDE_CODE_SUBAGENT_MODEL` (env) > per-spawn `model` param > frontmatter > session — see [`references/model-tiering.md`](references/model-tiering.md) § Precedenza. Manual override wins over dynamic derivation; on `meta.json` absent/unreadable → `sonnet` + note.
 >
-> **Report, don't sniff.** Do NOT have the subagent echo `$ANTHROPIC_MODEL` (or any env var) to prove its model: that reflects session config, not the resolved subagent model → false "always session model". Observability is orchestrator-side: annotate per task in the summary the model passed at spawn (e.g. `T-003: DEV=opus (critical)`, `T-004: solo=haiku (trivial)`).
+> **Model declaration + cross-check (mandatory evidence).** Every subagent declares its assigned model as its **first output line** `🤖 model=<x>` (instructed in `agents/{dev,pm,solo}.md`). The orchestrator: (1) injects `MODEL=<x>.` in the spawn prompt and the model in the `description`; (2) on return, **cross-checks** the declared `🤖 model=<x>` line against the model it requested; (3) annotates per task in the summary (e.g. `T-003: DEV=opus (critical) ✓declared`). Mismatch declared≠requested → flag in summary (do not escalate).
+>
+> **Do not sniff the runtime model.** There is **no reliable way** for a subagent to probe the model it actually runs on: `$ANTHROPIC_MODEL` reflects session config, not the resolved subagent model → false "always session model". The declaration is the **assigned** model (source: orchestrator), which is the strongest available evidence. A silent divergence is possible only via `CLAUDE_CODE_SUBAGENT_MODEL` — already caught by the startup env guard.
 
 ## Archive convention
 
