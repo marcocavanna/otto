@@ -44,3 +44,20 @@ flow_resolve_task() {
   if [ "$any_count" -eq 1 ]; then printf '%s\n' "$any_task"; return 0; fi
   [ "$any_count" -eq 0 ] && return 1 || return 2
 }
+
+# Emette il `context_root` (senza slash finale) della source il cui PROGRESS per-source ha
+# current_task == $1. Vuoto + exit 1 se non risolvibile. Best-effort, usato da scope-check
+# per consentire all'agente di scrivere il proprio artefatto versionato del task.
+flow_context_root_for_task() {
+  local task="$1" prog ct cr
+  [ -n "$task" ] || return 1
+  for prog in .flow/sources/*/PROGRESS.json; do
+    [ -f "$prog" ] || continue
+    ct=$(jq -r '.current_task // empty' "$prog" 2>/dev/null) || continue
+    [ "$ct" = "$task" ] || continue
+    cr=$(jq -r '.context_root // empty' "$prog" 2>/dev/null)
+    [ -n "$cr" ] || return 1
+    printf '%s\n' "${cr%/}"; return 0
+  done
+  return 1
+}

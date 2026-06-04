@@ -80,6 +80,22 @@ case "$REL" in
   ".flow/briefs/$TASK/"*) allow ;;
 esac
 
+# Output contract nella context-root — SOLO per l'agente `solo`: scrive il proprio artefatto
+# versionato del task (<context_root>/tasks/<TASK>.md) e l'append a technical-context.md (step
+# finalize). NON è codice, quindi non passa da scope.txt (come .flow/briefs/$TASK/). Il `dev`
+# in team mode tocca solo codice (dev.md gli vieta technical-context.md) → resta gated, il
+# guard non si indebolisce.
+case "$AGENT" in
+  solo|*:solo)
+    CR=$(flow_context_root_for_task "$TASK" 2>/dev/null || true)
+    if [ -n "$CR" ]; then
+      case "$REL" in
+        "$CR"/tasks/"$TASK".md|"$CR"/technical-context.md) allow ;;
+      esac
+    fi
+    ;;
+esac
+
 SCOPE=".flow/briefs/$TASK/scope.txt"
 [ -f "$SCOPE" ] || ask "scope.txt mancante per $TASK"
 
