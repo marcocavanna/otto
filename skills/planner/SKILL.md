@@ -1,13 +1,13 @@
 ---
 name: planner
 description: >-
-  Use this skill when the user wants to plan anything on a project or codebase —
-  from a standalone task to a full project. Absorbs the triggers of project-planner,
-  epic-planner and feature-planner. Triggers on: "pianifica", "ho un'idea per",
-  "voglio strutturare", "fammi i task per", "plan a feature", "plan an epic",
-  "scomponi in feature", "plan this project", "project plan", "project pitch",
-  "fammi da PM", "feature planner", "epic planner", "project planner".
-  Defaults to tier `feature` if scope is ambiguous; always confirms before generating.
+  Unified planning for project/epic/feature/task tiers. Single entry point delegates to
+  tier-specific logic. Absorbs project-planner, epic-planner, feature-planner triggers.
+  Triggers: "pianifica", "ho un'idea per", "voglio strutturare", "fammi i task per",
+  "plan a feature", "plan an epic", "scomponi in feature", "plan this project",
+  "project plan", "project pitch", "fammi da PM", "feature planner", "epic planner",
+  "project planner". Defaults feature tier. Non-negotiable: no filler, explicit assumptions,
+  push back on weak scope. Always confirms.
 ---
 
 # Planner

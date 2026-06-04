@@ -11,6 +11,30 @@ Questa guida si legge dall'alto verso il basso. Se sei di fretta, salta dritto a
 
 ---
 
+## 🆕 Novità 2.2.0 — Token diet
+
+Niente nuove funzionalità: questa release **riscrive** skill e agent per consumare **meno token a parità di comportamento**. Le istruzioni interne sono state potate (rimosso testo ridondante, procedure trasformate in liste) e portate in inglese — più denso da tokenizzare — preservando **al 100%** regole, edge-case e frasi di attivazione (trigger verbatim, anche in italiano).
+
+- **Hot-path (corpo di skill/agent, caricato a ogni esecuzione/spawn): −27%** (−8.019 token stimati). La leva principale è `flow-run`, l'orchestratore, da solo a −38.7%.
+- **Always-on (le `description`, in contesto a ogni sessione): −4%** — volutamente modesto: le `description` sono in gran parte trigger-phrase, preservate alla lettera per non degradare l'attivazione delle skill.
+- **Garanzia di non-regressione**: ogni file riscritto è passato per un gate (checklist edge-case + diff semantico + misura del delta token), con soglia vincolante `0 voci mancanti · 0 divergenti`.
+
+| Artefatto | prima | dopo | delta |
+|---|---:|---:|---:|
+| `flow-run` (body) | 8.570 | 5.251 | **−38.7%** |
+| `code-implementer` | 2.253 | 1.369 | **−39.2%** |
+| `flow-sync` | 2.724 | 1.773 | −34.9% |
+| `task-implementer` | 3.184 | 2.117 | −33.5% |
+| `whats-next` | 2.611 | 1.764 | −32.4% |
+| agent `dev`/`pm`/`solo` | 5.236 | 4.285 | −18.2% |
+| description `migrate`/`planner`/`critical-flow-analysis` | 399 | 331 | −17.0% |
+| **Hot-path totale** | **29.294** | **21.275** | **−27.4%** |
+| **Always-on totale** | **1.672** | **1.604** | **−4.1%** |
+
+> Stime con tokenizer proxy (`scripts/measure-tokens.py`, ~3,4 char/tok IT · ~4,0 EN): i delta comparativi sono affidabili, gli assoluti approssimati. Nessun cambiamento di semantica, contratti `.flow/`, hook o design file-based.
+
+---
+
 ## 🆕 Novità 2.1.0
 
 - **Fast path — modalità `solo`**: `flow-run` legge la `Complessità (ipotesi)` del planner **prima** di ogni spawn e chiude i task `trivial`/`standard` in **1 spawn** (`solo`) anziché 2 (PM+DEV = `team`), riservando il flusso `team` ai `critical`. Artefatti versionati **identici** e stessi hook di sicurezza (`scope-check` + `verify-gate`). Mappa `complexity → execution-mode` single-source in `model-tiering.md`; degrado conservativo → `team`.

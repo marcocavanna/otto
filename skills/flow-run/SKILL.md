@@ -5,283 +5,234 @@ description: Orchestratore "attended" del loop PM→DEV su un piano di task. Ese
 
 # Flow Run — orchestratore attended
 
-Sei il **main thread** = l'ORCHESTRATORE. PM e DEV sono subagent figli diretti (un solo livello: un subagent non può spawnarne altri). PM e DEV **non si parlano**: comunicano solo via file in `.flow/`. Tu spawnani via tool `Agent` con `subagent_type: pm` / `subagent_type: dev`.
+You are the **main thread** = ORCHESTRATOR. PM and DEV are direct child subagents (one level only: a subagent cannot spawn others). PM and DEV do not communicate with each other — only via files in `.flow/`. Spawn via `Agent` tool with `subagent_type: pm` / `subagent_type: dev`.
 
-## Principio di stato
+## State principle
 
-Lo stato del loop vive in **`.flow/sources/<slug>/PROGRESS.json`** (per-source, la verità d'esecuzione), MAI nella tua memoria. Così il loop regge la compattazione del contesto: a ogni ripresa rileggi il PROGRESS della source acquisita e riparti. Non ricostruire lo stato a mente.
+Loop state lives in **`.flow/sources/<slug>/PROGRESS.json`** (per-source, execution truth), never in memory. Re-read it on every resume.
 
-`.flow/sources/<slug>/PROGRESS.json`:
 ```json
-{ "source": "<slug>",
-  "context_root": "docs/features/<slug>/",
-  "owner": "<descrittore del flow>",
-  "current_task": "T-001",
+{ "source": "<slug>", "context_root": "docs/features/<slug>/",
+  "owner": "<descriptor>", "current_task": "T-001",
   "tasks": [ { "id": "T-001", "state": "pending|active|done" } ] }
 ```
 
-`.flow/PROGRESS.json` (radice) è **legacy**: la migrazione al PROGRESS per-source è completa, quindi lo scan lo ignora — il PROGRESS per-source è la sola fonte di verità d'esecuzione. Il file non è rimosso fisicamente (fuori scope), ma non va più letto né scritto come stato del loop.
+`.flow/PROGRESS.json` (root) is **legacy** — never read or write as loop state.
 
-## Modalità attended
+## Attended mode
 
-L'unica forma di escalation è: **tu (main) usi `AskUserQuestion` e ti fermi.** Nient'altro. I subagent non possono interpellare l'utente: scrivono `ESCALATION.json` / `RESULT.json` e terminano; sei TU a leggerli e, se serve, a interpellare l'utente.
+- Only the main thread uses `AskUserQuestion`. Subagents write `ESCALATION.json` / `RESULT.json` and terminate; you read them and escalate if needed.
+- Fail-closed: any anomaly (missing file, unreadable JSON, incomplete PM output) → escalate; never advance to next task.
 
-Fail-closed: ogni anomalia (file mancante, JSON illeggibile, output PM incompleto) → escala (AskUserQuestion), mai proseguire al task successivo.
+## Execution mode selection
 
-## Selezione del task: full-run vs single-task
+**Single-task** — user specifies a task (e.g. *"esegui solo T-003"*, *"flow-run T-003"*): process only that task (steps 2–6 once) and stop. If not `pending` in `PROGRESS.json`, ask confirmation before re-running.
 
-All'avvio, determina la **modalità di esecuzione** dall'input dell'utente:
+**Full-run** — default: iterate all `pending` in order until done or escalation.
 
-- **Single-task** — se l'utente indica un task specifico (es. *"esegui solo T-003"*, *"flow-run T-003"*, *"fai girare il loop su T-003"*): processi **solo** quel task (steps 2–6 una volta) e ti fermi, senza toccare gli altri. Se il task non è `pending` in `PROGRESS.json`, chiedi conferma all'utente prima di rieseguirlo (potrebbe essere già `done`).
-- **Full-run** — default, nessun task indicato: scorri tutti i `pending` in ordine finché non finiscono o non scatta un'escalation.
+### Model override (user input)
 
-In entrambe le modalità lo stato resta in `PROGRESS.json` e il protocollo per-task è identico.
+Extract from user input:
+- flag: `--model <haiku|sonnet|opus>`
+- natural: *"con/in/usa <haiku|sonnet|opus>"*
 
-### Override manuale del modello (input utente)
+Alias outside `{haiku, sonnet, opus}` → **no override** + note in summary (don't escalate).
 
-Oltre alla modalità d'esecuzione, estrai dall'input dell'utente un eventuale **override del modello**:
-- forma flag: `--model <haiku|sonnet|opus>`;
-- forma naturale: *"con/in/usa <haiku|sonnet|opus>"* (es. *"esegui il piano con haiku"*, *"solo T-003 in opus"*).
+Default: override applies to **DEV only**. Extends to PM only if user says so explicitly (e.g. *"tutto in opus"*, *"PM e DEV in opus"*).
 
-Alias fuori dall'enum `{haiku, sonnet, opus}` o token non riconosciuto (es. *"modello veloce"*, *"con gpt4"*, *"turbo"*) → **nessun override**: comportamento dinamico (step 3b) + **nota nel summary** (l'orchestratore non inventa un modello, non escala).
+Precedence: see [`references/model-tiering.md`](references/model-tiering.md) § Precedenza — user override wins over all. Override is **ephemeral** (current turn only; never persisted).
 
-Default: l'override riguarda **solo il DEV**. Si estende anche allo spawn `pm` SOLO se l'utente lo indica esplicitamente (es. *"tutto in opus"*, *"PM e DEV in opus"*, *"opus, PM compreso"*) — coerente col boundary di feature (il PM non è tierizzabile dinamicamente; l'override manuale è l'unica leva, e va resa intenzionale).
+Extract also a **dry-run directive**: *"salta il dry-run"* / `--no-dry-run` → skip; *"forza il dry-run"* / `--dry-run` → run. Wins over complexity policy. Also ephemeral.
 
-Precedenza: vedi [`references/model-tiering.md`](references/model-tiering.md) § Precedenza — **l'override utente vince su tutto**, mapping dinamico incluso. L'override è **effimero** (vive nel turno dell'orchestratore): non entra in `PROGRESS.json` né in alcun contratto su disco, come la derivazione dinamica.
+### Pre-check: concurrent flow (advisory, non-blocking)
 
-Estrai dall'input anche una eventuale **direttiva dry-run**: *"salta il dry-run"* / `--no-dry-run` → skip; *"forza il dry-run"* / `--dry-run` → run. Vince sulla policy per complessità (step 3b / 4). Anch'essa effimera.
+**Once at startup, before claim**: scan `.flow/locks/*/heartbeat.ts`; a lock is **alive** if `now - mtime < 300s` (see [`references/concurrency.md`](references/concurrency.md)).
 
-### Pre-check: flow concorrente (advisory, non bloccante)
+- No live lock → proceed to claim.
+- At least one live lock → **`AskUserQuestion`**: report slug(s) + owner, warn parallel flows unsupported (may corrupt state). Options: **Cancel (recommended)** / **Proceed anyway** (user assumes risk). On cancel → exit cleanly without claiming. On proceed → annotate in summary.
 
-**All'avvio dell'invocazione** (una volta, PRIMA del claim e della selezione task), verifica se esiste già **un altro flow vivo**. In otto 2.0.0 i flow paralleli **non sono supportati**: gli hook del DEV risolvono il task dalla source sotto lock e, con più source vive contemporaneamente, `flow_resolve_task` diventa ambiguo (vedi `hooks/flow-lib.sh`) → ogni scrittura del DEV finisce in `ask`, lo stato può corrompersi.
+> False positive on resume (heartbeat still fresh): "Proceed" is correct. This is an advisory, not a hard lock.
 
-Rilevamento (best-effort, fail-soft): scorri `.flow/locks/*/heartbeat.ts`; un lock è **vivo** se il suo heartbeat è fresco (`now - mtime < 300s`, stessa soglia di `references/concurrency.md`). Poiché a questo punto non hai ancora claimato nulla, **qualsiasi** lock vivo appartiene a un altro flow.
+### Claim source
 
-- **Nessun lock vivo** → procedi normalmente al claim.
-- **Almeno un lock vivo** → **`AskUserQuestion`**: avvisa che risulta un flow già in esecuzione (riporta lo/gli `<slug>` e l'`owner` dal PROGRESS/index), che i flow paralleli non sono supportati in questa versione e che procedere può corrompere lo stato. Opzioni: **Annulla (consigliato)** / **Procedi comunque** (l'utente si assume il rischio). Su "Annulla" → termina con successo senza claimare. Su "Procedi" → prosegui al claim e annota l'override nel summary.
+Before the task loop, **acquire the source** via advisory lock. Algorithm details: single-source in [`references/concurrency.md`](references/concurrency.md).
 
-> Limite noto (best-effort): su un **resume** dello stesso flow dopo una pausa breve l'heartbeat può essere ancora fresco e l'advisory scattare come falso positivo — in quel caso "Procedi" è la scelta corretta. È un avviso, non un lock: non impone vincoli strutturali (il parallelismo vero arriverà come feature dedicata).
+1. Scan sources with `pending` tasks, in order.
+2. For each: `mkdir .flow/locks/<slug>/`.
+   - Success → lock acquired: write `heartbeat.ts`, enter.
+   - EEXIST → check if stale (see `references/concurrency.md` § Soglia di reclaim):
+     - Stale → **reclaim**, enter.
+     - Live → **skip**, next source.
+3. No claim succeeds → report "nessuna source disponibile", exit with success (not escalation).
+4. **Init PROGRESS** (immediately after claim, before task loop):
+   - Exists → load and reuse (idempotent on reclaim; never re-initialize).
+   - Missing → `mkdir -p .flow/sources/<slug>/`; build from `tasks-active.md`: `state="done"` if Status row is done, else `"pending"`; `current_task=null`; fill `owner`/`context_root`. Write order: PROGRESS → `heartbeat.ts`. Then upsert entry in `.flow/index.json` (slug → `{ owner, alive:true, active:null, done, pending, archived:false }`); if `index.json` missing or invalid, **reconstruct first** (see § Reconstruct index.json).
+5. Execute task protocol below; read/write only the per-source PROGRESS. Update `heartbeat.ts` on every state transition (order: PROGRESS → heartbeat; see `references/concurrency.md` § Aggiornamento heartbeat).
+6. On source completion or abandon: **release** (`rm -rf .flow/locks/<slug>/`, idempotent). Update `index.json`: `alive=false`, `active=null`.
 
-### Claim source (pre-condizione al loop task)
+### Reconstruct index.json
 
-Prima di eseguire il protocollo per-task, il flow **acquisisce la source** via lock advisory.
-Dettagli dell'algoritmo (struttura lock, soglia di reclaim, formato heartbeat): single-source in
-[`references/concurrency.md`](references/concurrency.md) — non duplicare qui.
+If `.flow/index.json` missing or invalid:
 
-1. Scorre le source con task `pending`, in ordine.
-2. Per ogni source: tenta `mkdir .flow/locks/<slug>/`.
-   - Successo → lock acquisito: scrive `heartbeat.ts`, entra.
-   - Fallisce (EEXIST) → controlla se il lock è **stantio** (vedi `references/concurrency.md`
-     § Semantica "source viva" / § Soglia di reclaim):
-     - Stantio → **reclaim** ed entra.
-     - Vivo → **skip**, prossima source.
-3. Se nessun claim riesce (tutte vive sotto altri flow, o nessuna source pending) → riporta
-   "nessuna source disponibile" nel summary e termina con successo (exit 0). Non è un'escalation.
-4. **Inizializza il PROGRESS per-source** (subito dopo il claim riuscito, PRIMA del loop task):
-   - Se `.flow/sources/<slug>/PROGRESS.json` **esiste già** → caricalo e riusalo (reclaim di una
-     source già avviata: il PROGRESS preesistente è la verità, non re-inizializzare — idempotente).
-   - Se **non esiste** → `mkdir -p .flow/sources/<slug>/`, poi costruisci il PROGRESS dal
-     `tasks-active.md` della source: per ogni task, `state="done"` se la sua riga `Status` è done,
-     altrimenti `state="pending"`; `current_task=null`; `owner` = descrittore del flow;
-     `context_root` = directory della feature (es. `docs/features/<slug>/`). Schema canonico:
-     `{ source, context_root, owner, current_task, tasks[] }` (single-source in `technical-context.md`).
-     Aggiorna `heartbeat.ts` dopo questo write (ordine PROGRESS → heartbeat).
-     Dopo l'init del PROGRESS, **upsert entry** in `.flow/index.json` (slug → `{ owner, alive:true,
-     active:null, done, pending, archived:false }`); se `index.json` è assente o non valido,
-     **ricostruiscilo prima** (vedi § Ricostruzione index.json).
-5. Source acquisita: esegue il protocollo per-task sotto, leggendo/scrivendo **solo** il PROGRESS
-   per-source della source acquisita. Aggiorna `heartbeat.ts` a ogni transizione di stato
-   (ordine: scrivi `PROGRESS` → aggiorna `heartbeat.ts`; vedi
-   `references/concurrency.md` § Aggiornamento heartbeat).
-6. Al termine della source (o ad abbandono): **release** (`rm -rf .flow/locks/<slug>/`, idempotente).
-   Aggiorna `index.json`: `alive=false`, `active=null` per la source rilasciata; lascia `done`/`pending`
-   ai valori correnti.
+1. Scan `.flow/locks/`: each `<slug>/` is a candidate source.
+2. For each `<slug>`: read `.flow/sources/<slug>/PROGRESS.json`.
+   - Exists → populate entry: `owner` from PROGRESS, `alive` from `heartbeat.ts` mtime, `active`/`done`/`pending` from PROGRESS, `archived:false`.
+   - Missing → minimal entry `{ owner:"unknown", alive:false, active:null, done:0, pending:0, archived:false }`.
+3. Scan `.flow/sources/`: PROGRESS without matching lock → entry with `alive:false`.
+4. Write reconstructed file.
 
-### Ricostruzione index.json
+`index.json` is a fault-tolerant cache: a corrupt PROGRESS produces a degraded entry, not a fatal error. `archived` always initializes to `false` here; `true` is set only by auto-archive.
 
-Se `.flow/index.json` è assente o JSON non valido, ricostruiscilo prima di qualunque
-operazione sull'index:
+### Auto-archive at source end
 
-1. Scansiona `.flow/locks/`: ogni subdirectory `<slug>/` → source candidata.
-2. Per ogni `<slug>`: leggi `.flow/sources/<slug>/PROGRESS.json`.
-   - Esiste → popola entry: `owner` dal PROGRESS, `alive` da mtime `heartbeat.ts`
-     (semantica `concurrency.md` § Semantica "source viva"), `active`/`done`/`pending`
-     dal PROGRESS, `archived: false`.
-   - Non esiste → entry minima `{ owner:"unknown", alive:false, active:null,
-     done:0, pending:0, archived:false }`.
-3. Scansiona `.flow/sources/`: PROGRESS senza lock corrispondente → entry con `alive:false`.
-4. Scrivi il file ricostruito.
+**Trigger**: all tasks in per-source PROGRESS have `state="done"` after marking the last task done. Never on reclaim. Sequence **under lock**.
 
-`index.json` è cache tollerante: un PROGRESS corrotto produce entry degradata, non errore fatale.
-Il campo `archived` è sempre inizializzato a `false` in ricostruzione; `true` è responsabilità
-esclusiva dell'auto-archivio a fine source (sotto).
+Steps 1–2 are **best-effort, fail-soft** and run **only if the source belongs to an epic** (see § Resolve source epic). Never escalate on failure; annotate in summary and continue. Steps 1–2 must precede `git mv` because they read/update artefacts still live in `docs/features/<slug>/`.
 
-### Auto-archivio a fine source
+Steps 3–6 are the **mandatory sequence** (order is binding for idempotency):
 
-Trigger: tutti i task nel PROGRESS per-source hanno `state="done"` (verificato **dopo** aver segnato
-`done` l'ultimo task, prima di tornare al loop). Scatta solo sul task corrente che porta il conteggio a
-"tutti done", mai su reclaim. Sequenza **sotto lock**.
+1. **Consolidate technical-context → parent** (`#8`): run **`planner finalize <slug>`** (single-source: [`../planner/references/finalize.md`](../planner/references/finalize.md) § "Bubble-up single-hop selettivo") in **attended mode** — automatic selection of all coherent `## Decisioni tattiche …` sections. Append-only, dated, with **idempotency guard** (`## Consolidato da <slug>` already present → skip).
+2. **Mirror epic roadmap → done** (`#10`): set this feature's `Status feature` row in `docs/epics/<epic>/roadmap.md` to `✅ done` (see § Mirror epic roadmap). Idempotent (set, not append).
+3. **`git mv`** `docs/features/<slug>/` → `docs/archive/features/<slug>/` (`mkdir -p docs/archive/features/` first).
+   - Recovery: DST exists + SRC missing → already moved, skip. Both exist → write `ESCALATION.json` `{ "level":"L2", "reason":"archivio parziale non recuperabile: SRC e DST coesistono" }` and abort.
+   - `git mv` fails (source untracked) → `mv` fallback, annotate in summary.
+4. **Clean** `.flow/sources/<slug>/` and `.flow/briefs/<task>/` for all source tasks (`#11`, `rm -rf`, idempotent).
+5. **Release lock** (`rm -rf .flow/locks/<slug>/`, idempotent).
+6. **Update `index.json`**: `archived=true`, `alive=false`, `active=null`. If missing/corrupt: reconstruct first (§ Reconstruct index.json) then update.
 
-I passi 1–2 sono **best-effort, fail-soft** e si eseguono **solo se la source appartiene a un epic**
-(vedi § "Risoluzione epic della source"): mai escalation, se non producibili annotali nel summary e
-prosegui. Devono precedere il `git mv` perché leggono/aggiornano artefatti ancora vivi in
-`docs/features/<slug>/` o nell'epic. I passi 3–6 sono la **sequenza obbligatoria** (l'ordine è
-vincolante per idempotenza):
+Never commit. Annotate in summary: "Source `<slug>` archiviata in `docs/archive/features/<slug>/`. Commit NON eseguito."
 
-1. **Consolidamento technical-context → padre** (`#8`): esegui la procedura di **`planner finalize <slug>`**
-   (single-source: [`../planner/references/finalize.md`](../planner/references/finalize.md) § "Bubble-up
-   single-hop selettivo") in **modalità attended** — selezione **automatica** di tutte le sezioni
-   `## Decisioni tattiche …` coerenti (nel flow non c'è utente da interpellare; in uso **manuale**
-   `planner finalize` resta a **selezione guidata**). Risale al `Bubble-up target` dichiarato nell'anchor
-   della source (padre = epic o project; assente/`—` → no-op). Append-only, datato, con **guardia di
-   idempotenza** (`## Consolidato da <slug>` già presente nel target → salta). **Sostituisce** l'append
-   grezzo a copia integrale della 1.1.0.
-2. **Mirror roadmap epic → done** (`#10`): in `docs/epics/<epic>/roadmap.md` setta la riga
-   `Status feature` di questa feature a `✅ done` (vedi § "Mirror status sulla roadmap epic").
-   Idempotente (set, non append).
-3. **git mv** `docs/features/<slug>/` → `docs/archive/features/<slug>/` (`mkdir -p docs/archive/features/` prima).
-   Recovery crash: se DST esiste e SRC non esiste → già spostato, salta. Se entrambi esistono → scrivi
-   `.flow/briefs/<task>/ESCALATION.json` `{ "level":"L2", "reason":"archivio parziale non recuperabile: SRC e DST coesistono" }`
-   e interrompi la sequenza. Se `git mv` fallisce perché la source non è tracciata da git → `mv` come fallback (annotalo nel summary).
-4. **Pulizia** `.flow/sources/<slug>/` **e** `.flow/briefs/<task>/` di **tutti** i task della source
-   (`#11`, `rm -rf`, idempotente). I brief canonici sono ormai co-locati e archiviati con la feature
-   (passo 3): le copie effimere in `.flow/briefs/` non servono più e non vanno lasciate ad accumularsi.
-5. **Release lock** (`rm -rf .flow/locks/<slug>/`, idempotente). È l'ultimo passo prima dell'update index: il lock si tiene per tutta la sequenza.
-6. **Aggiorna** `index.json`: `archived=true`, `alive=false`, `active=null`
-   (`jq '.[$slug].archived=true | .[$slug].alive=false | .[$slug].active=null'`). Se mancante/corrotto:
-   ricostruisci on-demand (§ Ricostruzione index.json) poi aggiorna. Questa è la **sola** scrittura di `archived=true`.
+## Protocol (per task)
 
-Nessun commit, mai. L'orchestratore annota nel summary: "Source `<slug>` archiviata in `docs/archive/features/<slug>/`. Commit NON eseguito."
+**1. Read plan + per-source PROGRESS.**
+- Full-run: take next `pending` task. If none → all done: run auto-archive, then end source and report.
+- Single-task: take the user-indicated task.
 
-## Protocollo (per ogni task)
+**1b. Resolve `execution-mode`** (once per task, before any spawn) from single-source [`references/model-tiering.md`](references/model-tiering.md) § "Mappa". Read **`Complessità (ipotesi)`** from the task row in the source tasks-file: `trivial`/`standard` → **`solo`**; `critical` → **`team`**.
 
-1. **Leggi piano + PROGRESS per-source** (`.flow/sources/<slug>/PROGRESS.json` della source acquisita).
-   - Full-run: prendi il prossimo task `pending`. Se nessuno → tutti i task sono `done`: esegui
-     l'auto-archivio (vedi § Auto-archivio a fine source), poi termina la source e riporta summary.
-   - Single-task: prendi il task indicato dall'utente.
-1b. **Risolvi l'`execution-mode`** (prima di qualunque spawn, una sola volta per task) dalla single-source [`references/model-tiering.md`](references/model-tiering.md) § "Mappa". Leggi la **`Complessità (ipotesi)`** del task dalla sua riga nel **tasks-file** della source (schema task-entry, `../planner/planning-source-contract.md`): `trivial`/`standard` → **`solo`**; `critical` → **`team`**. Questa è una stima **a priori** del planner, disponibile **prima** del `meta.json` (che il PM emette solo al `brief`, troppo tardi per decidere *se* spawnare il PM). **Degrado conservativo**: complessità **assente / illeggibile / fuori enum**, **oppure** riga del task non risolvibile nel tasks-file → **`team`** (MAI `solo`) + **nota nel summary**. **Override utente** esplicito (*"esegui in team"*, *"forza solo"*, `--mode <solo|team>`) → vince sulla mappa, **effimero**, annotato nel summary. L'`execution-mode` **non** entra in `PROGRESS.json` né in alcun contratto su disco (effimero, come modello/dry-run).
-2. **Attiva il task PRIMA dello spawn** (DEV o `solo`; l'hook risolve il task da qui): nel PROGRESS **per-source**
-   (`.flow/sources/<slug>/PROGRESS.json`) setta `current_task = <task>` e quel task `state = "active"`.
-   Scrivi il file; poi aggiorna `heartbeat.ts` (ordine: PROGRESS → heartbeat; vedi
-   `references/concurrency.md` § Aggiornamento heartbeat).
-   Aggiorna `index.json`: `active = <task>`, `done`, `pending` aggiornati dai conteggi correnti del
-   PROGRESS per-source (ordine invariante: index dopo PROGRESS e heartbeat).
-   **Mirror roadmap epic → active** (`#10`, best-effort, fail-soft): se la source appartiene a un epic
-   (§ "Risoluzione epic della source") e la sua riga `Status feature` in `docs/epics/<epic>/roadmap.md`
-   è ancora `⚪ planned`, settala a `🔵 active`. Solo questa transizione planned→active; se è già
-   `active`/`done` non toccarla. Source standalone o roadmap non risolta → salta silenziosamente.
+- **Conservative fallback**: complexity missing/unreadable/out-of-enum, or task row unresolvable → **`team`** (NEVER `solo`) + note in summary.
+- **User override** (*"esegui in team"*, *"forza solo"*, `--mode <solo|team>`) → wins, ephemeral, annotated.
 
-> **Biforcazione per `execution-mode`** (risolto in 1b): se **`team`** → esegui i passi **3–6** sotto (flusso PM→DEV invariato). Se **`solo`** → **salta a § "Ramo `solo`"** (un solo spawn, niente PM brief, niente dry-run separato).
+`execution-mode` is ephemeral — never persisted.
 
-**Ramo `team`** (`execution-mode == team`) — flusso invariato:
+**2. Activate task BEFORE spawn**: set `current_task = <task>` and `state = "active"` in per-source PROGRESS. Write file, then update `heartbeat.ts` (order: PROGRESS → heartbeat). Update `index.json`: `active = <task>`, updated counts.
 
-3. **Spawn `pm` → `brief <task>`.** Al ritorno verifica che esistano e non siano vuoti `.flow/briefs/<task>/scope.txt` e `.flow/briefs/<task>/frozen.txt`. Se mancano/vuoti o c'è `ESCALATION.json` → **vai a 7**.
-3b. **Deriva le policy del task** dalla single-source [`references/model-tiering.md`](references/model-tiering.md) (una sola volta per task). Tre output: **modello DEV**, **dry-run sì/no**, **modello del finalize PM**.
-    - **Override manuale presente** (vedi § "Override manuale del modello"): usa il modello forzato per il DEV (e per il PM/finalize se l'utente ha esteso l'override). **NON** leggere né applicare `meta.json` per il modello: l'override ha precedenza massima e copre anche il caso `meta.json` assente/illeggibile (nessuna doppia logica, niente nota di degrado). Per la **dry-run policy**, un eventuale override esplicito (*"salta/forza il dry-run"*) vince; altrimenti vale la policy per complessità (sotto). Annota l'override applicato nel summary.
-    - **Nessun override**: leggi `.flow/briefs/<task>/meta.json` (`{ "complexity": "trivial|standard|critical", "category": "<str>" }`, emesso dal PM) e applica le tre policy via la single-source — **non** ridefinire qui le tabelle:
-      - **modello DEV**: `trivial→haiku`, `standard→sonnet`, `critical→opus`;
-      - **dry-run**: `trivial`/`standard` → **skip**, `critical` → **run**;
-      - **modello finalize PM**: `trivial`/`standard` → `haiku`, `critical` → `sonnet`.
-      Se `meta.json` è assente / illeggibile / `complexity` fuori enum → **degrado conservativo**: modello DEV = `sonnet` (MAI haiku), **dry-run = run**, modello finalize = `sonnet`, + **nota nel summary** del task.
-    Tieni i valori risolti: il modello DEV è lo **stesso** in 4 e 5 (stesso task ⇒ stesso modello in dry-run e implement); la dry-run policy decide se 4 viene eseguito; il modello finalize si usa in 6.
-4. **Dry-run (condizionale, vedi 3b).**
-   - Policy = **run** (task `critical`, oppure `meta.json` assente/illeggibile, oppure override *"forza"*): **spawn `dev` → `dry-run`** passando `model: <derivato>`. Al ritorno: se esiste `.flow/briefs/<task>/ESCALATION.json` → **vai a 7**.
-   - Policy = **skip** (`trivial`/`standard`, salvo override): **non** spawnare il dry-run; vai diretto a 5. In tal caso il **primo** checkpoint di escalation è l'implement (step 6) — il DEV può comunque scrivere `ESCALATION.json` e lo `scope-check` hook resta attivo.
-5. **Spawn `dev` → `implement`** (implement + verify) con lo **stesso** `model: <derivato>` del DEV.
-6. **Leggi `.flow/briefs/<task>/RESULT.json`.** Se `escalate==true` OPPURE `verify!="pass"` OPPURE esiste `ESCALATION.json` → **vai a 7**.
-   Altrimenti **finalizza**, con due percorsi:
-   - **Finalize inline (fast-path)** — SE il task è `trivial`/`standard` (mai `critical`) E `RESULT.deviations` non contiene deviazioni *funzionali* (solo note d'ambiente tipo `"build skipped..."` → ammesso; qualunque deviazione sostanziale o dubbio → percorso PM): l'orchestratore chiude il task **senza spawnare il PM**. Risolve il path del brief on-disk da `Context-root:` nell'header di `.flow/briefs/<task>/brief.md`: path canonico `<context-root>/tasks/<id>.md` (se `Context-root:` è assente → default `docs/planning/`). Marca `Status: ✅ finalized` nel brief risolto. **Non** tocca `technical-context.md` (deviazioni vuote ⇒ nessuna decisione cumulativa; l'eventuale append è già avvenuto al `brief`). Salta la ri-verifica semantica del PM: su un task leggero che ha passato il `verify-gate` il suo valore marginale non giustifica uno spawn a freddo (~90s). Il gate (`verify=="pass"`, no escalation) l'hai **già** applicato qui sopra.
-   - **Finalize PM (default)** — altrimenti (task `critical`, deviazioni funzionali, o override esteso al PM): **spawn `pm` → `finalize <task>`** col `model: <finalize derivato>` (vedi 3b: `trivial`/`standard`→`haiku`, `critical`→`sonnet`; degrado/override → `sonnet`). Qui restano la ri-verifica realtà-brief e l'eventuale update di `technical-context.md`.
-   In entrambi i casi: nel PROGRESS **per-source** (`.flow/sources/<slug>/PROGRESS.json`) setta il task `state="done"`, scrivi il file e aggiorna `heartbeat.ts` (ordine PROGRESS → heartbeat); poi **mirror dello status** (vedi sotto). In full-run, dopo aver segnato `done` l'ultimo task: verifica se **tutti** i task della source sono `done`; in caso → esegui § Auto-archivio a fine source (la source è chiusa, non tornare a 1). Altrimenti torna a **1**; in single-task riporta summary e fermati.
+**Mirror epic roadmap → active** (`#10`, best-effort, fail-soft): if source belongs to an epic and its `Status feature` is still `⚪ planned`, set to `🔵 active`. Only planned→active; if already active/done, do not touch. Standalone source or unresolved roadmap → skip silently.
 
-### Ramo `solo` (`execution-mode == solo`)
+---
 
-Sostituisce i passi **3–6** del ramo team con **un solo spawn**. Nessun `pm brief`, nessun dry-run separato: l'analisi vive nello stesso contesto dell'implementazione. L'agente `solo` è un subagent con gli **stessi hook** del DEV (`scope-check`/`verify-gate`), quindi le sue scritture restano gate-ate e il verify resta imposto — vedi `agents/solo.md`.
+> **Bifurcation by `execution-mode`**: if **`team`** → execute steps 3–6 below. If **`solo`** → jump to § Solo branch.
 
-- **S1. Deriva il modello** dalla `Complessità (ipotesi)` via [`references/model-tiering.md`](references/model-tiering.md) § "Mappa" (`trivial→haiku`, `standard→sonnet`; override utente / degrado come per il DEV). L'agente `solo` non gira **mai** su `critical` (quelli risolvono `team` in 1b).
-- **S2. Spawn `solo` → `implement`** (`subagent_type: solo`, `model: <derivato>`). In un solo contesto l'agente: analizza → materializza `scope.txt`/`frozen.txt` in `.flow/briefs/<task>/` (bootstrap consentito dallo `scope-check`) → implementa (gate-ato) → verifica → **produce gli artefatti versionati**: `<context-root>/tasks/<id>.md` completo (Vincoli risolti · File impattati · Shape · Deviazioni · `Status: ✅ finalized`) + append `technical-context.md` se decisioni cumulative → emette `RESULT.json`. **Struttura artefatti identica al ramo team; cambia solo l'ordine** (prima implementa, poi documenta la realtà).
-- **S3. Leggi `.flow/briefs/<task>/RESULT.json`.**
-  - **`promote==true`** → **promozione `solo → team`** (pre-write, working tree pulito: l'agente non ha toccato il codice): ri-esegui **questo stesso task** dal passo **3** in `team` (esegui la sequenza 3 → 3b → 4 → 5 → 6 del ramo team per lo stesso task, senza toccare il PROGRESS né segnare `done`); annota nel summary: `"PROMOTED <task>: <promote_reason> → re-eseguito in team"`. Valutato **prima** di `escalate`/`verify`: se `promote==true` il working tree è pulito, il re-run è sicuro.
-  - altrimenti **`escalate==true` OPPURE `verify!="pass"` OPPURE `ESCALATION.json` presente** → **vai a 7** (questi sono fail **post-write**: il codice è già stato toccato → **mai** promozione, eviterebbe un re-run su working tree sporco).
-- **S4. Gate del finalize (orchestratore).** Superato il gate (`verify=="pass"`, nessuna escalation): il brief è già `finalized` (scritto dall'agente in S2; l'orchestratore non spawna alcun finalize). Nel PROGRESS **per-source** setta `state="done"`, scrivi il file, aggiorna `heartbeat.ts` (ordine PROGRESS → heartbeat), poi **mirror dello status** (stessa procedura del ramo team, vedi sotto). In full-run, se tutti i task sono `done` → § Auto-archivio a fine source; altrimenti torna a **1**. In single-task riporta summary e fermati.
+---
 
-### Mirror status sul tasks-file della source (a finalize OK)
+### Team branch (`execution-mode == team`)
 
-Dopo aver marcato `done` in `PROGRESS.json`, riflettilo nel **tasks-file della source** del task (vedi il contratto in `../planner/planning-source-contract.md` § "Planning source contract"): `docs/planning/05-tasks-active.md` (project) oppure `docs/features/<slug>/tasks-active.md` (feature). Risolvilo come fa `task-implementer` (l'ID è opaco: `T-NNN` o `<slug>-NNN`); trova la riga `Status` del task e marcane il completamento secondo la convenzione del file. Modifica **solo** quella riga.
+**3. Spawn `pm` → `brief <task>`.** On return: verify `.flow/briefs/<task>/scope.txt` and `.flow/briefs/<task>/frozen.txt` exist and are not empty. Missing/empty or `ESCALATION.json` present → go to **7**.
 
-Vincoli del mirror:
-- È un riflesso **non-canonico**: la verità d'esecuzione resta `PROGRESS.json`. Se il tasks-file non contiene il task o ha un formato non riconoscibile, **non inventare**: salta il mirror e annotalo nel summary (non è un'escalation).
-- **Volatilità**: `planner expand` *sovrascrive* il tasks-file. Dopo un expand il mirror va riallineato (lo stato durevole è sempre `PROGRESS.json`). Segnalalo nel summary se rilevi un disallineamento.
-- Non toccare altre righe né altri file di planning.
+**3b. Derive task policies** from single-source [`references/model-tiering.md`](references/model-tiering.md) (once per task). Three outputs: **DEV model**, **dry-run policy**, **finalize PM model**.
 
-### Risoluzione epic della source
+- **Manual override present**: use forced model for DEV. Do NOT read `meta.json` for model — override has maximum precedence. For dry-run: explicit override (*"salta/forza"*) wins; otherwise use complexity policy below. Annotate in summary.
+- **No override**: read `.flow/briefs/<task>/meta.json`. Apply policies via single-source:
+  - DEV model: `trivial→haiku`, `standard→sonnet`, `critical→opus`
+  - dry-run: `trivial`/`standard` → **skip**, `critical` → **run**
+  - finalize PM model: `trivial`/`standard` → `haiku`, `critical` → `sonnet`
+  - `meta.json` missing/unreadable/`complexity` out-of-enum → **conservative fallback**: DEV=`sonnet` (NEVER haiku), dry-run=`run`, finalize=`sonnet` + note in summary.
 
-Una feature source può appartenere a un epic (pianificato dal tier epic di `planner`, vedi `../planner/references/tier-epic.md`). Per scoprirlo,
-**best-effort**:
-1. Glob `docs/epics/*/roadmap.md`. Per ciascuno cerca una riga `Source: docs/features/<slug>/` che
-   referenzi **questa** source.
-2. **0 match** → source **standalone**: nessun mirror roadmap, nessun consolidamento technical-context.
-   Salta silenziosamente (non è un'anomalia).
-3. **1 match** → l'epic è quello; usalo per il mirror roadmap e per il consolidamento.
-4. **>1 match** → anomalia (slug referenziato da più roadmap): salta entrambe le operazioni epic e
-   **annota nel summary**. Non escalare.
+DEV model is **the same** in steps 4 and 5 (same task = same model).
 
-Questa risoluzione è la sola dipendenza di `flow-run` dal layer epic: resta epic-agnostico per tutto
-il resto (gira ID opachi, una source per run). Se `docs/epics/` non esiste, l'intera logica è inerte.
+**4. Dry-run (conditional, see 3b).**
+- Policy = **run** (critical, or meta.json absent/unreadable, or *"forza"* override): **spawn `dev` → `dry-run`** with `model: <derived>`. On return: `ESCALATION.json` exists → go to **7**.
+- Policy = **skip** (trivial/standard, no override): skip spawn; go to 5. First escalation checkpoint is implement.
 
-### Mirror status sulla roadmap epic (best-effort)
+**5. Spawn `dev` → `implement`** (implement + verify) with the **same** `model: <derived>` as the DEV.
 
-Estende la filosofia del mirror sul tasks-file alla `roadmap.md` dell'epic: lo `Status feature` è un
-riflesso **non-canonico e advisory** (la verità d'esecuzione resta `PROGRESS.json` + tasks-file). Lo
-aggiorni **best-effort, fail-soft** per tenere la roadmap leggibile dall'umano allineata al lifecycle:
+**6. Read `.flow/briefs/<task>/RESULT.json`.** If `escalate==true` OR `verify!="pass"` OR `ESCALATION.json` present → go to **7**.
 
-- **planned → active**: alla prima attivazione di un task della source (step 2), se la riga era ancora `⚪ planned`.
-- **active → done**: all'auto-archivio (passo 2 della sequenza), quando tutti i task sono `done`.
+Otherwise **finalize** via one of two paths:
 
-Vincoli:
-- Trova in `docs/epics/<epic>/roadmap.md` il blocco della feature (header `### <slug> — …`) e modifica
-  **solo** la sua riga `- **Status feature**: …`. Nessun'altra riga, nessun altro file dell'epic.
-- **Solo transizioni in avanti** (`planned → active → done`): mai retrocedere. Se lo stato sul file è
-  già pari o più avanzato della transizione richiesta, non toccarlo.
-- Roadmap assente, feature non trovata nella roadmap, o formato della riga non riconoscibile → **salta
-  e annotalo nel summary**. Non è un'escalation, non inventare.
-- Il drift residuo (es. crash tra PROGRESS e roadmap) lo ripara `flow-sync` (§ omonima nella sua skill):
-  questo mirror è best-effort, `flow-sync` è il backstop di riconciliazione.
+- **Finalize inline (fast-path)** — IF task is `trivial`/`standard` AND `RESULT.deviations` contains no functional deviations (environment-only notes like `"build skipped..."` allowed; any substantive deviation or doubt → PM path): the orchestrator closes the task without spawning PM. Resolve the on-disk brief path from `Context-root:` in `.flow/briefs/<task>/brief.md` header: canonical path `<context-root>/tasks/<id>.md` (missing `Context-root:` → default `docs/planning/`). Mark `Status: ✅ finalized` in the resolved brief. Do NOT touch `technical-context.md`.
+- **Finalize PM (default)** — otherwise (critical task, functional deviations, or override extended to PM): **spawn `pm` → `finalize <task>`** with `model: <finalize derived>`. PM re-verifies reality vs brief and may update `technical-context.md`.
 
-7. **ESCALAZIONE.** Leggi `level` + `reason` da `.flow/briefs/<task>/ESCALATION.json` (o, se assente, il motivo del fail da `RESULT.json` / l'anomalia rilevata). Usa **`AskUserQuestion`** riportando level+reason e proponendo opzioni d'azione (es. revise planning, riapri brief, override scope, abbandona task). **FERMATI**: non passare ad altri task senza risposta dell'utente.
+In both cases: set `state="done"` in per-source PROGRESS, write file, update `heartbeat.ts` (order: PROGRESS → heartbeat), then **mirror status** (see below). In full-run, after marking last task done: if all tasks `done` → run § Auto-archive; else return to **1**. In single-task: report summary and stop.
 
-## Spawn — cosa passare ai subagent
+---
 
-- `pm` (brief): "Funzione: brief. TASK: <task>. Segui pm.md."
-- `pm` (finalize): "Funzione: finalize. TASK: <task>. Applica il gate attended." — spawn `Agent` col `model: <finalize derivato>` (vedi step 3b: tier più basso del DEV perché il finalize è prevalentemente meccanico).
-- `dev` (dry-run): "Modalità: dry-run. TASK: <task>. Leggi solo .flow/briefs/<task>/brief.md." — spawn `Agent` con override `model: <derivato>` (vedi step 3b). **Eseguito solo se la dry-run policy = run** (step 4).
-- `dev` (implement): "Modalità: implement. TASK: <task>." — stesso `model: <derivato>` del dry-run.
-- `solo` (implement): "Modalità: implement. TASK: <task>." — spawn `Agent` con `subagent_type: solo`, `model: <derivato dalla complessità>` (vedi § "Ramo solo" S1). **Un solo spawn**: l'agente fa analisi + implement + verify + artefatti versionati. Solo per task `trivial`/`standard` (`execution-mode == solo`).
+### Solo branch (`execution-mode == solo`)
 
-Non passare logica di business nel prompt: la fonte è il brief su disco. Tieni i prompt sottili.
+Replaces steps 3–6 with a single spawn. No `pm brief`, no separate dry-run. The `solo` agent has the **same hooks** as DEV (`scope-check`/`verify-gate`) — writes are gated, verify is enforced. See `agents/solo.md`.
 
-> Il `model` per-spawn del DEV è il valore risolto allo step 3b e **precede** il frontmatter del DEV. Se l'utente ha fornito un **override manuale** (§ "Override manuale del modello"), quel valore vince su tutto (derivazione dinamica inclusa) ed è il `model` per-spawn del DEV — e del `pm` solo se l'override è stato esteso esplicitamente. In assenza di override, il `model` deriva da `meta.json` via [`references/model-tiering.md`](references/model-tiering.md); su `meta.json` assente/illeggibile → `sonnet` + nota nel summary.
->
-> Smoke-check (RISK-model-tiering-002): se la versione di Claude Code **non** onora il `model` per-spawn del tool `Agent`, il DEV gira sul `model:` del frontmatter (sonnet baseline) → **degrado grazioso**, da annotare nel summary; **non** è un'escalation.
+**S1. Derive model** from `Complessità (ipotesi)` via [`references/model-tiering.md`](references/model-tiering.md) § "Mappa" (`trivial→haiku`, `standard→sonnet`; user override / fallback as for DEV). `solo` never runs on `critical` (those resolve to `team` in 1b).
 
-## Convenzione docs/archive
+**S2. Spawn `solo` → `implement`** (`subagent_type: solo`, `model: <derived>`). In one context the agent: analyzes → materializes `scope.txt`/`frozen.txt` in `.flow/briefs/<task>/` → implements (gated) → verifies → **produces versioned artefacts**: `<context-root>/tasks/<id>.md` complete (Vincoli risolti · File impattati · Shape · Deviazioni · `Status: ✅ finalized`) + append `technical-context.md` if cumulative decisions → emits `RESULT.json`.
 
-Feature e epic concluse vengono archiviate in:
-- `docs/archive/features/<slug>/` — feature archiviate
-- `docs/archive/epics/<slug>/` — epic archiviate
+**S3. Read `.flow/briefs/<task>/RESULT.json`.**
+- **`promote==true`** → **solo→team promotion** (pre-write, clean working tree): re-run **this same task** from step **3** in team (execute 3 → 3b → 4 → 5 → 6 without touching PROGRESS or marking done). Annotate: `"PROMOTED <task>: <promote_reason> → re-eseguito in team"`. Evaluated **before** `escalate`/`verify`.
+- Else: **`escalate==true` OR `verify!="pass"` OR `ESCALATION.json` present** → go to **7** (post-write fail; never promote).
 
-**Regola di esclusione**: `docs/archive/**` non partecipa allo scan di risoluzione (context-root e tasks-file): i task archiviati non sono mai `pending`.
-Fonte: `skills/planner/planning-source-contract.md` § "Planning source contract".
+**S4. Finalize gate (orchestrator).** Gate passed (`verify=="pass"`, no escalation): brief is already finalized (written by agent in S2; orchestrator spawns no finalize). Set `state="done"` in per-source PROGRESS, write file, update `heartbeat.ts`, then **mirror status** (same procedure as team branch). Full-run: if all done → § Auto-archive; else return to **1**. Single-task: report summary and stop.
 
-Lo spostamento fisico in archive è responsabilità di `planner`.
-Il mirror status è inerte su task già `done` in feature archiviate.
-Nessun lock/concorrenza per l'archive (fuori scope — feature `topology-concurrency-core`).
+---
 
-## Regole
+### Mirror status on source tasks-file (at finalize OK)
 
-- Mai `git commit`/`push`. Mai modificare i due sub-progetti fuori da ciò che il brief dichiara.
-- Un solo livello di delega: tu spawni pm/dev, loro non spawnano nulla.
-- Se `.flow/` non esiste, inizializzalo (PROGRESS.json con la lista task dal piano) prima del loop. Il "piano" può essere `docs/planning/05-tasks-active.md` (tier project) **o** `docs/features/<slug>/tasks-active.md` (tier feature): l'orchestratore tratta gli ID in modo opaco e non si cura della source.
-- Dopo ogni transizione di stato, **persisti il PROGRESS per-source** (`.flow/sources/<slug>/PROGRESS.json`) — poi `heartbeat.ts` — prima di proseguire. Il `.flow/PROGRESS.json` radice è legacy (vedi § Principio di stato): ignorato dallo scan, non più scritto.
-- La selezione del modello del DEV (step 3b) — sia la derivazione dinamica sia l'**override manuale** dell'utente — è **effimera**: vive nel turno dell'orchestratore, non entra in `PROGRESS.json` né in alcun contratto su disco. Se l'override per-spawn non è onorato, degrada al frontmatter del DEV — non è un'anomalia da escalare.
-- Precedenza del modello (single-source [`references/model-tiering.md`](references/model-tiering.md) § Precedenza): `override utente > mapping dinamico (DEV) > frontmatter > sessione`. Non ridefinire qui la regola, solo applicarla.
+After marking `done` in `PROGRESS.json`, reflect it in the source **tasks-file** (see contract in `../planner/planning-source-contract.md` § "Planning source contract"): `docs/planning/05-tasks-active.md` or `docs/features/<slug>/tasks-active.md`. Find the task's `Status` row and mark completion per file convention. **Modify only that row.**
+
+Constraints:
+- Non-canonical mirror: execution truth stays in `PROGRESS.json`. Task not found or unrecognizable format → skip, annotate in summary (not escalation).
+- `planner expand` overwrites the tasks-file; after expand, mirror needs re-alignment (durable state is always `PROGRESS.json`). Signal in summary if drift detected.
+
+### Resolve source epic
+
+Best-effort: glob `docs/epics/*/roadmap.md`; for each, search for a line `Source: docs/features/<slug>/` referencing this source.
+
+- 0 matches → standalone source: no roadmap mirror, no technical-context consolidation. Skip silently.
+- 1 match → use that epic for roadmap mirror and consolidation.
+- >1 matches → anomaly (slug in multiple roadmaps): skip both epic operations, annotate in summary. Don't escalate.
+
+### Mirror epic roadmap (best-effort)
+
+`Status feature` is a **non-canonical, advisory** reflection (execution truth stays in PROGRESS + tasks-file). Update best-effort, fail-soft.
+
+- **planned → active**: first task activation (step 2), if still `⚪ planned`.
+- **active → done**: auto-archive (step 2 of sequence).
+
+Constraints:
+- In `docs/epics/<epic>/roadmap.md`, find the feature block (`### <slug> — …`) and modify **only** its `- **Status feature**: …` row.
+- **Forward-only** transitions: never revert. If state is already equal or more advanced, do not touch.
+- Roadmap missing, feature not found, or row format unrecognizable → skip, annotate. Not an escalation.
+
+**7. ESCALATION.** Read `level` + `reason` from `.flow/briefs/<task>/ESCALATION.json` (or, if absent, the fail reason from `RESULT.json` / detected anomaly). Use **`AskUserQuestion`** reporting level+reason and proposing action options (e.g. revise planning, reopen brief, override scope, abandon task). **STOP**: do not advance to other tasks without user response.
+
+## Spawn — what to pass to subagents
+
+| Subagent | Prompt |
+|---|---|
+| `pm` brief | `"Funzione: brief. TASK: <task>. Segui pm.md."` |
+| `pm` finalize | `"Funzione: finalize. TASK: <task>. Applica il gate attended."` — spawn with `model: <finalize derived>` |
+| `dev` dry-run | `"Modalità: dry-run. TASK: <task>. Leggi solo .flow/briefs/<task>/brief.md."` — with `model: <derived>`. **Run only if dry-run policy = run.** |
+| `dev` implement | `"Modalità: implement. TASK: <task>."` — same `model: <derived>` as dry-run |
+| `solo` implement | `"Modalità: implement. TASK: <task>."` — `subagent_type: solo`, `model: <derived>`. Single spawn only. |
+
+Keep prompts thin. Business logic source is the on-disk brief.
+
+> DEV model for spawn precedes the DEV frontmatter. Manual override wins over dynamic derivation. On meta.json absent/unreadable → `sonnet` + note. Smoke-check (RISK-model-tiering-002): if Claude Code does not honor the per-spawn model, DEV runs on frontmatter model (sonnet baseline) → graceful degradation, annotate in summary; not an escalation.
+
+## Archive convention
+
+Concluded features and epics are archived under:
+- `docs/archive/features/<slug>/` — archived features
+- `docs/archive/epics/<slug>/` — archived epics
+
+`docs/archive/**` is excluded from resolution scans (context-root and tasks-file). Archived tasks are never `pending`. Source: `skills/planner/planning-source-contract.md`.
+
+## Rules
+
+- Never `git commit`/`push`. Never modify sub-projects beyond what the brief declares.
+- One delegation level only: you spawn pm/dev; they spawn nothing.
+- If `.flow/` does not exist, initialize it (PROGRESS.json from task plan) before the loop.
+- After every state transition: **persist per-source PROGRESS** (`.flow/sources/<slug>/PROGRESS.json`) — then `heartbeat.ts` — before continuing.
+- DEV model selection (step 3b) — dynamic derivation and manual override — is **ephemeral**: never enters PROGRESS.json or any on-disk contract. If per-spawn override not honored, degrades to DEV frontmatter — not an anomaly to escalate.
+
+## Compression notes
+
+- [NOTA] Sezione "Risoluzione epic della source" e "Mirror status sulla roadmap epic" erano sezioni separate in fondo al file originale; qui integrate nel flusso per ridurre la navigazione verticale. Semantica identica.

@@ -3,90 +3,92 @@ name: whats-next
 description: Advisor read-only che risponde "cosa faccio adesso / dopo" su un progetto con piani di lavoro otto. Fa il join di tutti i piani attivi (piani di progetto e feature generati da `planner`), riconcilia lo stato reale d'esecuzione con `.flow/index.json` (veloce) o `.flow/sources/*/PROGRESS.json` (fallback per-source), e produce un board multi-piano + una raccomandazione ragionata (cosa è sbloccato ora, cosa è quasi finito, cosa è sul critical path) con comandi concatenabili verso flow-run. NON modifica nulla, NON decide la priorità tra piani: la espone e la motiva. Supporta query globali o scoped. Triggera su "whats-next", "cosa devo fare dopo/adesso", "prossimo step/task", "next", "a che punto sono", "prossimo sprint", "stato del piano", "whats-next nella milestone M[N]", "whats-next nella feature <slug>".
 ---
 
-# Whats Next — advisor operativo read-only
+# Whats Next — read-only operational advisor
 
-Rispondi a **"cosa faccio adesso / dopo"** su un progetto che usa i piani di otto. Sei un **consigliere**, non un esecutore: `flow-run` esegue, tu indichi *cosa* e *perché*. Concatenabile: il tuo output finisce in `flow-run <id>`.
+Answer **"what do I do now / next"** on a project using otto plans. You are a **counselor**, not an executor: `flow-run` executes, you indicate *what* and *why*. Output is concatenable: `flow-run <id>`.
 
-## Principio di stato
+## State principle
 
-Non possiedi stato. Sei una **proiezione read-only** su artefatti che già esistono. Non scrivi MAI: né i piani, né `.flow/`, né il codice. Le descrizioni/dipendenze sono i tasks-file; la strategia è milestone/fasi. Tu fai solo il *join* e il ragionamento.
+Read-only projection over existing artifacts. Never write: no plans, no `.flow/`, no code.
 
-La verità d'esecuzione è **distribuita per-source**:
-- `.flow/index.json` → vista aggregata (veloce); se presente, usarla come prima lettura.
-- Fallback scan: `.flow/sources/*/PROGRESS.json` + `.flow/locks/*` → ricostituisce il quadro se index mancante o stantio.
-- `.flow/PROGRESS.json` (legacy singleton) → retrocompat; se presente, usarlo SOLO per i source/ID che NON compaiono in nessuna source per-source.
-- Nessun `.flow/` = nessun flusso mai eseguito (invariato).
+Execution truth is **distributed per-source**:
+- `.flow/index.json` — aggregated roll-up; use as first read if present.
+- Fallback: `.flow/sources/*/PROGRESS.json` + `.flow/locks/*/` (dir present = source alive).
+- `.flow/PROGRESS.json` — legacy singleton; use only for IDs absent from any per-source source.
+- No `.flow/` = no flow ever executed.
 
-## Principio di priorità (NON negoziabile)
+## Priority principle (non-negotiable)
 
-Con un macro-plan + feature parallele **non esiste un "next" globale deterministico**: scegliere se spingere la milestone o chiudere una feature è una **decisione dell'utente**. Tu rendi deterministica la parte calcolabile (cosa è bloccato/sbloccato/quasi-finito/fermo) e **esponi** la parte di giudizio con una raccomandazione motivata. Non la imponi. L'utente decide; tu fornisci il comando pronto.
+With macro-plan + parallel features, **no deterministic global "next" exists**. Make the calculable part deterministic (blocked/unblocked/almost-done/stalled), expose the judgment part with a motivated recommendation. Never impose. User decides; you provide the ready command.
 
-## Fonti dati (sola lettura)
+## Data sources (read-only)
 
-- `docs/planning/05-tasks-active.md` — task atomici **della sola milestone attiva** (project source).
-- `docs/planning/03-milestones.md` — stato macro delle milestone (🔵 active / ⚪ planned / ✅ done / ⏸ paused).
-- `docs/features/*/tasks-active.md` — task delle feature parallele (feature source, campo `Feature`).
-- `docs/tasks/*/tasks-active.md` — task standalone (**tier task**: una directory per task, 1 task-entry). Source canonica come le feature; compare nel board. La gerarchia col padre, se dichiarata, si legge dall'**anchor** (`Parent`/`Bubble-up target`) in `00-context.md`/`technical-context.md`.
-- `docs/epics/*/roadmap.md` — **(opzionale, additivo)** coordinamento di un epic: raggruppa più feature `<epic>-<feat>` sotto un epic e ne dichiara ordine + dipendenze inter-feature. Layer **non-canonico**: se assente, le feature restano piatte (comportamento storico). Vedi `references/epic-rollup.md`.
-- `.flow/index.json` — roll-up aggregato (`source → {owner, alive, active, done, pending, archived}`); se presente, primo punto di lettura.
-- `.flow/sources/<slug>/PROGRESS.json` — verità per-source; fallback se index assente.
-- `.flow/locks/<slug>/` — presenza della dir = source viva (lock attivo); usato nel fallback scan.
-- `.flow/PROGRESS.json` — legacy singleton; retrocompat per ID non ancora migrati a una source per-source.
+- `docs/planning/05-tasks-active.md` — atomic tasks of the active milestone only.
+- `docs/planning/03-milestones.md` — milestone states (🔵 active / ⚪ planned / ✅ done / ⏸ paused).
+- `docs/features/*/tasks-active.md` — parallel feature tasks.
+- `docs/tasks/*/tasks-active.md` — standalone task-tier; parent hierarchy via `Parent` anchor in `00-context.md`.
+- `docs/epics/*/roadmap.md` — **(optional, additive)** epic coordination: groups `<epic>-<feat>` features, declares inter-feature order/deps. If absent, features stay flat. See `references/epic-rollup.md`.
+- `.flow/index.json` — roll-up `source → {owner, alive, active, done, pending, archived}`; first read.
+- `.flow/sources/<slug>/PROGRESS.json` — per-source truth; fallback if index absent.
+- `.flow/locks/<slug>/` — dir present = source alive (fallback scan).
+- `.flow/PROGRESS.json` — legacy singleton; retrocompat for non-migrated IDs.
 
-Formato task (identico project/feature, vedi `../planner/references/task-expansion.md` e `../planner/planning-source-contract.md`): ID, categoria, `Effort` (range ore), `Dipende da`, `Status` (⚪🔵✅⏸). ID globalmente unici (`T-NNN` project, `<slug>-NNN` feature) — trattali in modo **opaco**.
+Task format (project/feature identical, see `../planner/references/task-expansion.md` and `../planner/planning-source-contract.md`): ID, category, `Effort` (hour range), `Dipende da`, `Status` (⚪🔵✅⏸). IDs globally unique — treat opaquely.
 
-## Modalità — deriva dall'input utente
+## Modes
 
-- **global** (default, nessuno scope): scopri TUTTI i piani attivi → board + raccomandazione cross-plan.
-- **plan**: "…del piano / del progetto / del macro-plan" → solo `docs/planning/`.
-- **milestone**: "…nella milestone M[N]" → vedi sotto (i task atomici esistono **solo** per la milestone attiva).
-- **feature**: "…nella feature <slug>" → solo `docs/features/<slug>/`. Se lo slug non esiste o è ambiguo, elenca le feature disponibili e chiedi.
-- **epic**: "…nell'epic <epic>" → le feature `<epic>-*` raggruppate via `docs/epics/<epic>/roadmap.md`, con next che rispetta la sequenza inter-feature. Vedi `references/epic-rollup.md`. Epic inesistente → elenca gli epic disponibili e chiedi.
+- **global** (default): all active plans → board + cross-plan recommendation.
+- **plan**: "…del piano / del progetto / del macro-plan" → only `docs/planning/`.
+- **milestone**: "…nella milestone M[N]" → special case below.
+- **feature**: "…nella feature <slug>" → only `docs/features/<slug>/`. Slug missing/ambiguous: list available and ask.
+- **epic**: "…nell'epic <epic>" → `<epic>-*` features via `docs/epics/<epic>/roadmap.md`. Epic not found: list available and ask. See `references/epic-rollup.md`.
 
-## Protocollo
+## Protocol
 
-1. **Scoperta.** In base alla modalità, individua i piani in scope. Per ciascuno trova il tasks-file e (se c'è) `.flow/index.json` o `.flow/sources/<slug>/PROGRESS.json`. Se non esiste nessun piano → dillo e suggerisci `planner`. Non inventare.
-2. **Riconciliazione stato** per ogni task — vedi `references/reconcile.md`. Se `index.json` è presente, carica per ogni source `{owner, alive, active, done, pending, archived}`; usa quel dato come pre-filtro prima di aprire i PROGRESS per-source. Source con `archived=true` → tutte le sue done congelate; non accedere al suo `tasks-active.md` per task attivi. Canonico per-task = PROGRESS per-source (o legacy singleton per ID non migrati); fallback = `Status` del tasks-file. Ogni **drift** va riportato, mai corretto (sei read-only).
-3. **Calcolo per-piano:**
-   - parse task → {id, categoria, effort, deps, stato-riconciliato}
-   - **source shell / non espansa** = `tasks-active.md` senza task-entry reali (vuoto o solo stub "da espandere", tipico di una feature appena decomposta da un epic): **non eseguibile da `flow-run`** → la prossima azione non è un task ma **`planner expand <slug>`**. Segnalala come tale nel board.
-   - **sbloccati** = stato `todo` **e** tutte le `Dipende da` risultano `done`
-   - **next del piano** = tra gli sbloccati, quello con peso di critical-path maggiore (n. di task che dipendono da esso); a parità, ordine del file
-   - **avanzamento** = ✅ / totale (per conteggio; nota se effort-pesato cambia il quadro)
-   - **blockers** = task `⏸` o `todo` con deps non soddisfatte (indica da cosa dipendono)
-4. **Roll-up gerarchico** (additivo) — la gerarchia padre→figlio (feature→epic, task→parent) si ricava dall'**anchor** (`Parent`) degli artefatti, con il campo `Source` della roadmap come conferma/fallback. Se esistono `docs/epics/*/roadmap.md`, raggruppa le feature sotto il loro epic, calcola l'avanzamento dai task reali e rispetta l'ordine/dipendenze inter-feature. Vedi `references/epic-rollup.md`. Senza anchor né roadmap, le source restano piatte.
-5. **Ranking cross-plan** (solo modalità global) — vedi `references/ranking.md`: WIP-avanzato → critical-path macro-plan → quick-win. È **euristica esposta**, non verità. Con epic presenti, l'unità di ranking può essere l'epic (vedi `epic-rollup.md`).
-6. **Output a 3 livelli** (vedi sotto).
+1. **Discovery.** Identify in-scope plans. Find each tasks-file + `.flow/index.json` or per-source PROGRESS. No plan → say so and suggest `planner`. Never invent.
+2. **State reconciliation** per task — see `references/reconcile.md`.
+   - If `index.json` present: load per-source `{..., archived}` as pre-filter before opening PROGRESS. Source with `archived=true`: done tasks frozen; skip its `tasks-active.md` for active tasks.
+   - Canonical per-task = per-source PROGRESS (or legacy singleton for non-migrated IDs); fallback = tasks-file `Status`.
+   - Report every **drift**; never correct (read-only).
+3. **Per-plan computation:**
+   - Parse → `{id, category, effort, deps, reconciled-state}`
+   - **Shell / unexpanded source** (no real task entries): not executable → next action is `planner expand <slug>`. Flag on board.
+   - **Unblocked** = `todo` + all deps `done`
+   - **Plan next** = highest critical-path weight among unblocked; tie → file order
+   - **Progress** = ✅ / total
+   - **Blockers** = `⏸` or `todo` with unsatisfied deps
+4. **Hierarchical roll-up** (additive) — parent→child from `Parent` anchor; roadmap `Source` as fallback. Group features under epic if `docs/epics/*/roadmap.md` exists; respect inter-feature order/deps. See `references/epic-rollup.md`. No anchor/roadmap → sources flat.
+5. **Cross-plan ranking** (global only) — see `references/ranking.md`: WIP-advanced → macro critical-path → quick-win. Exposed heuristic, not truth. With epics, ranking unit can be the epic.
+6. **3-level output** (see below).
 
-### Milestone scoped — caso speciale
+### Milestone scoped — special case
 
-`05-tasks-active.md` contiene task atomici **solo della milestone attiva**. Quindi:
-- Milestone richiesta == attiva → mostra i suoi task (come modalità plan).
-- Milestone richiesta != attiva → **non esistono task atomici**: mostra solo il macro da `03-milestones.md` (outcome, DoD, effort range, status) e dillo esplicitamente: *"M[N] non è la milestone attiva: niente task atomici. Per espanderla: `planner expand M[N]`."* Non inventare task.
+`05-tasks-active.md` has atomic tasks for the **active milestone only**:
+- Requested == active → show its tasks (as plan mode).
+- Requested ≠ active → **no atomic tasks**: show macro from `03-milestones.md` only; state: *"M[N] is not the active milestone: no atomic tasks. To expand: `planner expand M[N]`."* Do not invent tasks.
 
-## Output — 3 livelli, dal più immediato allo strategico
+## Output — 3 levels
 
-1. **Board** — tabella di tutti i piani in scope: nome, % avanzamento, next sbloccato, blockers/⚠. Stato riconciliato (segnala drift).
-2. **Raccomandazione ragionata** — 1-3 mosse con il **perché** (sblocca N task / chiude una feature ferma / sul critical path / quick win). In global applica il ranking; in scope è il next del piano.
-3. **Comandi concatenabili** — per ogni mossa proposta, il comando pronto da copiare, secondo lo stato della source:
-   - source **espansa** con task sbloccati → `flow-run <id>`;
-   - source **shell / non espansa** → **`planner expand <slug>`** (prima di poterla eseguire);
-   - lavoro **non ancora pianificato** → `planner <descrizione>` (il planner sceglie/conferma il tier).
-   whats-next resta read-only: propone i comandi, non li esegue.
+1. **Board** — all in-scope plans: name, % progress, next unblocked, blockers/⚠. Flag drift.
+2. **Motivated recommendation** — 1-3 moves with **why** (unblocks N / closes stalled feature / critical path / quick win). Global: apply ranking; scoped: plan next.
+3. **Concatenable commands** — ready-to-copy per move:
+   - Expanded source + unblocked tasks → `flow-run <id>`
+   - Shell/unexpanded → `planner expand <slug>`
+   - Not yet planned → `planner <description>`
 
-Tono: senior, denso, niente filler, niente cheerleading. Coerente con `flow-run`/`planner`.
+Tone: senior, dense, no filler, no cheerleading.
 
-## Regole di onestà (gap espliciti — la skill non finge rigore)
+## Honesty rules (explicit gaps)
 
-- **Niente dipendenze dichiarate** (`Dipende da: —` ovunque) → "nessuna dipendenza dichiarata: ordino per fase/categoria, non per critical-path."
-- **Effort è un range** → lo sprint/orizzonte è euristico, non garantito. Dillo.
-- **`.flow/index.json` e `.flow/sources/` assenti** → "stato d'esecuzione non tracciato (nessun `.flow`): uso lo `Status` del piano, che può non riflettere il lavoro reale." (copertura: sia schema per-source sia legacy singleton assenti).
-- **Drift PROGRESS per-source ↔ tasks-file** → riportalo (volatile dopo un `expand`, che sovrascrive il tasks-file). Non risolverlo: sei read-only. Per **ripararlo** usa `flow-sync` (`skills/flow-sync/`): preview di default, apply su conferma — ripara i drift sicuri + import conservativo, segnala gli ambigui/orphan. whats-next rileva, flow-sync ripara.
-- **Tasks-file in formato non riconoscibile / task mancante** → non inventare: salta e annotalo.
+- **No declared deps** (`Dipende da: —`) → warn; order by phase/category, not critical-path.
+- **Effort is a range** → horizon is heuristic, not guaranteed. Say so.
+- **No `.flow/`** → warn; use tasks-file `Status` (may not reflect actual work).
+- **Drift PROGRESS ↔ tasks-file** → report; never fix. To repair: use `flow-sync` (preview default, apply on confirmation — repairs safe drifts, flags ambiguous/orphan). whats-next detects, flow-sync repairs.
+- **Tasks-file unrecognized / task missing** → skip and annotate; never invent.
 
-## Cosa NON fa
+## What this skill does NOT do
 
-- Non scrive nulla (no piani, no `.flow`, no codice, no commit).
-- Non decide la priorità macro-vs-feature: la motiva e lascia scegliere.
-- Non espande milestone né genera task (è compito di `planner`).
-- Non esegue task (è compito di `flow-run`).
+- Write anything (no plans, no `.flow/`, no code, no commits).
+- Decide macro-vs-feature priority (motivates, lets user choose).
+- Expand milestones or generate tasks (`planner`'s job).
+- Execute tasks (`flow-run`'s job).

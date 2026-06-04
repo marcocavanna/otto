@@ -1,11 +1,10 @@
 ---
 name: migrate
-description: >
-  Porta un progetto otto dal vecchio layout (docs/tasks/ flat, nessun archivio)
-  al layout canonico; e retrofitta gli anchor (Tier/Parent/Bubble-up target) sugli
-  artefatti esistenti. Trigger: "migra il progetto", "migrate otto",
-  "porta otto al nuovo layout", "migrate", "migrazione layout",
-  "retrofit anchor", "aggiungi anchor agli artefatti".
+description: >-
+  Migrate otto projects from old layout to canonical. Retrofit anchor headers on artifacts.
+  Triggers: "migra il progetto", "migrate otto", "porta otto al nuovo layout", "migrate",
+  "migrazione layout", "retrofit anchor", "aggiungi anchor agli artefatti".
+  Fail-closed, idempotent, reversible, no auto-commits, post-verify delegated.
 ---
 
 # Migrate — migrazione old→new layout + retrofit anchor

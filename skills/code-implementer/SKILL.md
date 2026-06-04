@@ -5,128 +5,120 @@ description: Use this skill when the user wants to translate a finalized technic
 
 # Code Implementer
 
-Skill che traduce un brief tecnico (il brief co-locato `<context-root>/tasks/<id>.md`) in codice reale nel repository, mantenendo coerenza con il codebase esistente e tracciando le decisioni di implementazione.
+Translates a technical brief (`<context-root>/tasks/<id>.md`) into real code: creates/modifies source files, runs build verification, records implementation decisions.
 
 ## Operating principles
 
-Questa skill lavora **a valle** di `task-implementer`. Presuppone che esista il brief co-locato `<context-root>/tasks/<id>.md`, **self-sufficient** con la sezione "Vincoli risolti" (stack · librerie+versioni · VO/pattern/interfacce consumati · naming). Il brief embedda già tutto il contesto di **task**: la skill **non** legge `00-context`, `02-abstract`, `technical-context`. Legge invece le **regole-ambiente** del repo (`CLAUDE.md` + `.claude/rules`, vedi `references/context-loading.md` § 0): convenzioni/stile vincolanti, da non inferire dal sample.
+Works downstream of `task-implementer`. Requires the co-located brief `<context-root>/tasks/<id>.md` — **self-sufficient** with a "Vincoli risolti" section (stack · libraries+versions · VO/patterns/interfaces · naming). The brief embeds all task context; **do not** read `00-context`, `02-abstract`, or `technical-context`.
 
-**Risoluzione della context-root**: leggere l'header del brief. `Context-root:` può essere uno qualsiasi dei 4 tier — `docs/planning/` (project), `docs/epics/<slug>/` (epic), `docs/features/<slug>/` (feature), `docs/tasks/<slug>/` (task). La skill è **tier-agnostica**: usa il valore dell'header così com'è per risolvere il path del brief. Se l'header manca → default `docs/planning/` (retro-compatibilità). Contratto canonico: `../planner/planning-source-contract.md` § "Planning source contract". La context-root serve a risolvere il **path del brief**, non a caricare file di contesto separati.
+Read **environment rules** (`CLAUDE.md` + `.claude/rules`) for binding conventions — do not infer from samples.
 
-Se il brief non esiste, la skill rifiuta di operare e indirizza alle skill upstream.
+**Context-root resolution**: read `Context-root:` from the brief header (default: `docs/planning/` if absent). Tier-agnostic. Canonical contract: `../planner/planning-source-contract.md`.
 
-Tre regole non negoziabili:
+If the brief does not exist: refuse and redirect to upstream skills.
 
-1. **Context first, code second.** Prima di scrivere una sola riga di codice, la skill legge **tutto** il contesto necessario (vedi `references/context-loading.md`). Niente generazione speculativa basata su assunzioni.
+Three non-negotiable rules:
 
-2. **Mimic prima di innovare.** Se esiste già un costrutto simile nel codebase (un altro controller, un altro repository, ecc.), il nuovo codice ne segue lo stile. Solo per il **primo** costrutto di una categoria, la skill applica i vincoli della sezione "Vincoli risolti" del brief.
+1. **Context first, code second.** Read all required context (see `references/context-loading.md`) before writing any code. No speculative generation.
 
-3. **Decisioni cross-task chiedono, decisioni locali annotano.** Vedi `references/decision-classification.md` per i criteri esatti. Default: silenzio. Si chiede solo per decisioni che hanno effetto sui task futuri.
+2. **Mimic before innovating.** If a similar construct already exists, follow its style. Only for the **first** instance of a category apply constraints from "Vincoli risolti".
 
-## Architettura della skill
+3. **Cross-task decisions ask; local decisions annotate.** See `references/decision-classification.md` for exact criteria. Default: silence. Ask only for decisions affecting future tasks.
 
-La skill opera su due file system:
-- **Read-only**: il brief co-locato (`<context-root>/tasks/<id>.md`), codice esistente del progetto
-- **Write**: codice sorgente del progetto, sezioni specifiche del brief, `technical-context.md` (solo per decisioni cross-task confermate)
+## File system scope
 
-Regola di scope: la skill **non** modifica `02-abstract.md`, `00-context.md`, `03-milestones.md`, `04-phases.md`, `05-tasks-active.md` (né li legge in flusso ordinario). Se qualcuno di questi va modificato, indirizza a `planner revise`.
+- **Read-only**: co-located brief, existing project code
+- **Write**: project source files, specific brief sections, `technical-context.md` (cross-task decisions only)
+
+Never modify: `02-abstract.md`, `00-context.md`, `03-milestones.md`, `04-phases.md`, `05-tasks-active.md`. Redirect to `planner revise` if those need changes.
 
 ## Operating modes
 
-### Mode 1: `implement T-NNN` — implementazione di un task
+### Mode 1: `implement T-NNN`
 
-Flusso obbligatorio:
+> Load references lazy — only at the step that uses them.
+> `decision-classification.md`: only if step 3 finds cross-task decisions.
+> `build-verification.md`: only if step 5 has a declared build command.
 
-> Reference lazy: leggi ogni reference solo allo step che la usa.
-> `decision-classification.md`: solo se step 3 identifica decisioni cross-task.
-> `build-verification.md`: solo se step 5 ha un build command dichiarato.
+1. **Pre-flight** (see `references/preflight.md`):
+   - Resolve context-root from `Context-root:` header (default `docs/planning/`)
+   - Brief `<id>` exists and is `active` (not finalized, not paused)
+   - Brief contains "Vincoli risolti" section (if absent: warning + legacy fallback, Check 1-bis)
+   - Build command declared (if absent: warning)
 
-1. **Pre-flight check** (vedi `references/preflight.md`):
-   - **Risolve la context-root** dall'header `Context-root:` del brief (default `docs/planning/`) e individua il path del brief co-locato `<context-root>/tasks/<id>.md`
-   - Brief `<id>` esiste, è in stato active (non finalized né paused)
-   - Brief contiene la sezione "Vincoli risolti" (se no: warning + fallback legacy, Check 1-bis)
-   - Build command dichiarato nel brief (se no: warning)
-
-2. **Context loading** (vedi `references/context-loading.md`):
-   - Legge le **regole-ambiente** del repo (`CLAUDE.md` + `.claude/rules`, se presenti): convenzioni/stile vincolanti
-   - Legge il brief (self-sufficient: sezione "Vincoli risolti" embedda stack/lib/VO/naming)
-   - Identifica la categoria di costrutto dal brief (controller, repository, command, ecc.)
-   - Cerca **1 sample** esistente della stessa categoria
-   - Se trovato: legge il sample
-   - Se non trovato: prima volta → segue i vincoli della sezione "Vincoli risolti" del brief
-   - Legge i file `[edit]` dichiarati nel brief
-   - Note: NON legge i 3 file di planning (`00-context`, `02-abstract`, `technical-context`): il brief è self-sufficient
+2. **Context loading** (see `references/context-loading.md`):
+   - Read environment rules (`CLAUDE.md` + `.claude/rules`)
+   - Read the brief; identify construct category from it
+   - Find **1 sample** of the same category in the codebase
+   - If found: read it; if not found: use "Vincoli risolti" constraints directly
+   - Read `[edit]` files declared in the brief
+   - Do NOT read `00-context`, `02-abstract`, `technical-context`
 
 3. **Decision identification**:
-   - Analizza brief + context per identificare decisioni cross-task non risolte
-   - Se trova decisioni cross-task: blocca il flusso e chiede una alla volta (vedi `references/decision-classification.md`)
-   - Se trova solo decisioni locali: procede
+   - Identify unresolved cross-task decisions from brief + context
+   - If cross-task: block and ask one at a time (see `references/decision-classification.md`)
+   - If local only: proceed
 
 4. **Code generation**:
-   - Scrive i file dichiarati in "File impattati" del brief
-   - Applica shape del brief + stile del sample + regole di `technical-context.md`
-   - Niente file fuori da quelli dichiarati nel brief (eccetto test se brief lo prevede)
+   - Write only files listed in "File impattati"
+   - Apply brief shape + sample style + `technical-context.md` rules
+   - No files outside "File impattati" (exception: test files if brief requires them)
 
-5. **Build verification** (vedi `references/build-verification.md`):
-   - Se build command è dichiarato: esegue
-   - Se errori: 1 retry di fix automatico
-   - Se ancora errori dopo retry: si ferma e riporta gli errori all'utente
-   - Se nessun build command: skip con warning
+5. **Build verification** (see `references/build-verification.md`):
+   - Build command declared → execute; on error: 1 automatic fix retry; on second failure: stop and report
+   - No build command → skip with warning
 
 6. **Decision reporting**:
-   - Decisioni cross-task confermate → mostra all'utente lista finale e aggiorna `technical-context.md` + sezione Deviazioni del T-NNN.md
-   - Decisioni locali "meritevoli di trace" → mostra all'utente per validazione, poi aggiunge in Deviazioni
-   - Decisioni rumore → non annotate
+   - Confirmed cross-task decisions → update `technical-context.md` + brief Deviazioni section
+   - Local decisions worth tracing → show user for validation, then add to Deviazioni
+   - Noise decisions → not annotated
 
 7. **Summary**:
-   - File creati/modificati (lista)
-   - Status build (passed | failed | skipped)
-   - Decisioni cross-task introdotte
-   - Cosa fare dopo (suggerimento: `finalize T-NNN` di task-implementer quando done)
+   - Files created/modified
+   - Build status (passed | failed | skipped)
+   - Cross-task decisions introduced
+   - Suggested next action (`finalize T-NNN` via task-implementer)
 
-### Mode 2: `dry-run T-NNN` — preview senza scrivere
+### Mode 2: `dry-run T-NNN`
 
-Esegue gli step 1-3 + analisi di cosa scriverebbe, ma **non scrive** file di codice né modifica brief.
+Executes steps 1–3 + impact analysis without writing any code or modifying the brief.
 
-Output: piano di esecuzione dettagliato con:
-- Decisioni cross-task da chiedere
-- File che verrebbero creati/modificati
-- Sample identificato come riferimento stilistico
-- Eventuali warning (build command mancante, sample assente, ecc.)
+Output:
+- Cross-task decisions to resolve
+- Files that would be created/modified
+- Sample identified as style reference
+- Warnings (missing build command, no sample, etc.)
 
-Utile prima di committarsi su task grandi o ambigui.
+### Mode 3: `verify T-NNN`
 
-### Mode 3: `verify T-NNN` — controllo coerenza implementazione vs brief
+For tasks already partially or fully implemented. Checks:
+- All files declared in "File impattati" exist?
+- Key constructs (classes, methods, VO) from the brief are present in code?
+- Build passes?
+- Cross-task decisions in code align with `technical-context.md`?
 
-Per task già parzialmente o completamente implementati (es. hai scritto codice a mano dopo l'implement). Verifica:
-- Tutti i file dichiarati in "File impattati" esistono?
-- I costrutti chiave del brief (classi, metodi, VO) sono presenti nel codice?
-- Build passa?
-- Le decisioni cross-task del codice sono allineate con `technical-context.md`?
-
-Output: report di coerenza, niente modifiche automatiche. Suggerimenti puntuali su cosa allineare.
+Output: coherence report, no automatic changes.
 
 ## Tone
 
-Senior dev in 1:1 con `task-implementer`: denso, niente didattica.
+Senior dev in 1:1 with `task-implementer`: dense, no tutorials.
 
-Output in lingua dell'elicitation (italiano se l'utente scrive in italiano).
+Output language: matches elicitation language (Italian if user writes in Italian).
 
-## What this skill DOES NOT do
+## What this skill does NOT do
 
-- Non scrive **test** se il brief non li richiede esplicitamente
-- Non installa pacchetti (`npm install`, `dotnet add package`): mostra il comando, lo esegue l'utente
-- Non esegue migrazioni database
-- Non committa nel repo git
-- Non esegue il prodotto (solo build)
-- Non modifica file fuori dal "File impattati" del brief, eccetto:
-  - Casi di registrazione DI/routing necessari per il task (segnalati esplicitamente)
-  - File di configurazione strettamente richiesti dal task
-  - In entrambi i casi, segnalare nelle Deviazioni
+- Does not write tests unless the brief explicitly requires them
+- Does not install packages (`npm install`, `dotnet add package`): shows the command, user executes
+- Does not run database migrations
+- Does not commit to git
+- Does not run the product (build only)
+- Does not modify files outside "File impattati", except:
+  - DI registration / routing strictly required by the task (report in Deviazioni)
+  - Configuration files strictly required by the task (report in Deviazioni)
 
 ## When NOT to use this skill
 
-- Per task non gestiti da task-implementer (manca il brief T-NNN.md)
-- Per debugging di codice esistente (non è uno strumento di troubleshooting)
-- Per refactoring cross-task (scope sbagliato — un refactoring serio richiede un task dedicato)
-- Per code review (non confronta codice con best practice generiche)
+- Task not managed by task-implementer (no T-NNN.md brief)
+- Debugging existing code
+- Cross-task refactoring (needs a dedicated task)
+- Code review against generic best practices
