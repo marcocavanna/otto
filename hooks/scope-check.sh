@@ -35,7 +35,7 @@ TOOL=$(echo "$INPUT" | jq -r '.tool_name')
 
 if [ "$TOOL" = "Bash" ]; then
   CMD=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
-  echo "$CMD" | grep -qE '(>>?|tee|sed -i|cp |mv |dd |git (restore|checkout)|rm )' && ask "Bash con possibile scrittura → revisione manuale"
+  echo "$CMD" | grep -qE '(>>?[^&]|tee|sed -i|cp |mv |dd |git (restore|checkout)|rm )' && ask "Bash con possibile scrittura → revisione manuale"
   allow
 fi
 
