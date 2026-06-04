@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "method": "char/token proxy: IT=3.4, EN=4.0",
+  "totals": {
+    "tokens_desc": 1672,
+    "tokens_body": 29294
+  },
+  "artifacts": {
+    "skills/code-implementer/SKILL.md": {
+      "tokens_desc": 175,
+      "tokens_body": 2253,
+      "chars_desc": 700,
+      "chars_body": 7660,
+      "lang_desc": "en",
+      "lang_body": "it"
+    },
+    "skills/critical-flow-analysis/SKILL.md": {
+      "tokens_desc": 178,
+      "tokens_body": 1272,
+      "chars_desc": 712,
+      "chars_body": 4324,
+      "lang_desc": "en",
+      "lang_body": "it"
+    },
+    "skills/flow-run/SKILL.md": {
+      "tokens_desc": 294,
+      "tokens_body": 8570,
+      "chars_desc": 998,
+      "chars_body": 29137,
+      "lang_desc": "it",
+      "lang_body": "it"
+    },
+    "skills/flow-sync/SKILL.md": {
+      "tokens_desc": 280,
+      "tokens_body": 2724,
+      "chars_desc": 953,
+      "chars_body": 9263,
+      "lang_desc": "it",
+      "lang_body": "it"
+    },
+    "skills/migrate/SKILL.md": {
+      "tokens_desc": 85,
+      "tokens_body": 2490,
+      "chars_desc": 340,
+      "chars_body": 8465,
+      "lang_desc": "en",
+      "lang_body": "it"
+    },
+    "skills/planner/SKILL.md": {
+      "tokens_desc": 136,
+      "tokens_body": 954,
+      "chars_desc": 546,
+      "chars_body": 3244,
+      "lang_desc": "en",
+      "lang_body": "it"
+    },
+    "skills/task-implementer/SKILL.md": {
+      "tokens_desc": 197,
+      "tokens_body": 3184,
+      "chars_desc": 789,
+      "chars_body": 10824,
+      "lang_desc": "en",
+      "lang_body": "it"
+    },
+    "skills/whats-next/SKILL.md": {
+      "tokens_desc": 239,
+      "tokens_body": 2611,
+      "chars_desc": 814,
+      "chars_body": 8879,
+      "lang_desc": "it",
+      "lang_body": "it"
+    },
+    "agents/dev.md": {
+      "tokens_desc": 18,
+      "tokens_body": 1539,
+      "chars_desc": 73,
+      "chars_body": 5233,
+      "lang_desc": "en",
+      "lang_body": "it"
+    },
+    "agents/pm.md": {
+      "tokens_desc": 39,
+      "tokens_body": 1438,
+      "chars_desc": 155,
+      "chars_body": 4888,
+      "lang_desc": "en",
+      "lang_body": "it"
+    },
+    "agents/solo.md": {
+      "tokens_desc": 31,
+      "tokens_body": 2259,
+      "chars_desc": 125,
+      "chars_body": 7679,
+      "lang_desc": "en",
+      "lang_body": "it"
+    }
+  }
+}
