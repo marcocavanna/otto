@@ -47,7 +47,7 @@ flow-run + dev/pm/solo + 4 skill calde; nessuna regressione comportamentale al d
   EN (guadagno always-on). Body **fuori scope** (skill rare, ROI basso). Trigger verbatim.
 - **Dipende da feature**: token-diet-foundation
 - **Size**: M  (indicativo — effort reale determinato a expand)
-- **Status feature**: ⚪ planned
+- **Status feature**: ✅ done
 - **Source**: docs/features/token-diet-cold-skills/
 
 ## Fronti paralleli

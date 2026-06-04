@@ -1,6 +1,12 @@
 ---
 name: critical-flow-analysis
-description: Use this skill to deeply analyze an EXISTING software flow/feature starting from an anchor file, reconstruct the real flow, and produce a dense technical audit (bugs, logic errors, incoherent flows, weak code) with a wave-based hardening plan. Read-only on code. On EXPLICIT user confirmation it can turn the hardening waves into operational tasks (fragmenting long ones) as a feature bundle under docs/features/<slug>/, ready for flow-run. Triggers on phrases like "analizza il flusso/flow di …", "trova i bug in questo flow", "fai un audit di …", "analisi critica del flusso", "fammi un hardening di …", "rivedi a fondo questa funzionalità per bug". Requires an anchor/entry-point file; if missing, ask for it.
+description: >-
+  Analyze existing flows from anchor file: reconstruct real flow, produce audit
+  (bugs, logic errors, weak code) with wave-based hardening plan. Read-only. On explicit
+  confirmation, turn waves into tasks. Triggers: "analizza il flusso/flow di …",
+  "trova i bug in questo flow", "fai un audit di …", "analisi critica del flusso",
+  "fammi un hardening di …", "rivedi a fondo questa funzionalità per bug".
+  Never modify code. Requires anchor—ask if missing.
 ---
 
 # Critical Flow Analysis
