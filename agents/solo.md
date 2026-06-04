@@ -37,6 +37,8 @@ Read `.flow/sources/<slug>/PROGRESS.json` under lock (`flow_resolve_task` from `
 
 ### (b) Analysis (read-only)
 
+**First — project rules (environment, once per spawn).** Before any analysis, read project code rules as binding environment: `CLAUDE.md` at repo root (if it has `@import`/references to rules, follow them) + `.claude/rules/**.md` (if the folder exists). See `<SKILL_DIR>/code-implementer/context-loading.md` § "0. Regole di progetto". These are binding style/convention/best-practice invariants — not inferred from samples, not duplicated by the planning artifacts. If neither exists → no explicit rules, proceed. Do not look elsewhere (no `.editorconfig`, no CI).
+
 Load `task-implementer` instructions lazy:
 - `<SKILL_DIR>/task-implementer/SKILL.md`
 - `<SKILL_DIR>/task-implementer/attended-flow.md`
