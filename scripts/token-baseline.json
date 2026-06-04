@@ -3,7 +3,7 @@
   "method": "char/token proxy: IT=3.4, EN=4.0",
   "totals": {
     "tokens_desc": 1672,
-    "tokens_body": 25975
+    "tokens_body": 25024
   },
   "artifacts": {
     "skills/code-implementer/SKILL.md": {
@@ -72,25 +72,25 @@
     },
     "agents/dev.md": {
       "tokens_desc": 18,
-      "tokens_body": 1539,
+      "tokens_body": 1180,
       "chars_desc": 73,
-      "chars_body": 5233,
+      "chars_body": 4719,
       "lang_desc": "en",
-      "lang_body": "it"
+      "lang_body": "en"
     },
     "agents/pm.md": {
       "tokens_desc": 39,
-      "tokens_body": 1438,
+      "tokens_body": 1014,
       "chars_desc": 155,
-      "chars_body": 4888,
+      "chars_body": 4055,
       "lang_desc": "en",
-      "lang_body": "it"
+      "lang_body": "en"
     },
     "agents/solo.md": {
       "tokens_desc": 31,
-      "tokens_body": 2259,
+      "tokens_body": 2091,
       "chars_desc": 125,
-      "chars_body": 7679,
+      "chars_body": 7110,
       "lang_desc": "en",
       "lang_body": "it"
     }

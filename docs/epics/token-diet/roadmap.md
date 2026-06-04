@@ -39,7 +39,7 @@ flow-run + dev/pm/solo + 4 skill calde; nessuna regressione comportamentale al d
   (potatura + EN), edge-case preservati.
 - **Dipende da feature**: token-diet-foundation
 - **Size**: L  (indicativo — effort reale determinato a expand)
-- **Status feature**: ⚪ planned
+- **Status feature**: ✅ done
 - **Source**: docs/features/token-diet-hot-skills/
 
 ### token-diet-cold-skills — 💻 Compattazione description skill rare
