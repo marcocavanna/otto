@@ -31,7 +31,7 @@ flow-run + dev/pm/solo + 4 skill calde; nessuna regressione comportamentale al d
   sui full-run.
 - **Dipende da feature**: token-diet-foundation
 - **Size**: S  (indicativo — effort reale determinato a expand)
-- **Status feature**: ⚪ planned
+- **Status feature**: ✅ done
 - **Source**: docs/features/token-diet-agents/
 
 ### token-diet-hot-skills — 💻 Riscrittura skill calde (body + description)

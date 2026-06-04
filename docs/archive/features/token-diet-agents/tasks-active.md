@@ -21,7 +21,7 @@ nel brief.
   comunicazione **invariati**. Misura delta con `python3 scripts/measure-tokens.py --delta`.
 - **Dipende da**: —
 - **Complessità (ipotesi)**: standard
-- **Status**: ⚪ todo
+- **Status**: ✅ done
 
 ## Note operative
 

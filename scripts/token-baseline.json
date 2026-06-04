@@ -3,7 +3,7 @@
   "method": "char/token proxy: IT=3.4, EN=4.0",
   "totals": {
     "tokens_desc": 1672,
-    "tokens_body": 29294
+    "tokens_body": 25975
   },
   "artifacts": {
     "skills/code-implementer/SKILL.md": {
@@ -24,9 +24,9 @@
     },
     "skills/flow-run/SKILL.md": {
       "tokens_desc": 294,
-      "tokens_body": 8570,
+      "tokens_body": 5251,
       "chars_desc": 998,
-      "chars_body": 29137,
+      "chars_body": 17854,
       "lang_desc": "it",
       "lang_body": "it"
     },
