@@ -98,6 +98,8 @@ Write `<context-root>/tasks/<id>.md` with mandatory sections:
 
 If there are **cumulative decisions specific to this task** (new VO, pattern, library, convention): append to `<context-root>/technical-context.md`. Never for cross-task decisions (those → escalation).
 
+**Do NOT touch the tasks-file** (`<context-root>/tasks-active.md` / `docs/planning/05-tasks-active.md`): marking the task done / mirroring its `Status` is the **orchestrator's** job at finalize, **after** you return (flow-run § "Mirror status on source tasks-file"). Your output contract is exactly two paths — `<context-root>/tasks/<id>.md` and `<context-root>/technical-context.md` — and `scope-check.sh` allows only those. Attempting to write `tasks-active.md` is out of scope by design and will (correctly) be blocked: do not try.
+
 ### (g) RESULT.json
 
 Always write `.flow/briefs/<TASK>/RESULT.json`.
@@ -149,3 +151,4 @@ Exit with summary `ESCALATION: <reason>`.
 - Output in Italian, dense. Final summary always includes: files touched, build/verify status, any `ESCALATION:`.
 - Do not write `technical-context.md` for cross-task decisions (→ escalation). Local deviations go in `RESULT.json.deviations` and the Deviazioni section of the versioned artifact.
 - Write only inside paths from `scope.txt`. The scope-check hook gates every Write/Edit/Bash write.
+- Never write the tasks-file (`tasks-active.md` / `05-tasks-active.md`): the orchestrator mirrors the task `Status` at finalize, after you return. It is out of your output contract by design.
