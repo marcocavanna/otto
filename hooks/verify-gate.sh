@@ -22,10 +22,14 @@ esac
 # Fail-open: se il task non è risolvibile univocamente, lascia chiudere lo Stop (exit 0).
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd) || exit 0
 . "$SCRIPT_DIR/flow-lib.sh" 2>/dev/null || exit 0
-TASK=$(flow_resolve_task) || exit 0
+# flow_resolve_task emette "ROOT<TAB>TASK": ROOT è la workspace root assoluta (cwd-independent),
+# usata per costruire il path del brief senza dipendere dalla cwd del subagent.
+RESOLVED=$(flow_resolve_task) || exit 0
+[ -n "$RESOLVED" ] || exit 0
+ROOT=${RESOLVED%%	*}; TASK=${RESOLVED#*	}
 [ -n "$TASK" ] || exit 0
 
-DIR=".flow/briefs/$TASK"; R="$DIR/RESULT.json"; C="$DIR/retries"
+DIR="$ROOT/.flow/briefs/$TASK"; R="$DIR/RESULT.json"; C="$DIR/retries"
 
 [ -f "$R" ] || { echo "RESULT.json mancante: esegui verify e scrivilo" >&2; exit 2; }
 
