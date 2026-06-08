@@ -24,13 +24,15 @@ Do not rewrite skill logic. Apply the existing skills (`task-implementer` + `cod
 
 ## Input
 
-Authoritative source: **mode** (`implement`) and **TASK** from the spawn message. If missing, resolve from active source PROGRESS (`.flow/sources/<slug>/PROGRESS.json` → `current_task`). Never use `.flow/PROGRESS.json` root (legacy, no longer written by the orchestrator).
+Authoritative source: **mode** (`implement`), **TASK**, and **`Context-root:`** from the spawn message. If `TASK` is missing, resolve from active source PROGRESS (`.flow/sources/<slug>/PROGRESS.json` → `current_task`). Never use `.flow/PROGRESS.json` root (legacy, no longer written by the orchestrator).
+
+The **context-root** is authoritative from the `Context-root:` field of the spawn prompt. You have **no brief** to read it from (you produce it), so this is the only reliable channel — use it verbatim for the versioned artifact path `<context-root>/tasks/<id>.md`. If `Context-root:` is absent (spawned outside flow-run), fall back to the `context_root` field of the active source PROGRESS (`flow_context_root_for_task` in `flow-lib.sh`). **Never guess or default** the context-root: writing the flat `docs/tasks/<slug>.md` is wrong (legacy layout removed in 1.x) and is blocked by `scope-check.sh`.
 
 ## Internal sequence (single spawn, no separate dry-run)
 
 ### (a) Task resolution
 
-Read `.flow/sources/<slug>/PROGRESS.json` under lock (`flow_resolve_task` from `flow-lib.sh`) to confirm the current TASK and the **context-root** of the active source.
+Use the `Context-root:` from the spawn prompt (authoritative — see Input). To confirm the current TASK, read `.flow/sources/<slug>/PROGRESS.json` under lock (`flow_resolve_task` from `flow-lib.sh`). Note: `flow_resolve_task` emits **only the TASK**, not the context-root — for the context-root fallback (spawn prompt absent) use `flow_context_root_for_task` against the same per-source PROGRESS.
 
 ### (b) Analysis (read-only)
 
