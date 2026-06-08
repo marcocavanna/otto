@@ -37,6 +37,19 @@ abspath() {
   fi
 }
 
+# Risale dagli antenati di un path ASSOLUTO fino alla prima dir che contiene `.flow/`:
+# quella è la workspace root che possiede il file. Stdout: root (senza slash finale).
+# Exit 1 se nessun antenato ha `.flow` (target fuori da ogni workspace → fail-closed).
+find_wsroot() {
+  local d
+  d=$(dirname "$1")
+  while :; do
+    [ -d "$d/.flow" ] && { printf '%s\n' "$d"; return 0; }
+    [ "$d" = "/" ] && return 1
+    d=$(dirname "$d")
+  done
+}
+
 TOOL=$(echo "$INPUT" | jq -r '.tool_name')
 
 if [ "$TOOL" = "Bash" ]; then
@@ -52,9 +65,15 @@ fi
 FP=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 [ -n "$FP" ] || ask "tool_input senza file_path"
 
-ROOT=$(pwd -P) || ask "pwd fallita"
 ABS=$(abspath "$FP") || ask "impossibile normalizzare il path (realpath -m e python3 assenti)"
-case "$ABS" in "$ROOT"/*) REL=${ABS#"$ROOT"/} ;; *) ask "fuori repo: $ABS" ;; esac
+
+# Ancora la workspace root al `.flow` ANTENATO del path target, NON a $pwd. La cwd del
+# subagent dev/solo non è affidabile (monorepo, git root su sottocartella, sessione aperta
+# sul parent → la cwd può essere il parent del workspace, dove `.flow` non esiste). Il gate
+# deve essere cwd-independent: si risolve tutto rispetto al `.flow` che possiede davvero il
+# file in scrittura. Da qui in poi REL è relativo a $WSROOT.
+WSROOT=$(find_wsroot "$ABS") || ask "fuori workspace: nessun '.flow' antenato di $ABS"
+REL=${ABS#"$WSROOT"/}
 
 # Blocklist: stato orchestratore — mai scrivibile dal DEV/SOLO indipendentemente da scope.txt
 case "$REL" in
@@ -80,7 +99,7 @@ esac
 # Scansiona TUTTI i PROGRESS per-source: compatibile con esecuzione parallela di più source.
 case "$AGENT" in
   solo|*:solo)
-    for prog in .flow/sources/*/PROGRESS.json; do
+    for prog in "$WSROOT"/.flow/sources/*/PROGRESS.json; do
       [ -f "$prog" ] || continue
       cr=$(jq -r '.context_root // empty' "$prog" 2>/dev/null) || continue
       [ -n "$cr" ] || continue
@@ -99,7 +118,7 @@ esac
 # quale task PROGRESS.json segni come current_task).
 # Se nessun scope.txt esiste → ask (nessun brief attivo).
 FOUND_SCOPE=0
-for scope_file in .flow/briefs/*/scope.txt; do
+for scope_file in "$WSROOT"/.flow/briefs/*/scope.txt; do
   [ -f "$scope_file" ] || continue
   FOUND_SCOPE=1
   while IFS= read -r g; do
